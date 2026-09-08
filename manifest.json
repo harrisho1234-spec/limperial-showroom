@@ -1,7 +1,7 @@
 {
-  "name": "Limperial Luxury Suite",
+  "name": "Limperial Luxury Showroom",
   "short_name": "Limperial",
-  "description": "Limperial Luxury Enterprise Operations Suite (Showroom, Purchases, Sales & Attendance)",
+  "description": "Showroom Sales Dashboard & Pricing Engine for Limperial Luxury",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",
