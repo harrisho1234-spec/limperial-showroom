@@ -1,14 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="112" fill="#090c12"/>
-  <rect x="24" y="24" width="464" height="464" rx="88" fill="#111827" stroke="#dfb26c" stroke-width="8"/>
-  <!-- Crown Graphic -->
-  <path d="M128 360 L128 200 L192 270 L256 160 L320 270 L384 200 L384 360 Z" fill="#dfb26c" stroke="#cda05b" stroke-width="4"/>
-  <circle cx="128" cy="195" r="16" fill="#f2d9a1"/>
-  <circle cx="256" cy="155" r="20" fill="#f2d9a1"/>
-  <circle cx="384" cy="195" r="16" fill="#f2d9a1"/>
-  <!-- Jewel accents on crown base -->
-  <rect x="156" y="325" width="200" height="12" rx="6" fill="#090c12" opacity="0.4"/>
-  <circle cx="256" cy="331" r="5" fill="#f2d9a1"/>
-  <circle cx="210" cy="331" r="4" fill="#f2d9a1"/>
-  <circle cx="302" cy="331" r="4" fill="#f2d9a1"/>
+  <rect width="512" height="512" fill="#ffffff"/>
+  <text x="256" y="240" font-family="'Playfair Display', 'Liberation Serif', serif" font-weight="bold" font-size="58" fill="#e5a83b" text-anchor="middle">L'IMPERIAL</text>
+  <line x1="68" y1="285" x2="195" y2="285" stroke="#e5a83b" stroke-width="4"/>
+  <text x="256" y="294" font-family="'Playfair Display', 'Liberation Serif', serif" font-weight="bold" font-size="24" fill="#e5a83b" text-anchor="middle" letter-spacing="4">LUXURY</text>
+  <line x1="317" y1="285" x2="444" y2="285" stroke="#e5a83b" stroke-width="4"/>
 </svg>
