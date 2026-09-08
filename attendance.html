@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>L'Imperial Luxury — Employee Attendance Dashboard</title>
+
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#090c12">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Limperial">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .modal-open { overflow: hidden; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
+        .tab-inactive { color: #64748b; font-weight: 500; border-bottom: 2px solid transparent; }
+        .tab-inactive:hover { color: #334155; border-bottom: 2px solid #cbd5e1; }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex flex-col">
+
+    <!-- Unified Master Suite Navigation -->
+    <header class="bg-[#090c12] border-b border-[#dfb26c]/20 sticky top-0 z-40 px-4 py-2.5 shadow-md shrink-0">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <a href="./index.html" class="flex items-center space-x-2 shrink-0">
+                    <img src="https://lh3.googleusercontent.com/d/1lW4DKT9IDiuo97MxmAgZMKVdLXOUItnf" 
+                         alt="Limperial Luxury" 
+                         class="h-8 w-auto object-contain"
+                         onerror="this.outerHTML='<div class=\'h-8 w-8 rounded-full border border-[#dfb26c]/30 flex items-center justify-center bg-gray-900 shrink-0\'><i class=\'fa-solid fa-crown text-[#dfb26c] text-sm\'></i></div>';">
+                </a>
+                
+                <!-- Desktop Suite Navigation Tabs -->
+                <nav class="hidden md:flex items-center space-x-1 bg-black/30 p-1 rounded-xl border border-[#dfb26c]/20 ml-2">
+                    <a href="./index.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-[#dfb26c] hover:bg-white/5 flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-gem text-[11px]"></i><span>Showroom & Quotes</span>
+                    </a>
+                    <a href="./purchase.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-[#dfb26c] hover:bg-white/5 flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-receipt text-[11px]"></i><span>Purchases & AR</span>
+                    </a>
+                    <a href="./tracking.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-[#dfb26c] hover:bg-white/5 flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-truck-fast text-[11px]"></i><span>Sales & POs</span>
+                    </a>
+                    <a href="./attendance.html" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#dfb26c] text-[#090c12] shadow-sm flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-calendar-check text-[11px]"></i><span>Attendance</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="fetchData()" class="px-2.5 py-1 text-gray-300 hover:text-[#dfb26c] bg-white/5 hover:bg-white/10 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 border border-white/10" title="Refresh Live Data">
+                    <i class="fa-solid fa-arrows-rotate text-xs"></i>
+                    <span class="hidden sm:inline">Refresh</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Suite Tabs -->
+    <nav class="md:hidden flex items-center space-x-1.5 bg-[#090c12] border-b border-[#dfb26c]/15 px-3 py-2 overflow-x-auto hide-scrollbar sticky top-[51px] z-30 shadow-sm shrink-0">
+        <a href="./index.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-[#dfb26c] bg-white/5 shrink-0 flex items-center gap-1.5 border border-white/5">
+            <i class="fa-solid fa-gem text-[10px]"></i><span>Showroom</span>
+        </a>
+        <a href="./purchase.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-[#dfb26c] bg-white/5 shrink-0 flex items-center gap-1.5 border border-white/5">
+            <i class="fa-solid fa-receipt text-[10px]"></i><span>Purchases & AR</span>
+        </a>
+        <a href="./tracking.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-[#dfb26c] bg-white/5 shrink-0 flex items-center gap-1.5 border border-white/5">
+            <i class="fa-solid fa-truck-fast text-[10px]"></i><span>Sales & POs</span>
+        </a>
+        <a href="./attendance.html" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#dfb26c] text-[#090c12] shrink-0 flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-calendar-check text-[10px]"></i><span>Attendance</span>
+        </a>
+    </nav>
+
+    <!-- Attendance Sub-Navigation Tabs (Daily vs Calendar) -->
+    <div class="bg-white border-b border-slate-200 px-4 md:px-6 pt-3 flex-shrink-0 z-20">
+        <div class="flex space-x-6 overflow-x-auto hide-scrollbar max-w-[75rem] mx-auto">
+            <button onclick="switchTab('daily')" id="tab-daily" class="tab-active pb-2.5 px-2 transition-all whitespace-nowrap text-sm">Daily Attendance</button>
+            <button onclick="switchTab('calendar')" id="tab-calendar" class="tab-inactive pb-2.5 px-2 transition-all whitespace-nowrap text-sm">Calendar View</button>
+        </div>
+    </div>
+
+    <div class="flex-grow overflow-auto p-4 md:p-6 relative" id="mainContainer">
+        
+        <!-- System Message / Loader -->
+        <div id="systemMessage" class="mb-6 p-6 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 shadow-sm flex items-center justify-center max-w-[75rem] mx-auto">
+            <i class="fa-solid fa-circle-notch fa-spin mr-3 text-xl"></i> 
+            <span class="font-medium text-lg" id="sysMessageText">Connecting to Google Sheets... <span class="font-bold text-blue-800">0%</span></span>
+        </div>
+
+        <!-- ==================== DAILY ATTENDANCE VIEW ==================== -->
+        <div id="dailyView" class="block max-w-[75rem] mx-auto pb-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-slate-900">Daily Attendance</h1>
+                    <p class="text-xs md:text-sm text-slate-500 mt-1">Detailed list of staff on leave for specific dates.</p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <!-- Date Pager -->
+                    <div class="flex items-center bg-slate-50 rounded-lg p-1 border border-slate-200 shadow-inner w-full sm:w-auto justify-between">
+                        <button onclick="changeDailyDate(-1)" class="w-10 h-10 flex items-center justify-center rounded-md hover:bg-white hover:shadow transition-all text-slate-600 border border-transparent hover:border-slate-200 shrink-0"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div class="px-2 md:px-4 font-bold text-slate-800 text-base md:text-lg min-w-[130px] md:w-40 text-center" id="dailyAttendanceDateText">Aug 14, 2026</div>
+                        <button onclick="changeDailyDate(1)" class="w-10 h-10 flex items-center justify-center rounded-md hover:bg-white hover:shadow transition-all text-slate-600 border border-transparent hover:border-slate-200 shrink-0"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    
+                    <!-- Export Button -->
+                    <button onclick="downloadDailyReport(this)" class="w-full sm:w-auto px-4 py-2 bg-emerald-500 text-white font-bold rounded-lg shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 h-12 shrink-0">
+                        <i class="fa-solid fa-file-excel"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Daily Content Container (Injected via JS) -->
+            <div id="dailyContentArea">
+            </div>
+            
+            <!-- Empty State -->
+            <div id="dailyNoDataMessage" class="hidden p-12 mt-6 text-center text-slate-500 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="w-16 h-16 bg-slate-50 shadow-sm rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                    <i class="fa-solid fa-mug-hot text-2xl text-slate-300"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700 mb-1">Everyone is present!</h3>
+                <p class="text-sm">No leaves, lates, or absences recorded for this date.</p>
+            </div>
+        </div>
+
+        <!-- ==================== CALENDAR VIEW ==================== -->
+        <div id="calendarView" class="hidden max-w-[75rem] mx-auto h-auto min-h-full flex flex-col md:flex-row gap-5 pb-8">
+            
+            <!-- Calendar Main Area -->
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col h-auto z-10 w-full md:w-[65%] lg:w-[70%]">
+                <div class="flex justify-between items-center mb-4">
+                    
+                    <!-- Month Selector Custom Dropdown -->
+                    <div class="flex items-center gap-2">
+                        <div class="relative filter-dropdown">
+                            <button id="monthDropdownBtn" class="flex items-center gap-1.5 text-xl md:text-2xl font-bold text-slate-800 hover:text-blue-600 transition-colors focus:outline-none bg-transparent cursor-pointer">
+                                <span id="monthDropdownLabel">August</span>
+                                <i class="fa-solid fa-chevron-down text-sm text-slate-400 mb-0.5"></i>
+                            </button>
+                            <div id="monthDropdownMenu" class="hidden absolute left-0 z-50 w-44 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden py-1.5 transform origin-top-left transition-all">
+                                <button onclick="jumpToMonth(0)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">January</button>
+                                <button onclick="jumpToMonth(1)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">February</button>
+                                <button onclick="jumpToMonth(2)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">March</button>
+                                <button onclick="jumpToMonth(3)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">April</button>
+                                <button onclick="jumpToMonth(4)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">May</button>
+                                <button onclick="jumpToMonth(5)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">June</button>
+                                <button onclick="jumpToMonth(6)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">July</button>
+                                <button onclick="jumpToMonth(7)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">August</button>
+                                <button onclick="jumpToMonth(8)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">September</button>
+                                <button onclick="jumpToMonth(9)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">October</button>
+                                <button onclick="jumpToMonth(10)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">November</button>
+                                <button onclick="jumpToMonth(11)" class="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">December</button>
+                            </div>
+                        </div>
+                        <span class="text-xl md:text-2xl font-bold text-slate-800" id="calendarYearText">2026</span>
+                    </div>
+
+                    <div class="flex space-x-1.5">
+                        <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 transition-colors shadow-sm hover:shadow">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <button onclick="changeMonth(1)" class="w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 transition-colors shadow-sm hover:shadow">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-7 gap-1 md:gap-1.5 mb-1.5 mt-2 text-center text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <div class="text-rose-500">Sun</div>
+                    <div>Mon</div>
+                    <div>Tue</div>
+                    <div>Wed</div>
+                    <div>Thu</div>
+                    <div>Fri</div>
+                    <div>Sat</div>
+                </div>
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1 md:gap-1.5 auto-rows-max">
+                </div>
+            </div>
+
+            <!-- Calendar Sidebar -->
+            <div class="w-full md:w-[35%] lg:w-[30%] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-auto md:h-[calc(100vh-140px)] md:sticky md:top-4 z-20 min-w-[250px]">
+                
+                <div class="p-5 border-b border-slate-100 shrink-0 bg-white rounded-t-xl z-20">
+                    <div class="flex justify-between items-start mb-4 gap-2">
+                        <h3 class="text-lg font-bold text-slate-800" id="sidebarTitle">Monthly Summary</h3>
+                        
+                        <div class="relative filter-dropdown">
+                            <button id="calCompanyDropdownBtn" class="bg-white border border-slate-200 text-slate-700 text-xs rounded-md focus:ring-blue-500 focus:border-blue-500 p-1.5 min-w-[100px] flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors shadow-sm font-medium">
+                                <span id="calCompanyDropdownLabel" class="truncate max-w-[70px]">All</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] ml-1 text-slate-400"></i>
+                            </button>
+                            <div id="calCompanyDropdownMenu" class="hidden absolute right-0 z-30 w-48 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 flex flex-col overflow-hidden">
+                                <div class="p-1.5 border-b border-slate-100 bg-white z-10 shrink-0">
+                                    <label class="flex items-center space-x-2 cursor-pointer p-1 hover:bg-slate-50 rounded">
+                                        <input type="checkbox" id="calSelectAllCompanies" class="rounded text-blue-600 focus:ring-blue-500">
+                                        <span class="text-xs font-semibold text-slate-700">All (LPH & LPL)</span>
+                                    </label>
+                                </div>
+                                <div id="calCompanyCheckboxList" class="p-1.5 flex flex-col space-y-0.5 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="calendarSummaryMonth" class="text-sm text-slate-500 mb-3">Aggregated records</div>
+                    
+                    <div id="calendarTotals" class="flex flex-col gap-1.5 pt-3 border-t border-slate-100 w-full">
+                    </div>
+                </div>
+                
+                <div class="overflow-y-auto p-4 flex-grow bg-slate-50/50" id="calendarSummaryList">
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Backdrop -->
+    <div id="employeeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] transform scale-95 transition-transform duration-300" id="modalContent">
+            
+            <div class="flex justify-between items-start p-6 border-b border-slate-100 shrink-0 relative overflow-hidden bg-white">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+                <div class="flex items-center space-x-4">
+                    <div class="w-14 h-14 rounded-full bg-blue-50 text-blue-600 border border-blue-100 shadow-inner flex items-center justify-center text-xl font-bold" id="modalAvatar">
+                        A
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900" id="modalName">Employee Name</h2>
+                        <p class="text-sm text-slate-500 mt-0.5"><span id="modalId" class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-bold">ID</span> • <span id="modalCompany" class="font-bold text-slate-700">Company</span></p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 hover:bg-slate-100 w-8 h-8 flex items-center justify-center rounded-full transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 md:p-6 overflow-y-auto flex-grow bg-slate-50/30">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                        <p class="text-[11px] text-slate-400 font-bold mb-1 uppercase tracking-wider">Department / Position</p>
+                        <p class="font-semibold text-slate-800" id="modalPosition">Position</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                        <p class="text-[11px] text-slate-400 font-bold mb-1 uppercase tracking-wider">Join Date</p>
+                        <p class="font-semibold text-slate-800" id="modalJoinDate">Date</p>
+                    </div>
+                </div>
+
+                <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-scale-balanced text-blue-500"></i> Leave Balances (YTD)</h3>
+                
+                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden mb-6 shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-xs">
+                                <tr>
+                                    <th class="px-4 py-3 min-w-[120px]">Type</th>
+                                    <th class="px-4 py-3 text-center">Used</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-4 py-3 font-semibold text-slate-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span> Annual (AL)</td>
+                                    <td class="px-4 py-3 text-center font-bold text-blue-600" id="leave-al-us">0</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-4 py-3 font-semibold text-slate-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span> Sick (SL)</td>
+                                    <td class="px-4 py-3 text-center font-bold text-blue-600" id="leave-sl-us">0</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-4 py-3 font-semibold text-slate-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span> Special (SP)</td>
+                                    <td class="px-4 py-3 text-center font-bold text-blue-600" id="leave-sp-us">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-red-50/50 border border-red-100 rounded-xl p-3.5 flex justify-between items-center shadow-sm flex-col sm:flex-row gap-2">
+                        <span class="text-xs font-bold text-red-600 flex items-center gap-1.5 text-center"><i class="fa-solid fa-money-bill-transfer"></i> Unpaid Leaves (UP)</span>
+                        <span class="text-xl font-bold text-red-600" id="leave-up">0</span>
+                    </div>
+                    <div class="bg-red-50/50 border border-red-100 rounded-xl p-3.5 flex justify-between items-center shadow-sm flex-col sm:flex-row gap-2">
+                        <span class="text-xs font-bold text-red-600 flex items-center gap-1.5 text-center"><i class="fa-solid fa-user-xmark"></i> Absences (A)</span>
+                        <span class="text-xl font-bold text-red-600" id="leave-a">0</span>
+                    </div>
+                </div>
+
+                <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-calendar-days text-blue-500"></i> Leave History by Month</h3>
+                <div id="modalHistoryContainer" class="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 shrink-0 bg-white flex justify-end rounded-b-2xl">
+                <button onclick="closeModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg shadow-md transition-colors text-sm font-bold tracking-wide">Close Window</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Details Modal -->
+    <div id="dailyDetailsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-40 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] transform scale-95 transition-transform duration-300" id="dailyDetailsModalContent">
+            
+            <div class="flex justify-between items-center p-5 border-b border-slate-100 shrink-0 relative overflow-hidden bg-white">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900" id="dailyModalTitle">Date</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Staff on leave or day off</p>
+                </div>
+                <button onclick="closeDailyDetailsModal()" class="text-slate-400 hover:text-slate-700 hover:bg-slate-100 w-8 h-8 flex items-center justify-center rounded-full transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 md:p-6 overflow-y-auto flex-grow bg-slate-50/50" id="dailyModalBody">
+            </div>
+            
+            <div class="p-4 border-t border-slate-100 shrink-0 bg-white flex justify-end gap-3 rounded-b-2xl">
+                <button id="dailyModalExportBtn" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm transition-colors text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-file-excel"></i> Export</button>
+                <button onclick="closeDailyDetailsModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg shadow-md transition-colors text-sm font-bold tracking-wide">Close Window</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const csvInfoUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8o8p12U_gWwt-uSmSRBgm1mq1Ouks6qP_38xv5szrDpiPmDTotqrL88nop0l-kbV14aPMpHWv6sH3/pub?gid=0&single=true&output=csv';
+        const csvDataPullUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8o8p12U_gWwt-uSmSRBgm1mq1Ouks6qP_38xv5szrDpiPmDTotqrL88nop0l-kbV14aPMpHWv6sH3/pub?gid=1932519603&single=true&output=csv';
+        
+        const gridSources = [
+            { month: 'January', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=2006891031&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=2006891031&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=2006891031&single=true&output=csv'] },
+            { month: 'February', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=1349409947&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=1349409947&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=1349409947&single=true&output=csv'] },
+            { month: 'March', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=1401062813&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=1401062813&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=1401062813&single=true&output=csv'] },
+            { month: 'April', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=1577313383&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=1577313383&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=1577313383&single=true&output=csv'] },
+            { month: 'May', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=411061239&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=411061239&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=411061239&single=true&output=csv'] },
+            { month: 'June', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=533249454&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=533249454&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=533249454&single=true&output=csv'] },
+            { month: 'July', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=565478401&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=565478401&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=565478401&single=true&output=csv'] },
+            { month: 'August', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=1279774546&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=1279774546&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=1279774546&single=true&output=csv'] },
+            { month: 'September', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=946959903&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=946959903&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=946959903&single=true&output=csv'] },
+            { month: 'October', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=1363713547&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=1363713547&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=1363713547&single=true&output=csv'] },
+            { month: 'November', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=967879953&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=967879953&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=967879953&single=true&output=csv'] },
+            { month: 'December', urls: ['https://docs.google.com/spreadsheets/d/e/2PACX-1vR6t0Y4tyj0_mfECLqLcLs5fkb_1_bfmPw_goauS2Rnzo5IjG-ifmF6rXCYVPP-KHX0GJTcr5VMgnEp/pub?gid=1958319263&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vTlBLiAerrgDSPv7x8ENRLV-CFWDQ5dGLInrqiiadmtZ0xSOXdX6inlnPO1X0M1ew5xXLWwUlkH_YVp/pub?gid=1958319263&single=true&output=csv','https://docs.google.com/spreadsheets/d/e/2PACX-1vSSQh8yswBgWnt3tToX-Xr0eH6o11ZSMby2qq2iXx_Woym6YVbWE5QDgjkSRarUPNmp-PFFsIW_XE_O/pub?gid=1958319263&single=true&output=csv'] }
+        ];
+
+        let allEmployees = [];
+        let companies = new Set();
+        let selectedCalendarCompanies = []; 
+        let leaveHistoryByEmployee = {};
+        let dailyLeaveRecords = []; 
+        
+        let currentCalendarDate = new Date(); 
+        let currentDailyDate = new Date(); 
+        let activeLeaveFilter = null; 
+        
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        const sysMsg = document.getElementById('systemMessage');
+        const sysMsgText = document.getElementById('sysMessageText');
+        
+        let calBtn, calMenu, calLabel, calSelectAll, calCheckboxList;
+        let monthBtn, monthMenu; 
+
+        const normalizeId = (id) => String(id || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            calBtn = document.getElementById('calCompanyDropdownBtn');
+            calMenu = document.getElementById('calCompanyDropdownMenu');
+            calLabel = document.getElementById('calCompanyDropdownLabel');
+            calSelectAll = document.getElementById('calSelectAllCompanies');
+            calCheckboxList = document.getElementById('calCompanyCheckboxList');
+            monthBtn = document.getElementById('monthDropdownBtn');
+            monthMenu = document.getElementById('monthDropdownMenu');
+
+            document.addEventListener('click', (event) => {
+                if (!event.target.closest('.filter-dropdown')) {
+                    if (calMenu) calMenu.classList.add('hidden');
+                    if (monthMenu) monthMenu.classList.add('hidden');
+                }
+            });
+
+            if (calBtn) calBtn.addEventListener('click', () => {
+                calMenu.classList.toggle('hidden');
+                if (monthMenu) monthMenu.classList.add('hidden');
+            });
+            if (monthBtn) monthBtn.addEventListener('click', () => {
+                monthMenu.classList.toggle('hidden');
+                if (calMenu) calMenu.classList.add('hidden');
+            });
+
+            if (calSelectAll) calSelectAll.addEventListener('change', (e) => handleSelectAll(e.target.checked));
+
+            fetchData();
+        });
+
+        async function fetchData() {
+            try {
+                const fetchOpts = { cache: 'no-store' };
+                let totalRequests = 1 + (gridSources.length * 3); 
+                let completedRequests = 0;
+                const cb = new Date().getTime() + Math.random().toString(36).substring(7);
+
+                const updateProgress = () => {
+                    completedRequests++;
+                    let pct = Math.floor((completedRequests / totalRequests) * 100);
+                    if (pct > 100) pct = 100;
+                    if (sysMsgText) sysMsgText.innerHTML = `Downloading live data... <span class="font-bold text-blue-800">${pct}%</span>`;
+                };
+                
+                let infoText = "";
+                try {
+                    let res = await fetch(csvInfoUrl + '&cb=' + cb, fetchOpts);
+                    updateProgress();
+                    if (res.ok) infoText = await res.text();
+                } catch (e) {
+                    updateProgress();
+                    console.error("Failed to fetch info:", e);
+                }
+
+                let gridsByMonth = [];
+                for (let source of gridSources) {
+                    let monthPromises = source.urls.map(url => {
+                        let finalUrl = url + (url.includes('?') ? '&cb=' : '?cb=') + cb;
+                        return fetch(finalUrl, fetchOpts)
+                            .then(async res => {
+                                updateProgress();
+                                return res.ok ? await res.text() : "";
+                            })
+                            .catch(err => {
+                                updateProgress();
+                                console.error("Error fetching", finalUrl, err);
+                                return "";
+                            });
+                    });
+                    
+                    let texts = await Promise.all(monthPromises);
+                    let monthCombinedData = [];
+                    texts.forEach(text => {
+                        if (text) {
+                            let parsed = Papa.parse(text);
+                            monthCombinedData = monthCombinedData.concat([[]], parsed.data); 
+                        }
+                    });
+                    gridsByMonth.push({ month: source.month, data: monthCombinedData });
+                }
+
+                if (sysMsgText) sysMsgText.innerText = "Processing Data...";
+
+                Papa.parse(infoText, {
+                    complete: function(infoResults) {
+                        try {
+                            processData(infoResults.data, gridsByMonth);
+                        } catch (err) {
+                            showError("Data Processing Error: " + err.message);
+                        }
+                    },
+                    error: function(err) {
+                        showError("CSV Parsing Error: " + err.message);
+                    }
+                });
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function showError(msg) {
+            if(sysMsg) {
+                sysMsg.className = "mb-6 p-6 rounded-xl bg-red-50 border-2 border-red-200 text-red-800 shadow-sm max-w-[75rem] mx-auto";
+                sysMsg.innerHTML = `<div class="flex items-start"><i class="fa-solid fa-triangle-exclamation text-3xl mr-4 text-red-500 mt-1"></i> <div><h3 class="font-bold text-lg mb-1">Error Loading Data</h3><p class="text-sm font-medium mb-3">${msg}</p></div></div>`;
+            }
+        }
+
+        function processData(infoData, gridsByMonth) {
+            allEmployees = [];
+            leaveHistoryByEmployee = {};
+            dailyLeaveRecords = [];
+            companies.clear();
+
+            gridsByMonth.forEach(monthGrid => {
+                let currentMonth = monthGrid.month;
+                let gridData = monthGrid.data;
+                let currentDayMap = {};
+                let gridIdIdx = 5;
+
+                gridData.forEach((row, index) => {
+                    if (row.length < 5) return;
+                    let strRow = row.map(v => String(v).trim().toLowerCase());
+                    let isHeaderRow = false;
+                    
+                    if (strRow.includes('1') && strRow.includes('2') && strRow.includes('3') && strRow.includes('28')) {
+                        currentDayMap = {}; 
+                        for (let c = 0; c < row.length; c++) {
+                            let dayNum = parseInt(row[c]);
+                            if (!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31) currentDayMap[c] = dayNum;
+                        }
+                        isHeaderRow = true;
+                    }
+
+                    let cleanHeader = strRow.map(v => v.replace(/[^a-z0-9]/g, ''));
+                    if (cleanHeader.includes('id') || cleanHeader.includes('staffname') || cleanHeader.includes('staffid')) {
+                        let foundId = cleanHeader.findIndex(c => c === 'id' || c === 'staffid');
+                        if (foundId !== -1) gridIdIdx = foundId;
+                        isHeaderRow = true;
+                    }
+                    if (isHeaderRow) return;
+
+                    if (Object.keys(currentDayMap).length > 0) {
+                        let id = normalizeId(row[gridIdIdx]);
+                        if (id && id !== 'ID' && id !== 'STAFFID') {
+                            for (const [colIdx, day] of Object.entries(currentDayMap)) {
+                                let rawCell = String(row[colIdx] || '').trim();
+                                if(!rawCell) continue;
+
+                                let timeNote = "";
+                                let noteMatch = rawCell.match(/\(([^)]+)\)/);
+                                if (noteMatch) timeNote = noteMatch[1].trim();
+
+                                let cellValue = rawCell.toUpperCase().replace(/\(.*?\)/g, '');
+                                let al = 0, sl = 0, sp = 0, up = 0, a = 0, d = 0, late5m = 0, late3m = 0, ot = 0;
+                                
+                                let parts = cellValue.split(/[\+&,\n\/]/); 
+                                let defaultAmt = parts.length > 1 ? (1.0 / parts.length) : 1;
+                                
+                                parts.forEach(p => {
+                                    let trimmedP = p.trim();
+                                    if(!trimmedP) return;
+                                    
+                                    if (trimmedP === "L") { late5m += 1; return; }
+                                    if (trimmedP === "L'") { late3m += 1; return; }
+                                    
+                                    let numMatch = trimmedP.match(/[\d\.]+/);
+                                    let amt = numMatch ? parseFloat(numMatch[0]) : defaultAmt;
+                                    
+                                    let cleanP = trimmedP.replace(/[^A-Z]/g, ''); 
+                                    if (cleanP === 'AL' || cleanP === 'ANNUAL') al += amt; 
+                                    else if (cleanP === 'HAL') al += 0.5;
+                                    else if (cleanP === 'SL' || cleanP === 'SICK') sl += amt; 
+                                    else if (cleanP === 'HSL') sl += 0.5;
+                                    else if (cleanP === 'SP' || cleanP === 'SPECIAL') sp += amt; 
+                                    else if (cleanP === 'HSP') sp += 0.5;
+                                    else if (cleanP === 'UP' || cleanP === 'UNPAID') up += amt; 
+                                    else if (cleanP === 'HUP') up += 0.5;
+                                    else if (cleanP === 'A' || cleanP === 'ABSENT' || cleanP === 'ABS') a += amt; 
+                                    else if (cleanP === 'HA') a += 0.5;
+                                    else if (cleanP === 'D' || cleanP === 'DAYOFF' || cleanP === 'OFF' || cleanP === 'DO') d += amt; 
+                                    else if (cleanP === 'HD' || cleanP === 'HALFDAYOFF') d += 0.5;
+                                    else if (cleanP === 'OT' || cleanP === 'OVERTIME') ot += amt;
+                                });
+
+                                if (al>0 || sl>0 || sp>0 || up>0 || a>0 || d>0 || late5m>0 || late3m>0 || ot>0) {
+                                    dailyLeaveRecords.push({ month: currentMonth, day: parseInt(day), staffId: id, leaves: { AL: al, SL: sl, SP: sp, UP: up, A: a, Late5m: late5m, Late3m: late3m, OT: ot, D: d }, note: timeNote });
+                                    if (!leaveHistoryByEmployee[id]) leaveHistoryByEmployee[id] = {};
+                                    if (!leaveHistoryByEmployee[id][currentMonth]) leaveHistoryByEmployee[id][currentMonth] = { AL: 0, SL: 0, SP: 0, UP: 0, A: 0, Late5m: 0, Late3m: 0, OT: 0, D: 0 };
+                                    leaveHistoryByEmployee[id][currentMonth].AL += al;
+                                    leaveHistoryByEmployee[id][currentMonth].SL += sl;
+                                    leaveHistoryByEmployee[id][currentMonth].SP += sp;
+                                    leaveHistoryByEmployee[id][currentMonth].UP += up;
+                                    leaveHistoryByEmployee[id][currentMonth].A += a;
+                                    leaveHistoryByEmployee[id][currentMonth].D += d;
+                                    leaveHistoryByEmployee[id][currentMonth].Late5m += late5m;
+                                    leaveHistoryByEmployee[id][currentMonth].Late3m += late3m;
+                                    leaveHistoryByEmployee[id][currentMonth].OT += ot;
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+
+            infoData.forEach((row, index) => {
+                if (index < 3) return; 
+                let rawId = (row[1] || '').toString().trim();
+                let id = normalizeId(rawId);
+                if (!id || id.includes('STAFFID')) return;
+
+                let name = (row[2] || '').trim();
+                let company = (row[3] || 'Unknown').toUpperCase();
+                
+                if (company !== 'LPH' && company !== 'LPL') return;
+                if (!name || name === '-' || name.toUpperCase() === 'VACANT') return;
+
+                let department = row[4] || 'Unknown'; 
+                let position = row[5] || 'Unknown';
+                let joinDate = row[6] || 'N/A';
+                
+                if (company) companies.add(company);
+
+                let employee = {
+                    id: id, displayId: rawId, name: name, company: company, department: department,
+                    position: position, joinDate: joinDate,
+                    leaves: {
+                        available: { AL: parseFloat(row[8]) || 0, SL: parseFloat(row[9]) || 0, SP: parseFloat(row[10]) || 0 },
+                        used: { SL: parseFloat(row[16]) || 0, AL: parseFloat(row[17]) || 0, SP: parseFloat(row[19]) || 0 },
+                        remaining: { AL: parseFloat(row[20]) || 0, SL: parseFloat(row[21]) || 0, SP: parseFloat(row[22]) || 0 },
+                        unpaid: parseFloat(row[12]) || 0,
+                        absences: parseFloat(row[13]) || 0
+                    }
+                };
+                allEmployees.push(employee);
+            });
+
+            const compArray = Array.from(companies).sort();
+            calCheckboxList.innerHTML = '';
+            compArray.forEach(company => {
+                calCheckboxList.innerHTML += `
+                    <label class="flex items-center space-x-2 cursor-pointer p-1 hover:bg-slate-50 rounded">
+                        <input type="checkbox" value="${company}" class="comp-checkbox rounded text-blue-600 focus:ring-blue-500" onchange="handleCompanyCheck('${company}', this.checked)">
+                        <span class="text-xs text-slate-700">${company}</span>
+                    </label>`;
+            });
+            calSelectAll.checked = true;
+
+            if(sysMsg) sysMsg.style.display = 'none';
+            
+            renderDailyAttendance();
+            renderCalendar();
+            renderCalendarSummary(monthNames[currentCalendarDate.getMonth()]);
+        }
+
+        function handleSelectAll(isChecked) {
+            selectedCalendarCompanies = [];
+            document.querySelectorAll('#calCompanyCheckboxList .comp-checkbox').forEach(cb => cb.checked = false);
+            calSelectAll.checked = isChecked;
+            updateCompanyLabels();
+            activeLeaveFilter = null; 
+            renderCalendar();
+            renderDailyAttendance();
+        }
+
+        window.handleCompanyCheck = function(company, isChecked) {
+            if (isChecked) {
+                if (!selectedCalendarCompanies.includes(company)) selectedCalendarCompanies.push(company);
+                calSelectAll.checked = false; 
+            } else {
+                let index = selectedCalendarCompanies.indexOf(company);
+                if (index > -1) selectedCalendarCompanies.splice(index, 1);
+            }
+            const checkbox = document.querySelector(`#calCompanyCheckboxList .comp-checkbox[value="${company}"]`);
+            if (checkbox) checkbox.checked = isChecked;
+            if (selectedCalendarCompanies.length === 0) calSelectAll.checked = true;
+
+            updateCompanyLabels();
+            activeLeaveFilter = null; 
+            renderCalendar();
+            renderDailyAttendance();
+        }
+
+        function updateCompanyLabels() {
+            let labelText = "All";
+            if (selectedCalendarCompanies.length === 1) labelText = selectedCalendarCompanies[0];
+            else if (selectedCalendarCompanies.length > 1) labelText = `${selectedCalendarCompanies.length} Cos`;
+            if (calLabel) calLabel.innerText = labelText;
+        }
+
+        window.changeDailyDate = function(offset) {
+            currentDailyDate.setDate(currentDailyDate.getDate() + offset);
+            renderDailyAttendance();
+        }
+
+        function renderDailyAttendance() {
+            const contentArea = document.getElementById('dailyContentArea');
+            const noData = document.getElementById('dailyNoDataMessage');
+            if(!contentArea || !noData) return;
+            
+            const monthName = monthNames[currentDailyDate.getMonth()];
+            const todayDay = currentDailyDate.getDate();
+            const year = currentDailyDate.getFullYear();
+            
+            document.getElementById('dailyAttendanceDateText').innerText = `${monthName.substring(0, 3)} ${todayDay}, ${year}`;
+
+            let todaysRecords = dailyLeaveRecords.filter(r => r.month.toLowerCase().startsWith(monthName.substring(0, 3).toLowerCase()) && r.day === todayDay);
+            let validRecords = todaysRecords.filter(r => {
+                let emp = allEmployees.find(e => e.id === r.staffId);
+                if (!emp) return false;
+                return selectedCalendarCompanies.length === 0 || selectedCalendarCompanies.includes(emp.company);
+            });
+
+            validRecords.sort((a, b) => {
+                let aHasLeave = (a.leaves.AL > 0 || a.leaves.SL > 0 || a.leaves.SP > 0 || a.leaves.UP > 0 || a.leaves.A > 0 || a.leaves.Late5m > 0 || a.leaves.Late3m > 0 || a.leaves.OT > 0) ? 1 : 0;
+                let bHasLeave = (b.leaves.AL > 0 || b.leaves.SL > 0 || b.leaves.SP > 0 || b.leaves.UP > 0 || b.leaves.A > 0 || b.leaves.Late5m > 0 || b.leaves.Late3m > 0 || b.leaves.OT > 0) ? 1 : 0;
+                return bHasLeave - aHasLeave;
+            });
+
+            const lplRecords = validRecords.filter(r => allEmployees.find(e => e.id === r.staffId)?.company === 'LPL');
+            const lphRecords = validRecords.filter(r => allEmployees.find(e => e.id === r.staffId)?.company === 'LPH');
+
+            const totalLPLStaff = 18; 
+            const totalLPHStaff = 16; 
+
+            contentArea.innerHTML = '';
+            let htmlContent = '';
+            if (selectedCalendarCompanies.length === 0 || selectedCalendarCompanies.includes('LPL')) {
+                htmlContent += buildDailySection('LPL STAFF', lplRecords, totalLPLStaff);
+            }
+            if (selectedCalendarCompanies.length === 0 || selectedCalendarCompanies.includes('LPH')) {
+                htmlContent += buildDailySection('LPH STAFF', lphRecords, totalLPHStaff);
+            }
+            contentArea.innerHTML = htmlContent;
+
+            if (validRecords.length === 0) noData.classList.remove('hidden');
+            else noData.classList.add('hidden');
+        }
+
+        function buildDailySection(title, records, totalStaffCount) {
+            let cleanTitle = title.replace(' STAFF', '');
+            let html = `
+                <div class="mb-6 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="flex items-center gap-3 py-3.5 px-5 bg-slate-50/80 border-b border-slate-100">
+                        <h2 class="text-base font-bold text-slate-800 tracking-wide">${cleanTitle}</h2>
+                        <span class="bg-white text-slate-500 text-[11px] font-bold px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                            ${records.length} / ${totalStaffCount} Staff
+                        </span>
+                    </div>
+            `;
+            
+            if (records.length === 0) return html + `</div>`;
+
+            html += `
+                    <div class="hidden md:block overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <tbody class="divide-y divide-slate-100">
+            `;
+
+            let mobileCardsHtml = `<!-- Mobile Cards --> <div class="block md:hidden divide-y divide-slate-100">`;
+
+            records.forEach(record => {
+                let emp = allEmployees.find(e => e.id === record.staffId);
+                let typesHtml = generateLeaveTags(record.leaves, false);
+                let mobileTypesHtml = generateLeaveTags(record.leaves, true);
+                
+                html += `
+                    <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="openModalById('${emp.id}')">
+                        <td class="px-5 py-4 font-medium text-slate-900 w-24">${emp.displayId}</td>
+                        <td class="px-5 py-4 font-bold text-slate-800 group-hover:text-blue-600 transition-colors">${emp.name}</td>
+                        <td class="px-5 py-4 text-slate-500 text-xs">${emp.position}</td>
+                        <td class="px-5 py-4"><div class="flex gap-1.5 flex-wrap">${typesHtml}</div></td>
+                        <td class="px-5 py-4 text-xs font-medium text-slate-400 text-right w-32">${record.note || '-'}</td>
+                    </tr>
+                `;
+
+                mobileCardsHtml += `
+                    <div class="p-4 cursor-pointer active:bg-slate-50" onclick="openModalById('${emp.id}')">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">${emp.name}</h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">${emp.displayId} • ${emp.position}</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center mt-3">
+                            <div class="flex gap-1.5 flex-wrap">${mobileTypesHtml}</div>
+                            <span class="text-[11px] font-medium text-slate-400">${record.note || '-'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</tbody></table></div>`;
+            mobileCardsHtml += `</div>`;
+            return html + mobileCardsHtml + `</div>`;
+        }
+
+        function generateLeaveTags(h, isMobile) {
+            let tags = [];
+            const c = isMobile ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-[11px]';
+            if (h.AL > 0) tags.push(`<span class="bg-blue-50 text-blue-600 ${c} rounded border border-blue-200 font-bold shadow-sm">AL: ${h.AL}</span>`);
+            if (h.SL > 0) tags.push(`<span class="bg-teal-50 text-teal-600 ${c} rounded border border-teal-200 font-bold shadow-sm">SL: ${h.SL}</span>`);
+            if (h.SP > 0) tags.push(`<span class="bg-purple-50 text-purple-600 ${c} rounded border border-purple-200 font-bold shadow-sm">SP: ${h.SP}</span>`);
+            if (h.Late5m > 0) tags.push(`<span class="bg-yellow-50 text-yellow-700 ${c} rounded border border-yellow-200 font-bold shadow-sm">L (>5m): ${h.Late5m}</span>`);
+            if (h.Late3m > 0) tags.push(`<span class="bg-yellow-50 text-yellow-600 ${c} rounded border border-yellow-300 font-bold shadow-sm">L' (>30m): ${h.Late3m}</span>`);
+            if (h.UP > 0) tags.push(`<span class="bg-red-50 text-red-600 ${c} rounded border border-red-200 font-bold shadow-sm">UP: ${h.UP}</span>`);
+            if (h.A > 0) tags.push(`<span class="bg-red-50 text-red-600 ${c} rounded border border-red-200 font-bold shadow-sm">A: ${h.A}</span>`);
+            if (h.OT > 0) tags.push(`<span class="bg-orange-50 text-orange-600 ${c} rounded border border-orange-200 font-bold shadow-sm">OT: ${h.OT}</span>`);
+            if (h.D > 0) tags.push(`<span class="bg-slate-100 text-slate-600 ${c} rounded border border-slate-200 font-bold shadow-sm">Day Off</span>`);
+            return tags.join('');
+        }
+
+        function changeMonth(offset) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
+            activeLeaveFilter = null; 
+            renderCalendar();
+        }
+
+        window.jumpToMonth = function(monthIndex) {
+            currentCalendarDate.setMonth(parseInt(monthIndex));
+            activeLeaveFilter = null;
+            if(monthMenu) monthMenu.classList.add('hidden');
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            const monthName = monthNames[month];
+            
+            if(document.getElementById('monthDropdownLabel')) document.getElementById('monthDropdownLabel').innerText = monthName;
+            if(document.getElementById('calendarYearText')) document.getElementById('calendarYearText').innerText = year;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += `<div class="h-20 sm:h-24 md:h-28 rounded-xl bg-transparent"></div>`;
+            }
+
+            let leavesThisMonth = dailyLeaveRecords.filter(r => r.month.toLowerCase().startsWith(monthName.substring(0, 3).toLowerCase()));
+            const today = new Date();
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                let isToday = (day === today.getDate() && month === today.getMonth() && year === today.getFullYear());
+                let baseClass = "relative h-20 sm:h-24 md:h-28 rounded-lg md:rounded-xl flex flex-col items-center justify-start text-sm border transition-all duration-200 cursor-pointer overflow-hidden p-0.5 md:p-1 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md ";
+                
+                if (isToday) baseClass += " bg-blue-50 border-blue-400 ring-1 ring-blue-300 shadow-sm z-10";
+                else baseClass += " bg-white border-slate-200";
+                
+                let dayLeaves = leavesThisMonth.filter(r => r.day === day);
+                let validDayLeaves = dayLeaves.filter(r => {
+                    let emp = allEmployees.find(e => e.id === r.staffId);
+                    if(!emp) return false;
+                    return selectedCalendarCompanies.length === 0 || selectedCalendarCompanies.includes(emp.company);
+                });
+
+                validDayLeaves.sort((a, b) => {
+                    let aHasLeave = (a.leaves.AL > 0 || a.leaves.SL > 0 || a.leaves.SP > 0 || a.leaves.UP > 0 || a.leaves.A > 0 || a.leaves.Late5m > 0 || a.leaves.Late3m > 0 || a.leaves.OT > 0) ? 1 : 0;
+                    let bHasLeave = (b.leaves.AL > 0 || b.leaves.SL > 0 || b.leaves.SP > 0 || b.leaves.UP > 0 || b.leaves.A > 0 || b.leaves.Late5m > 0 || b.leaves.Late3m > 0 || b.leaves.OT > 0) ? 1 : 0;
+                    return bHasLeave - aHasLeave;
+                });
+
+                let badgesHtml = `<div class="w-full mt-5 overflow-y-auto hide-scrollbar flex flex-col gap-0.5 px-0.5 md:px-1 pb-1">`;
+                validDayLeaves.forEach(r => {
+                    let emp = allEmployees.find(e => e.id === r.staffId);
+                    let shortName = emp.name.split(' ')[0];
+                    let tag = ''; let bgClass = '';
+                    if (r.leaves.AL > 0) { tag = 'AL'; bgClass = 'bg-blue-100 text-blue-700 border-blue-200'; }
+                    else if (r.leaves.SL > 0) { tag = 'SL'; bgClass = 'bg-teal-100 text-teal-700 border-teal-200'; }
+                    else if (r.leaves.SP > 0) { tag = 'SP'; bgClass = 'bg-purple-100 text-purple-700 border-purple-200'; }
+                    else if (r.leaves.UP > 0) { tag = 'UP'; bgClass = 'bg-red-100 text-red-700 border-red-200'; }
+                    else if (r.leaves.A > 0) { tag = 'A'; bgClass = 'bg-red-100 text-red-700 border-red-200'; }
+                    else if (r.leaves.Late5m > 0 || r.leaves.Late3m > 0) { tag = 'LATE'; bgClass = 'bg-yellow-100 text-yellow-700 border-yellow-300'; }
+                    else if (r.leaves.OT > 0) { tag = 'OT'; bgClass = 'bg-orange-100 text-orange-700 border-orange-200'; }
+                    else if (r.leaves.D > 0) { tag = 'OFF'; bgClass = 'bg-slate-100 text-slate-500 border-slate-200'; }
+                    
+                    badgesHtml += `
+                        <div class="w-full flex justify-between items-center text-[8px] md:text-[9px] px-1 py-[2px] rounded-sm border ${bgClass} shadow-sm">
+                            <span class="truncate pr-1">${shortName}</span>
+                            <span class="font-bold shrink-0">${tag}</span>
+                        </div>
+                    `;
+                });
+                badgesHtml += `</div>`;
+                
+                let dayLabelClass = isToday ? "text-blue-700 bg-blue-100 rounded-full w-6 h-6 flex items-center justify-center font-bold absolute top-1 right-1" : "text-slate-600 font-bold absolute top-1 right-1 md:right-2";
+
+                grid.innerHTML += `
+                    <div class="${baseClass}" onclick="openDailyDetailsModal(${year}, ${month}, ${day})">
+                        <span class="${dayLabelClass} text-[10px] md:text-xs z-20">${day}</span>
+                        ${validDayLeaves.length > 0 ? badgesHtml : ''}
+                    </div>
+                `;
+            }
+            renderCalendarSummary(monthName);
+        }
+
+        window.openDailyDetailsModal = function(year, month, day) {
+            const modal = document.getElementById('dailyDetailsModal');
+            const content = document.getElementById('dailyDetailsModalContent');
+            const title = document.getElementById('dailyModalTitle');
+            const body = document.getElementById('dailyModalBody');
+            const exportBtn = document.getElementById('dailyModalExportBtn');
+
+            const monthName = monthNames[month];
+            title.innerText = `${monthName} ${day}, ${year}`;
+
+            let todaysRecords = dailyLeaveRecords.filter(r => r.month.toLowerCase().startsWith(monthName.substring(0, 3).toLowerCase()) && r.day === day);
+            let validRecords = todaysRecords.filter(r => {
+                let emp = allEmployees.find(e => e.id === r.staffId);
+                if (!emp) return false;
+                return selectedCalendarCompanies.length === 0 || selectedCalendarCompanies.includes(emp.company);
+            });
+
+            if (validRecords.length === 0) {
+                body.innerHTML = `
+                    <div class="text-center p-12 flex flex-col items-center justify-center">
+                        <div class="w-16 h-16 bg-white shadow-sm rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                            <i class="fa-solid fa-mug-hot text-2xl text-slate-300"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-700 mb-1">Everyone is present!</h3>
+                        <p class="text-sm text-slate-500">No leaves, lates, or absences recorded for this date.</p>
+                    </div>
+                `;
+                exportBtn.style.display = 'none';
+            } else {
+                exportBtn.style.display = 'flex';
+                exportBtn.onclick = function() {
+                    let tempDate = currentDailyDate;
+                    currentDailyDate = new Date(year, month, day);
+                    downloadDailyReport(this);
+                    currentDailyDate = tempDate;
+                };
+
+                validRecords.sort((a, b) => {
+                    let aHasLeave = (a.leaves.AL > 0 || a.leaves.SL > 0 || a.leaves.SP > 0 || a.leaves.UP > 0 || a.leaves.A > 0 || a.leaves.Late5m > 0 || a.leaves.Late3m > 0 || a.leaves.OT > 0) ? 1 : 0;
+                    let bHasLeave = (b.leaves.AL > 0 || b.leaves.SL > 0 || b.leaves.SP > 0 || b.leaves.UP > 0 || b.leaves.A > 0 || b.leaves.Late5m > 0 || b.leaves.Late3m > 0 || b.leaves.OT > 0) ? 1 : 0;
+                    return bHasLeave - aHasLeave;
+                });
+
+                const lplRecords = validRecords.filter(r => allEmployees.find(e => e.id === r.staffId)?.company === 'LPL');
+                const lphRecords = validRecords.filter(r => allEmployees.find(e => e.id === r.staffId)?.company === 'LPH');
+
+                const totalLPLStaff = 18;
+                const totalLPHStaff = 16;
+
+                body.innerHTML = '';
+                if (selectedCalendarCompanies.length === 0 || selectedCalendarCompanies.includes('LPL')) {
+                    body.innerHTML += buildModalDailySection('LPL STAFF', lplRecords, totalLPLStaff);
+                }
+                if (selectedCalendarCompanies.length === 0 || selectedCalendarCompanies.includes('LPH')) {
+                    body.innerHTML += buildModalDailySection('LPH STAFF', lphRecords, totalLPHStaff);
+                }
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+                document.body.classList.add('modal-open');
+            }, 10);
+        }
+
+        window.closeDailyDetailsModal = function() {
+            const modal = document.getElementById('dailyDetailsModal');
+            const content = document.getElementById('dailyDetailsModalContent');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            if (document.getElementById('employeeModal').classList.contains('hidden')) {
+                document.body.classList.remove('modal-open');
+            }
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        function buildModalDailySection(title, records, totalStaffCount) {
+            let cleanTitle = title.replace(' STAFF', '');
+            let html = `
+                <div class="mb-5 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="flex items-center gap-3 py-3 px-4 bg-slate-50/80 border-b border-slate-100">
+                        <h2 class="text-sm font-bold text-slate-800 tracking-wide">${cleanTitle}</h2>
+                        <span class="bg-white text-slate-500 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-slate-200 shadow-sm">
+                            ${records.length} / ${totalStaffCount} Staff
+                        </span>
+                    </div>
+            `;
+            
+            if(records.length === 0) return html + `</div>`;
+
+            html += `
+                    <div class="hidden md:block overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600 min-w-[500px]">
+                            <tbody class="divide-y divide-slate-100">
+            `;
+
+            let mobileCardsHtml = `<!-- Mobile Cards --> <div class="block md:hidden divide-y divide-slate-100">`;
+
+            records.forEach(record => {
+                let emp = allEmployees.find(e => e.id === record.staffId);
+                let typesHtml = generateLeaveTags(record.leaves, false);
+                let mobileTypesHtml = generateLeaveTags(record.leaves, true);
+                
+                html += `
+                    <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="openModalById('${emp.id}')">
+                        <td class="px-4 py-3 font-medium text-slate-900 w-24">${emp.displayId}</td>
+                        <td class="px-4 py-3 font-bold text-slate-800 group-hover:text-blue-600 transition-colors">${emp.name}</td>
+                        <td class="px-4 py-3 text-slate-500 text-xs">${emp.position}</td>
+                        <td class="px-4 py-3"><div class="flex gap-1.5 flex-wrap">${typesHtml}</div></td>
+                        <td class="px-4 py-3 text-xs font-medium text-slate-400 text-right w-24">${record.note || '-'}</td>
+                    </tr>
+                `;
+
+                mobileCardsHtml += `
+                    <div class="p-3.5 cursor-pointer active:bg-slate-50 hover:border-blue-300 transition-colors" onclick="openModalById('${emp.id}')">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">${emp.name}</h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">${emp.displayId} • ${emp.position}</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center mt-3">
+                            <div class="flex gap-1.5 flex-wrap">${mobileTypesHtml}</div>
+                            <span class="text-[11px] font-medium text-slate-400">${record.note || '-'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</tbody></table></div></div>`;
+            mobileCardsHtml += `</div>`;
+            return html + mobileCardsHtml + `</div>`;
+        }
+
+        window.toggleLeaveFilter = function(code) {
+            if (activeLeaveFilter === code) activeLeaveFilter = null; 
+            else activeLeaveFilter = code; 
+            renderCalendarSummary(monthNames[currentCalendarDate.getMonth()]); 
+        }
+
+        function renderCalendarSummary(monthName) {
+            const list = document.getElementById('calendarSummaryList');
+            const totalsContainer = document.getElementById('calendarTotals');
+            
+            let recordsFound = false;
+            let tAL = 0, tSL = 0, tSP = 0, tUP = 0, tA = 0, tL5m = 0, tL3m = 0, tOT = 0, tD = 0;
+            let companyStats = {}; 
+            let htmlContent = '';
+            let validCards = [];
+
+            document.getElementById('calendarSummaryMonth').innerHTML = `<div class="flex items-center w-full bg-slate-50 p-2.5 rounded-lg border border-slate-200 shadow-sm mt-1 mb-2"><span class="font-bold text-slate-700">Aggregated records for ${monthName}</span></div>`;
+            
+            allEmployees.forEach(emp => {
+                let matchesCompany = selectedCalendarCompanies.length === 0 || selectedCalendarCompanies.includes(emp.company);
+                if (matchesCompany && leaveHistoryByEmployee[emp.id]) {
+                    let matchingMonthKey = Object.keys(leaveHistoryByEmployee[emp.id]).find(k => k.toLowerCase().startsWith(monthName.substring(0, 3).toLowerCase()));
+                    if (matchingMonthKey) {
+                        recordsFound = true;
+                        let history = leaveHistoryByEmployee[emp.id][matchingMonthKey];
+                        
+                        tAL += history.AL; tSL += history.SL; tSP += history.SP;
+                        tUP += history.UP; tA += history.A; tL5m += history.Late5m; tL3m += history.Late3m; tOT += history.OT; tD += (history.D || 0);
+                        
+                        let comp = emp.company;
+                        if (!companyStats[comp]) companyStats[comp] = { AL: 0, SL: 0, SP: 0, UP: 0, A: 0, D: 0 };
+                        if (history.AL > 0) companyStats[comp].AL++;
+                        if (history.SL > 0) companyStats[comp].SL++;
+                        if (history.SP > 0) companyStats[comp].SP++;
+                        if (history.UP > 0) companyStats[comp].UP++;
+                        if (history.A > 0) companyStats[comp].A++;
+                        if (history.D > 0) companyStats[comp].D++;
+                        
+                        validCards.push({ emp, history, note: "" });
+                    }
+                }
+            });
+
+            if (!recordsFound) {
+                htmlContent += `<div class="text-center p-8 mt-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col justify-center items-center"><div class="w-14 h-14 bg-white shadow-sm rounded-full flex items-center justify-center mb-3 border border-slate-100"><i class="fa-solid fa-mug-hot text-2xl text-slate-300"></i></div><p class="text-sm font-bold text-slate-600">Quiet month!</p><p class="text-[11px] mt-1 text-center text-slate-500">No leaves or absences recorded for ${monthName}.</p></div>`;
+                totalsContainer.innerHTML = '';
+            } else {
+                let breakdownHtml = '';
+                if (Object.keys(companyStats).length > 0) {
+                    breakdownHtml = '<div class="w-full mb-4 bg-gradient-to-br from-slate-50 to-white rounded-xl p-4 border border-slate-200 shadow-sm">';
+                    breakdownHtml += '<div class="flex justify-between items-center mb-3"><h4 class="text-[11px] uppercase tracking-widest text-slate-500 font-bold">Staff on Leave</h4><i class="fa-solid fa-users text-slate-300 text-sm"></i></div>';
+                    for (const [comp, stats] of Object.entries(companyStats)) {
+                        let parts = [];
+                        if (stats.AL > 0) parts.push(`<span class="font-medium text-slate-600"><b class="text-blue-600">${stats.AL}</b> AL</span>`);
+                        if (stats.SL > 0) parts.push(`<span class="font-medium text-slate-600"><b class="text-teal-600">${stats.SL}</b> SL</span>`);
+                        if (stats.SP > 0) parts.push(`<span class="font-medium text-slate-600"><b class="text-purple-600">${stats.SP}</b> SP</span>`);
+                        if (stats.UP > 0) parts.push(`<span class="font-medium text-slate-600"><b class="text-red-500">${stats.UP}</b> UP</span>`);
+                        if (stats.A > 0) parts.push(`<span class="font-medium text-slate-600"><b class="text-red-600">${stats.A}</b> Absent</span>`);
+                        if (stats.D > 0) parts.push(`<span class="font-medium text-slate-600"><b class="text-slate-500">${stats.D}</b> Day Off</span>`);
+                        
+                        if (parts.length > 0) {
+                            breakdownHtml += `<div class="flex text-xs mb-2 last:mb-0 leading-tight items-start"><span class="font-bold text-slate-800 w-10 shrink-0 mt-1.5">${comp}:</span><div class="flex flex-wrap gap-x-2 gap-y-1.5 bg-white px-2 py-1.5 rounded-lg w-full border border-slate-100 shadow-sm">${parts.join('<span class="text-slate-200 flex items-center">|</span>')}</div></div>`;
+                        }
+                    }
+                    breakdownHtml += '</div>';
+                }
+
+                const makeFilterBtn = (code, label, count, colorClasses) => {
+                    if (count <= 0) return '';
+                    const isActive = activeLeaveFilter === code;
+                    const ringClass = isActive ? 'ring-2 ring-offset-1 ring-slate-400 scale-[1.03] shadow-md z-10' : 'hover:scale-[1.03] opacity-90 hover:opacity-100 hover:shadow-md';
+                    return `<button onclick="toggleLeaveFilter('${code}')" title="Click to filter list" class="${colorClasses} font-bold border text-[10px] md:text-[11px] px-2 py-1 rounded shadow-sm transition-all ${ringClass}">${label}: ${count}</button>`;
+                };
+
+                let tHtml = '';
+                tHtml += makeFilterBtn('AL', 'Total AL', tAL, 'bg-blue-100 text-blue-800 border-blue-300');
+                tHtml += makeFilterBtn('SL', 'Total SL', tSL, 'bg-teal-100 text-teal-800 border-teal-300');
+                tHtml += makeFilterBtn('SP', 'Total SP', tSP, 'bg-purple-100 text-purple-800 border-purple-300');
+                tHtml += makeFilterBtn('Late5m', 'Total L(>5m)', tL5m, 'bg-yellow-100 text-yellow-800 border-yellow-300');
+                tHtml += makeFilterBtn('Late3m', 'Total L'(>30m)', tL3m, 'bg-yellow-50 text-yellow-700 border-yellow-200');
+                tHtml += makeFilterBtn('UP', 'Total UP', tUP, 'bg-red-100 text-red-800 border-red-300');
+                tHtml += makeFilterBtn('A', 'Total A', tA, 'bg-red-100 text-red-800 border-red-300');
+                tHtml += makeFilterBtn('OT', 'Total OT', tOT, 'bg-orange-100 text-orange-800 border-orange-300');
+                tHtml += makeFilterBtn('D', 'Total Day Off', tD, 'bg-slate-100 text-slate-700 border-slate-300');
+                
+                totalsContainer.innerHTML = breakdownHtml + `<div class="flex flex-wrap gap-1.5 w-full pt-2 border-t border-slate-100 pb-1">${tHtml}</div>`;
+                
+                if (activeLeaveFilter) {
+                    totalsContainer.innerHTML += `<div class="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-slate-200"><span class="text-[10px] md:text-xs font-semibold text-slate-500"><i class="fa-solid fa-filter text-blue-500 mr-1"></i> List filtered below.</span><button onclick="toggleLeaveFilter('${activeLeaveFilter}')" class="text-[10px] font-bold text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 px-2 py-0.5 rounded border border-slate-200">Clear Filter <i class="fa-solid fa-xmark ml-0.5"></i></button></div>`;
+                }
+
+                validCards.sort((a, b) => {
+                    const hasLeaveA = (a.history.AL > 0 || a.history.SL > 0 || a.history.SP > 0 || a.history.UP > 0 || a.history.A > 0 || a.history.Late5m > 0 || a.history.Late3m > 0 || a.history.OT > 0) ? 1 : 0;
+                    const hasLeaveB = (b.history.AL > 0 || b.history.SL > 0 || b.history.SP > 0 || b.history.UP > 0 || b.history.A > 0 || b.history.Late5m > 0 || b.history.Late3m > 0 || b.history.OT > 0) ? 1 : 0;
+                    return hasLeaveB - hasLeaveA;
+                });
+
+                validCards.forEach(item => {
+                    let showCard = true;
+                    if (activeLeaveFilter) {
+                        if (item.history[activeLeaveFilter] <= 0) showCard = false;
+                    }
+                    if (showCard) {
+                        let badges = '';
+                        const bStyle = "text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm border";
+                        let h = item.history;
+                        if (h.AL > 0) badges += `<span class="bg-blue-50 text-blue-600 border-blue-200 ${bStyle}">AL: ${h.AL}</span> `;
+                        if (h.SL > 0) badges += `<span class="bg-teal-50 text-teal-600 border-teal-200 ${bStyle}">SL: ${h.SL}</span> `;
+                        if (h.SP > 0) badges += `<span class="bg-purple-50 text-purple-600 border-purple-200 ${bStyle}">SP: ${h.SP}</span> `;
+                        if (h.Late5m > 0) badges += `<span class="bg-yellow-50 text-yellow-700 border-yellow-200 ${bStyle}">L(>5m): ${h.Late5m}</span> `;
+                        if (h.Late3m > 0) badges += `<span class="bg-yellow-50 text-yellow-600 border-yellow-300 ${bStyle}">L'(>30m): ${h.Late3m}</span> `;
+                        if (h.UP > 0) badges += `<span class="bg-red-50 text-red-600 border-red-200 ${bStyle}">UP: ${h.UP}</span> `;
+                        if (h.A > 0) badges += `<span class="bg-red-50 text-red-600 border-red-200 ${bStyle}">A: ${h.A}</span> `;
+                        if (h.OT > 0) badges += `<span class="bg-orange-50 text-orange-600 border-orange-200 ${bStyle}">OT: ${h.OT}</span> `;
+                        if (h.D > 0) badges += `<span class="bg-slate-100 text-slate-600 border-slate-200 ${bStyle}">Day Off: ${h.D}</span> `;
+
+                        htmlContent += `
+                            <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm mb-3 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all group" onclick="openModalById('${item.emp.id}')">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <h4 class="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors">${item.emp.name}</h4>
+                                        <p class="text-[10px] text-slate-400 font-medium mt-0.5">${item.emp.displayId} • ${item.emp.position}</p>
+                                    </div>
+                                    <span class="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-bold border border-amber-200">${item.emp.company}</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1 mt-2.5">${badges}</div>
+                            </div>
+                        `;
+                    }
+                });
+
+                if (htmlContent === '') htmlContent = `<div class="text-center p-6 text-slate-400 flex flex-col justify-center items-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200 mt-2"><i class="fa-solid fa-filter-circle-xmark text-2xl text-slate-300 mb-2"></i><p class="text-xs font-medium text-slate-500">No staff match this specific filter.</p></div>`;
+            }
+            list.innerHTML = htmlContent;
+        }
+
+        window.openModalById = function(empId) {
+            const emp = allEmployees.find(e => e.id === empId);
+            if (emp) {
+                document.getElementById('modalAvatar').innerText = emp.name.charAt(0).toUpperCase();
+                document.getElementById('modalName').innerText = emp.name;
+                document.getElementById('modalId').innerText = emp.displayId;
+                document.getElementById('modalCompany').innerText = emp.company;
+                document.getElementById('modalPosition').innerText = emp.position;
+                document.getElementById('modalJoinDate').innerText = emp.joinDate;
+                
+                document.getElementById('leave-al-us').innerText = emp.leaves.used.AL;
+                document.getElementById('leave-sl-us').innerText = emp.leaves.used.SL;
+                document.getElementById('leave-sp-us').innerText = emp.leaves.used.SP;
+                document.getElementById('leave-up').innerText = emp.leaves.unpaid;
+                document.getElementById('leave-a').innerText = emp.leaves.absences;
+
+                const historyContainer = document.getElementById('modalHistoryContainer');
+                historyContainer.innerHTML = '';
+                const history = leaveHistoryByEmployee[emp.id] || {};
+                
+                monthNames.forEach(month => {
+                    let matchingMonthKey = Object.keys(history).find(k => k.toLowerCase().startsWith(month.substring(0, 3).toLowerCase()));
+                    let itemsHtml = '';
+                    if (matchingMonthKey) {
+                        let h = history[matchingMonthKey];
+                        if (h.AL > 0) itemsHtml += `<div class="flex justify-between text-xs"><span class="text-slate-500">AL:</span><span class="font-bold text-slate-800">${h.AL}</span></div>`;
+                        if (h.SL > 0) itemsHtml += `<div class="flex justify-between text-xs"><span class="text-slate-500">SL:</span><span class="font-bold text-slate-800">${h.SL}</span></div>`;
+                        if (h.SP > 0) itemsHtml += `<div class="flex justify-between text-xs"><span class="text-slate-500">SP:</span><span class="font-bold text-slate-800">${h.SP}</span></div>`;
+                        if (h.Late5m > 0) itemsHtml += `<div class="flex justify-between text-xs"><span class="text-slate-500">Late(>5m):</span><span class="font-bold text-slate-800">${h.Late5m}</span></div>`;
+                        if (h.Late3m > 0) itemsHtml += `<div class="flex justify-between text-xs"><span class="text-slate-500">Late(>30m):</span><span class="font-bold text-slate-800">${h.Late3m}</span></div>`;
+                        if (h.UP > 0) itemsHtml += `<div class="flex justify-between text-xs"><span class="text-red-500">UP:</span><span class="font-bold text-red-600">${h.UP}</span></div>`;
+                        if (h.A > 0) itemsHtml += `<div class="flex justify-between text-xs"><span class="text-red-500">A:</span><span class="font-bold text-red-600">${h.A}</span></div>`;
+                        if (h.OT > 0) itemsHtml += `<div class="flex justify-between text-xs"><span class="text-orange-500">OT:</span><span class="font-bold text-orange-600">${h.OT}</span></div>`;
+                    }
+                    if (itemsHtml === '') itemsHtml = `<div class="text-[10px] text-slate-400 italic mt-1">No leaves</div>`;
+                    historyContainer.innerHTML += `<div class="border border-slate-200 rounded-lg p-2 md:p-3 bg-slate-50 shadow-sm flex flex-col"><h4 class="font-bold text-slate-700 text-[11px] md:text-sm mb-1 pb-1 border-b border-slate-200">${month}</h4><div class="space-y-0.5">${itemsHtml}</div></div>`;
+                });
+
+                const modal = document.getElementById('employeeModal');
+                const content = document.getElementById('modalContent');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                    document.body.classList.add('modal-open');
+                }, 10);
+            }
+        }
+
+        window.closeModal = function() {
+            const modal = document.getElementById('employeeModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            if (document.getElementById('dailyDetailsModal').classList.contains('hidden')) {
+                document.body.classList.remove('modal-open');
+            }
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        window.switchTab = function(tabId) {
+            document.getElementById('calendarView').classList.add('hidden');
+            document.getElementById('dailyView').classList.add('hidden');
+            
+            document.getElementById('tab-calendar').className = "tab-inactive pb-2.5 px-2 transition-all whitespace-nowrap text-sm";
+            document.getElementById('tab-daily').className = "tab-inactive pb-2.5 px-2 transition-all whitespace-nowrap text-sm";
+            
+            document.getElementById(`${tabId}View`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).className = "tab-active pb-2.5 px-2 transition-all whitespace-nowrap text-sm";
+            
+            if (tabId === 'daily') renderDailyAttendance();
+            if (tabId === 'calendar') renderCalendar();
+        }
+
+        window.downloadDailyReport = function(btnElement) {
+            const year = currentDailyDate.getFullYear();
+            const month = currentDailyDate.getMonth();
+            const monthName = monthNames[month];
+            const day = currentDailyDate.getDate();
+            const dateString = `${day}/${monthName}/${year}`;
+
+            let todaysRecords = dailyLeaveRecords.filter(r => r.month.toLowerCase().startsWith(monthName.substring(0, 3).toLowerCase()) && r.day === day);
+            let reportDataByCompany = {};
+            
+            todaysRecords.forEach(record => {
+                let emp = allEmployees.find(e => e.id === record.staffId);
+                if (!emp || (selectedCalendarCompanies.length > 0 && !selectedCalendarCompanies.includes(emp.company))) return;
+                
+                if (!reportDataByCompany[emp.company]) reportDataByCompany[emp.company] = [];
+                
+                let types = []; let h = record.leaves;
+                if (h.AL > 0) types.push("Annual Leave"); if (h.SL > 0) types.push("Sick Leave");
+                if (h.SP > 0) types.push("Special Leave"); if (h.Late5m > 0) types.push("Late (>5m)");
+                if (h.Late3m > 0) types.push("Late (>30m)"); if (h.UP > 0) types.push("Unpaid Leave");
+                if (h.A > 0) types.push("Absence"); if (h.OT > 0) types.push("Overtime");
+                if (h.D > 0) types.push("Day Off");
+                
+                reportDataByCompany[emp.company].push({
+                    name: emp.name, type: types.length > 0 ? types.join(', ') : 'Present', time: record.note || ""
+                });
+            });
+
+            if (Object.keys(reportDataByCompany).length === 0) {
+                let originalHTML = btnElement.innerHTML;
+                btnElement.innerHTML = '<i class="fa-solid fa-ban"></i> No Data';
+                btnElement.classList.replace('bg-emerald-500', 'bg-red-500');
+                btnElement.classList.replace('hover:bg-emerald-600', 'hover:bg-red-600');
+                setTimeout(() => {
+                    btnElement.innerHTML = originalHTML;
+                    btnElement.classList.replace('bg-red-500', 'bg-emerald-500');
+                    btnElement.classList.replace('hover:bg-red-600', 'hover:bg-emerald-600');
+                }, 2000);
+                return;
+            }
+
+            let companyTitleStr = selectedCalendarCompanies.length > 0 ? selectedCalendarCompanies.join(' & ') : 'LPH & LPL';
+            let html = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset="utf-8"><style>
+                table { border-collapse: collapse; width: 100%; font-family: 'Times New Roman', serif; }
+                th, td { border: 1px solid black; padding: 6px; text-align: center; vertical-align: middle; font-size: 11pt; mso-number-format:"\\@";}
+                .header-row th { background-color: #bdd7ee; font-weight: bold; color: black; }
+                .title { font-size: 14pt; font-weight: bold; color: #0000ff; text-align: center; border: none; }
+                .subtitle { font-size: 11pt; font-weight: bold; color: #0000ff; text-align: left; border: none; font-style: italic; }
+            </style></head>
+            <body><table>
+                <tr><td colspan="5" class="title">Daily Staff Attendance Reports (${companyTitleStr})</td></tr>
+                <tr><td colspan="5" class="subtitle">Date: ${dateString}</td></tr>
+                <tr></tr>
+                <tr class="header-row"><th>No.</th><th>Entity</th><th>Staffs Name</th><th>Type</th><th>Time</th></tr>
+            `;
+
+            for (const [company, staffs] of Object.entries(reportDataByCompany)) {
+                staffs.forEach((staff, index) => {
+                    html += `<tr><td>${index + 1}</td>`; 
+                    if (index === 0) html += `<td rowspan="${staffs.length}">${company}</td>`;
+                    html += `<td>${staff.name}</td><td>${staff.type}</td><td>${staff.time}</td></tr>`;
+                });
+            }
+            html += `</table></body></html>`;
+
+            let blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = `Attendance_Report_${dateString.replace(/\//g, '-')}.xls`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.warn(err));
+            });
+        }
+    </script>
+</body>
+</html>
