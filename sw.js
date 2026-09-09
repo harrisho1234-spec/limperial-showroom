@@ -1,5 +1,5 @@
 // Limperial Luxury Showroom Service Worker - V20 (Cache Buster)
-const CACHE_NAME = 'limperial-v21';
+const CACHE_NAME = 'limperial-v22';
 
 const STATIC_ASSETS = [
   './',
