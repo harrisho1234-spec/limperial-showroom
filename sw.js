@@ -1,5 +1,6 @@
-// Limperial Luxury Showroom Service Worker
-const CACHE_NAME = 'limperial-v8';
+// Limperial Luxury Showroom Service Worker - V20 (Cache Buster)
+const CACHE_NAME = 'limperial-v20';
+
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -18,15 +19,17 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return Promise.allSettled(
-        STATIC_ASSETS.map((url) => cache.add(url).catch((err) => console.warn('[SW] Pre-cache skip:', url)))
+        STATIC_ASSETS.map((url) => cache.add(url).catch((err) => console.warn('[SW] skip:', url)))
       );
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
+// Force wipe ALL previous caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -37,6 +40,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Network-First for HTML so new updates appear immediately
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
