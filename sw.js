@@ -1,5 +1,5 @@
 // Limperial Luxury Showroom Service Worker
-const CACHE_NAME = 'limperial-v7';
+const CACHE_NAME = 'limperial-v8';
 const STATIC_ASSETS = [
   './',
   './index.html',
