@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" fill="#ffffff"/>
-  <text x="256" y="240" font-family="'Playfair Display', 'Liberation Serif', serif" font-weight="bold" font-size="58" fill="#e5a83b" text-anchor="middle">L'IMPERIAL</text>
-  <line x1="68" y1="285" x2="195" y2="285" stroke="#e5a83b" stroke-width="4"/>
-  <text x="256" y="294" font-family="'Playfair Display', 'Liberation Serif', serif" font-weight="bold" font-size="24" fill="#e5a83b" text-anchor="middle" letter-spacing="4">LUXURY</text>
-  <line x1="317" y1="285" x2="444" y2="285" stroke="#e5a83b" stroke-width="4"/>
-</svg>
