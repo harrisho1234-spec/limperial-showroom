@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-   <title>Limperial Catalog V4</title>
+    <title>Limperial Luxury — Showroom Sales Dashboard & Pricing Engine</title>
     
     <!-- PWA Web App Manifest and Theme Configuration -->
     <link rel="manifest" href="manifest.json">
@@ -11,7 +11,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Limperial V4">
+    <meta name="apple-mobile-web-app-title" content="Limperial">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -713,6 +713,13 @@
         let savedInterestLists = [];
         let saveListsRequestToken = 0;
         let isSavingInterestList = false;
+        let documentFormStates = {
+            quotation: { initialized: false },
+            sales_order: { initialized: false },
+            inventory: { initialized: false },
+            delivery_order: { initialized: false }
+        };
+        let isRestoringSavedDocumentState = false;
 
         const BRAND_GROUP_ORDER = ['Arredoluce', 'ARTE ARREDO', 'Asfour Crystal', 'Bicer', 'Carpet', 'DELUXE ART', 'Elite Bohemia', 'Malaysia Modern', 'Mobilpiu', 'Other', 'Piermaria', 'Turkey Modern'];
 
@@ -1381,7 +1388,65 @@
             renderProductGrid(); calculateAndDrawTotals();
         }
 
+        function captureDocumentFormState(type = documentType) {
+            const modal = document.getElementById('share-modal');
+            if (!modal) return;
+
+            const state = { initialized: true, fields: {}, itemNotes: {}, showPreOrderOnDoc: !!showPreOrderOnDoc };
+            modal.querySelectorAll('input[id], textarea[id], select[id]').forEach((el) => {
+                if (!el || !el.id) return;
+                const inputType = String(el.type || '').toLowerCase();
+                if (['button', 'submit', 'reset', 'file'].includes(inputType)) return;
+                state.fields[el.id] = {
+                    type: inputType,
+                    value: typeof el.value === 'string' ? el.value : '',
+                    checked: inputType === 'checkbox' || inputType === 'radio' ? !!el.checked : undefined
+                };
+            });
+
+            modal.querySelectorAll('.quote-item-note-input').forEach((input) => {
+                const itemId = input.getAttribute('data-item-id');
+                if (itemId) state.itemNotes[String(itemId)] = input.value || '';
+            });
+
+            documentFormStates[type] = state;
+        }
+
+        function restoreDocumentFormState(type = documentType) {
+            const state = documentFormStates[type];
+            if (!state || !state.initialized) return false;
+
+            Object.entries(state.fields || {}).forEach(([id, saved]) => {
+                const el = document.getElementById(id);
+                if (!el || !saved) return;
+                const inputType = String(saved.type || el.type || '').toLowerCase();
+                if (inputType === 'checkbox' || inputType === 'radio') {
+                    el.checked = !!saved.checked;
+                } else if ('value' in saved) {
+                    el.value = saved.value ?? '';
+                }
+            });
+
+            showPreOrderOnDoc = state.showPreOrderOnDoc !== false;
+            const preorderToggle = document.getElementById('doc-preorder-toggle');
+            if (preorderToggle) preorderToggle.checked = showPreOrderOnDoc;
+
+            const notesForm = document.getElementById('quote-items-notes-form');
+            if (notesForm) {
+                notesForm.querySelectorAll('.quote-item-note-input').forEach((input) => {
+                    const itemId = input.getAttribute('data-item-id');
+                    if (itemId && Object.prototype.hasOwnProperty.call(state.itemNotes || {}, itemId)) {
+                        input.value = state.itemNotes[itemId] || '';
+                    }
+                });
+            }
+            return true;
+        }
+
         function setDocType(type) {
+            const previousType = documentType;
+            if (!isRestoringSavedDocumentState && previousType) captureDocumentFormState(previousType);
+
             documentType = type;
             const quoteBtn = document.getElementById('doc-type-quote'); const soBtn = document.getElementById('doc-type-so'); const invBtn = document.getElementById('doc-type-inv'); const doBtn = document.getElementById('doc-type-do');
             const numLabel = document.getElementById('num-input-label'); const soDepositFields = document.getElementById('so-deposit-fields'); const doExtraFields = document.getElementById('do-extra-fields');
@@ -1398,7 +1463,6 @@
             } else if (type === 'sales_order') {
                 soBtn.className = activeClass;
                 numLabel.textContent = "Sales Order N°"; soDepositFields.classList.remove('hidden');
-                syncDepositAmountFromPct();
             } else if (type === 'delivery_order') {
                 doBtn.className = activeClass;
                 numLabel.textContent = "Delivery Order N°"; doExtraFields.classList.remove('hidden');
@@ -1406,10 +1470,17 @@
                 invBtn.className = activeClass;
                 numLabel.textContent = "Request N°";
             }
+
+            const restored = restoreDocumentFormState(type);
+            if (type === 'sales_order' && !restored) syncDepositAmountFromPct();
             updateQuotationPreview();
         }
 
-        function toggleDocPreOrder(checked) { showPreOrderOnDoc = checked; updateQuotationPreview(); }
+        function toggleDocPreOrder(checked) {
+            showPreOrderOnDoc = checked;
+            if (documentFormStates[documentType]?.initialized) documentFormStates[documentType].showPreOrderOnDoc = !!checked;
+            updateQuotationPreview();
+        }
 
         function handlePartnerToggle(checked, el) {
             hasPartner = checked;
@@ -2461,6 +2532,7 @@
         }
 
         function buildSavedInterestListRecord(name) {
+            captureDocumentFormState(documentType);
             return {
                 id: 'SIL-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
                 name: String(name || '').trim(),
@@ -2471,7 +2543,9 @@
                     discountFlatValue,
                     partnerCommType,
                     partnerCommValue,
-                    hasPartner
+                    hasPartner,
+                    documentType,
+                    documentFormStates: cloneForStorage(documentFormStates)
                 }
             };
         }
@@ -2786,11 +2860,25 @@
             partnerCommValue = Number(state.partnerCommValue) || 0;
             hasPartner = !!state.hasPartner;
 
+            if (state.documentFormStates && typeof state.documentFormStates === 'object') {
+                documentFormStates = cloneForStorage(state.documentFormStates);
+                ['quotation', 'sales_order', 'inventory', 'delivery_order'].forEach(type => {
+                    if (!documentFormStates[type]) documentFormStates[type] = { initialized: false };
+                });
+            }
+
             const ids = [['discount-pct', discountPctValue], ['discount-flat', discountFlatValue], ['mobile-discount-pct', discountPctValue], ['mobile-discount-flat', discountFlatValue]];
             ids.forEach(([id,val]) => { const el = document.getElementById(id); if (el) el.value = val || ''; });
             const pt = document.getElementById('partner-toggle'); const mpt = document.getElementById('mobile-partner-toggle');
             if (pt) pt.checked = hasPartner; if (mpt) mpt.checked = hasPartner;
-            updateCartVisuals(); renderProductGrid(); closeSavedListsModal();
+            updateCartVisuals(); renderProductGrid();
+
+            const restoredDocType = state.documentType || documentType || 'quotation';
+            isRestoringSavedDocumentState = true;
+            setDocType(restoredDocType);
+            isRestoringSavedDocumentState = false;
+
+            updateQuotationPreview(); closeSavedListsModal();
             showNotification(`"${selected.name || 'Saved List'}" retrieved.`, "success");
         }
 
