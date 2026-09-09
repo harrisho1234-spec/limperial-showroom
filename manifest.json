@@ -1,7 +1,7 @@
 {
-  "name": "Limperial Luxury Showroom",
-  "short_name": "Limperial",
-  "description": "Showroom Sales Dashboard & Pricing Engine for Limperial Luxury",
+  "name": "Limperial Catalog V4",
+  "short_name": "Limperial V4",
+  "description": "Limperial Catalog V4 — Showroom Sales Dashboard & Pricing Engine",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",
