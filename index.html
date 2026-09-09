@@ -2,20 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Limperial V4</title>
-    
-    <!-- PWA Web App Manifest and Theme Configuration -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="shortcut icon" href="icon-192.png">
-    <meta name="theme-color" content="#090c12">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Limperial V4">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limperial Luxury — Showroom Sales Dashboard & Pricing Engine</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -179,11 +167,6 @@
                 </div>
 
                 <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-                    <!-- PWA Install Button (Appears on supported browsers/devices) -->
-                    <button id="pwa-install-btn" onclick="triggerPWAInstall()" class="hidden h-7 px-2.5 rounded-full border border-luxury-gold/40 bg-luxury-gold/10 hover:bg-luxury-gold hover:text-slate-950 text-luxury-gold text-[10px] font-bold uppercase tracking-wider items-center gap-1.5 transition-all duration-200 shadow-sm" title="Install App to Home Screen">
-                        <i class="fa-solid fa-download text-[10px]"></i> <span class="hidden sm:inline">Install App</span>
-                    </button>
-
                     <button onclick="toggleTheme()" class="h-7 w-7 rounded-full border border-luxury-gold/20 bg-luxury-accent/40 hover:bg-luxury-accent/80 text-luxury-gold flex items-center justify-center transition-all duration-200" id="theme-toggle-btn" title="Toggle Theme Layout">
                         <i class="fa-solid fa-moon text-xs" id="theme-icon"></i>
                     </button>
@@ -240,7 +223,7 @@
                         <button onclick="resetFilters()" class="shrink-0 bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold hover:bg-luxury-gold/10 text-luxury-muted hover:text-luxury-gold rounded-xl w-[50px] flex items-center justify-center transition-all duration-300 shadow-sm" title="Clear All Filters"><i class="fa-solid fa-filter-circle-xmark text-lg"></i></button>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-6 gap-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-7 gap-4">
                         <div>
                             <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-gem text-luxury-gold/60 text-[9px]"></i> Category</label>
                             <select id="class-select" onchange="selectClass(this.value)" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-3 py-1.5 text-xs text-luxury-text outline-none transition-colors duration-200 cursor-pointer"><option value="">All Category</option></select>
@@ -252,6 +235,10 @@
                         <div>
                             <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-tag text-luxury-gold/60 text-[9px]"></i> Brand / Supplier</label>
                             <select id="brand-select" onchange="selectBrand(this.value)" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-3 py-1.5 text-xs text-luxury-text outline-none transition-colors duration-200 cursor-pointer"><option value="">All Brands</option></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-gem text-luxury-gold/60 text-[9px]"></i> Key Material</label>
+                            <select id="key-material-select" onchange="selectKeyMaterial(this.value)" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-3 py-1.5 text-xs text-luxury-text outline-none transition-colors duration-200 cursor-pointer"><option value="">All Key Materials</option></select>
                         </div>
                         <div>
                             <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-map-location-dot text-luxury-gold/60 text-[9px]"></i> Location</label>
@@ -313,7 +300,6 @@
                         <h2 class="font-serif text-lg font-semibold text-luxury-gold">Customer Interest List</h2>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button onclick="openSavedListsModal()" class="px-2.5 py-1 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/30 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors" title="Saved Customer Lists"><i class="fa-solid fa-folder-open text-[10px]"></i> Lists</button>
                         <button id="cart-bundle-btn" onclick="promptCreateSet()" class="hidden bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-cubes mr-1"></i> Combine Set</button>
                         <span id="desktop-cart-count" class="bg-luxury-gold text-[#0a0f19] text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                     </div>
@@ -403,7 +389,6 @@
                     <h2 class="font-serif text-lg font-semibold text-luxury-gold">Customer Interest List</h2>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button onclick="openSavedListsModal()" class="px-2.5 py-1 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/30 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors" title="Saved Customer Lists"><i class="fa-solid fa-folder-open text-[10px]"></i> Lists</button>
                     <button id="mobile-cart-bundle-btn" onclick="promptCreateSet()" class="hidden bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-cubes mr-1"></i> Combine Set</button>
                     <button onclick="toggleMobileCart(false)" class="p-2 text-luxury-muted hover:text-luxury-text"><i class="fa-solid fa-xmark text-xl"></i></button>
                 </div>
@@ -670,12 +655,13 @@
                         <h4 class="text-xs font-bold text-luxury-gold uppercase tracking-widest border-b border-luxury-gold/20 pb-2 pt-2">Assign Rooms / Notes</h4>
                         <div id="quote-items-notes-form" class="space-y-3 max-h-[200px] overflow-y-auto pr-1"></div>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 pt-4 border-t border-luxury-gold/15">
+                    <div class="grid grid-cols-3 gap-3 pt-4 border-t border-luxury-gold/15">
                         <button onclick="copyQuoteToClipboard()" class="py-2.5 bg-slate-900 hover:bg-luxury-gold text-luxury-gold hover:text-slate-950 border-2 border-luxury-gold rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-md flex items-center justify-center gap-1.5 cursor-pointer"><i class="fa-solid fa-copy"></i>Copy Plain Text</button>
+                        <button onclick="exportDocumentAsImage()" class="py-2.5 bg-luxury-dark hover:bg-luxury-gold text-luxury-gold hover:text-[#0a0f19] border-2 border-luxury-gold rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-md flex items-center justify-center gap-1.5 cursor-pointer"><i class="fa-solid fa-image"></i>Export Image</button>
                         <button onclick="printProposal()" class="py-2.5 bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover hover:to-amber-700 text-[#0a0f19] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200 shadow-lg"><i class="fa-solid fa-print mr-1.5"></i>Print/PDF Proposal</button>
                     </div>
                 </div>
-                <div class="flex flex-1 flex-col overflow-auto bg-luxury-dark/40 rounded-xl border border-luxury-gold/10 p-2 sm:p-4 min-h-[450px]" id="quotation-live-paper-container">
+                <div class="hidden lg:flex flex-1 flex-col overflow-auto bg-luxury-dark/40 rounded-xl border border-luxury-gold/10 p-4" id="quotation-live-paper-container">
                     <div class="bg-white text-slate-800 rounded-xl shadow-2xl p-8 relative mx-auto" id="quotation-live-paper" style="min-width: 760px; width: 100%;"></div>
                 </div>
             </div>
@@ -690,6 +676,7 @@
         let currentClassFilter = '';
         let currentSubclassFilter = '';
         let currentLocFilter = '';
+        let currentKeyMaterialFilter = '';
         let cart = []; 
         let discountPctValue = 0;
         let discountFlatValue = 0;
@@ -711,11 +698,19 @@
         let searchTimeout;
 
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQQ9iODZxEeRN48tF7tF6pTZvKTN5l0fA3_d34cQFqo1ckz1G5ojitqeoCtPunAAkkLLLsx0ivt7Zl1/pub?gid=828283876&single=true&output=csv";
+        // Key Material source: Spreadsheet 1maKk_lPYMYval44vnorm3_awwrIh5IYPKLovn_gWYtg, sheet "All", Column T.
+        const KEY_MATERIAL_CSV_URL = "https://docs.google.com/spreadsheets/d/1maKk_lPYMYval44vnorm3_awwrIh5IYPKLovn_gWYtg/gviz/tq?tqx=out:csv&sheet=All&tq=select%20B%2CT";
+        let keyMaterialByCode = {};
+        // Customer Interest List saved-list storage.
+        // Set this to your deployed Google Apps Script Web App URL for shared persistence.
+        // Leave blank to use this browser's localStorage only.
         const SAVED_LISTS_API_URL = "https://script.google.com/macros/s/AKfycbwAah-oFIyiSON0jOhjWlL1lzlr0d354bq-1OxMDY2Qz-D-rzAYFaPzTkKDNlnfz1tk/exec";
         const SAVED_LISTS_LOCAL_KEY = "limperial_saved_interest_lists";
         let savedInterestLists = [];
         let saveListsRequestToken = 0;
         let isSavingInterestList = false;
+        // Keep a complete snapshot for each document type. The four document modes share
+        // the same controls, so this prevents one mode from overwriting another mode's data.
         let documentFormStates = {
             quotation: { initialized: false },
             sales_order: { initialized: false },
@@ -724,6 +719,8 @@
         };
         let isRestoringSavedDocumentState = false;
 
+        // Canonical Brand / Supplier hierarchy (mirrors Column P of the backend sheet, grouped into
+        // storefront-facing brand families). Order here controls display order in the filter tree.
         const BRAND_GROUP_ORDER = ['Arredoluce', 'ARTE ARREDO', 'Asfour Crystal', 'Bicer', 'Carpet', 'DELUXE ART', 'Elite Bohemia', 'Malaysia Modern', 'Mobilpiu', 'Other', 'Piermaria', 'Turkey Modern'];
 
         const OFFLINE_FALLBACK_PRODUCTS = [
@@ -745,7 +742,7 @@
                     id: safeId, code: p.code, brand: p.brand, class: p.class, itemName: p.itemName,
                     description: p.description, qty: p.qty, price: activePrice, salesPrice: p.salesPrice,
                     actualSalesPrice: p.actualSalesPrice || p.price, costing: p.costing, margin: activePrice - p.costing,
-                    location: p.location, arrivalDate: p.arrivalDate, aging: p.aging,
+                    keyMaterial: p.keyMaterial || '', location: p.location, arrivalDate: p.arrivalDate, aging: p.aging,
                     promotion: p.promotion, pricePromotion: p.pricePromotion, imgLink: p.imgLink
                 };
             });
@@ -804,10 +801,16 @@
             if (brandClean.includes('kim heng')) return 'Malaysia Modern';
             if (brandClean.includes('mef') || brandClean.includes('sude')) return 'Turkey Modern';
             if (brandClean.includes('bicer')) return 'Bicer';
+            // Everything else (China Led, Duqi, Falacie, General Vendors, Jian Fa, Ming Tai, PR Lighting,
+            // Tong Luo, Jinbangshi/VE0006, Yunding/VE0012, Nou Yu Shi/VE0046, Ming Du Jing Dian/VE0081,
+            // Fei Tien/VE0094, Zun Hua, ZX Lighting, and any newly added supplier) rolls up into "Other".
             return 'Other';
         }
 
         function getDisplayCategory(item) {
+            // Classification is based strictly on the product's "class" field (e.g. "Accessories, Brass",
+            // "Classic, Table & Side", "Wall Lamp, Modern"), matching the reference pivot taxonomy:
+            // Accessory / Carpet / Furniture / Light Bulb / Lighting.
             if (!item) return 'Accessory';
             const c = (typeof item === 'string' ? item : String(item.class || '')).toLowerCase().trim();
             if (!c) return 'Accessory';
@@ -819,10 +822,12 @@
                 c.includes('stand lamp') || c.includes('wall lamp')) {
                 return 'Lighting';
             }
+            // Everything else (Bedroom, Bench, Chair, Console & Sideboard, Mirror, Sofa, Table & Desk, Table & Side)
             return 'Furniture';
         }
 
         function getDisplaySubcategory(item) {
+            // Second-level grouping nested under each Category, matching the reference pivot taxonomy.
             if (!item) return 'Accessory';
             const c = (typeof item === 'string' ? item : String(item.class || '')).toLowerCase().trim();
             const category = getDisplayCategory(item);
@@ -838,6 +843,7 @@
                 if (c.includes('wall lamp')) return 'Wall Lamp';
                 return 'Lighting';
             }
+            // Furniture
             if (c.includes('bedroom')) return 'Bedroom';
             if (c.includes('bench')) return 'Bench';
             if (c.includes('chair')) return 'Chair';
@@ -897,6 +903,7 @@
                 ? `<img id="catalog-export-img-${item.id}" crossorigin="anonymous" src="${directImg}" style="max-width:100%; max-height:100%; object-fit:contain; display:block;">`
                 : `<div style="text-align:center; color:#6b6558; font-family:'Inter','Battambang',sans-serif;"><div style="font-size:52px; line-height:1; opacity:0.6;">&#9813;</div><div style="letter-spacing:3px; text-transform:uppercase; font-size:12px; margin-top:14px; opacity:0.7;">No Image</div></div>`;
 
+            // Darkened duplicate of the product photo used only as the right panel's backdrop.
             const bgImageHtml = hasImg
                 ? `<img id="catalog-export-bg-${item.id}" crossorigin="anonymous" src="${directImg}" style="position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; object-fit:cover;">`
                 : '';
@@ -932,6 +939,8 @@
             return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
         }
 
+        // Renders one item's catalog markup off-screen and resolves with a JPEG blob.
+        // Shared by both the single-item export and the "export all shown" bulk export.
         function renderCatalogImageBlob(item, includePrice) {
             return new Promise((resolve, reject) => {
                 const wrapper = document.createElement('div');
@@ -972,6 +981,11 @@
             if (typeof html2canvas === 'undefined') { showNotification('Export library unavailable. Check your internet connection.', 'error'); return; }
             showNotification('Preparing catalog image...', 'info');
 
+            // On mobile, clicking a blob-URL download link makes Safari navigate the whole
+            // page to a file-preview panel instead of downloading, and going "back" reloads
+            // the app (losing filters/state). To avoid that, open a blank tab now — while we
+            // still have the click's user-gesture — and only fill it in later if needed. This
+            // keeps the app tab untouched no matter what happens.
             const mobile = isMobileDevice();
             let previewTab = null;
             if (mobile) {
@@ -988,6 +1002,8 @@
                 const canUseShare = !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
 
                 if (canUseShare) {
+                    // Native share sheet is an overlay, not a page navigation, so the app
+                    // tab's state is safe either way. Close the spare blank tab we opened.
                     if (previewTab) previewTab.close();
                     navigator.share({ files: [file], title: item.itemName })
                         .then(() => showNotification("Image shared successfully!", "success"))
@@ -1045,6 +1061,8 @@
             setTimeout(() => toast.remove(), 400);
         }
 
+        // Exports every item currently shown on the active page (respecting search/filters
+        // and pagination) as one zip of catalog images, delivered with a single click.
         async function exportAllCatalogImages(includePrice) {
             if (typeof html2canvas === 'undefined') { showNotification('Export library unavailable. Check your internet connection.', 'error'); return; }
             if (typeof JSZip === 'undefined') { showNotification('Zip library unavailable. Check your internet connection.', 'error'); return; }
@@ -1209,7 +1227,6 @@
         }
 
         window.onload = function() { bootstrapDashboardEngine(); };
-
         function bootstrapDashboardEngine() {
             const savedTheme = localStorage.getItem('limperial_theme');
             const icon = document.getElementById('theme-icon');
@@ -1225,12 +1242,13 @@
             } else products = loadFallbackProducts();
 
             filteredProducts = [...products];
-            renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderLocationFilters(); setProductLayoutMode(productLayoutMode);
+            renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); setProductLayoutMode(productLayoutMode);
             const spinner = document.getElementById('loading-spinner');
             if (spinner) spinner.className = "hidden";
             fetchSheetData();
             initMobileProductScrollAssist();
             loadSavedInterestLists();
+            fetchKeyMaterialData();
         }
 
         async function fetchWithBackoff(url, options = {}, retries = 5, backoffMs = 1000) {
@@ -1245,6 +1263,64 @@
             throw new Error("Network connection issue");
         }
 
+        function applyKeyMaterialToProducts() {
+            if (!Array.isArray(products) || !products.length) return;
+            const normalizeCode = value => String(value || '').trim().toLowerCase();
+            products.forEach(product => {
+                const code = normalizeCode(product.code);
+                // Always replace the cached value. This prevents an old Column R value
+                // from surviving while Column T is being loaded.
+                product.keyMaterial = code && Object.prototype.hasOwnProperty.call(keyMaterialByCode, code)
+                    ? String(keyMaterialByCode[code] || '').trim()
+                    : '';
+            });
+        }
+
+        async function fetchKeyMaterialData() {
+            try {
+                // Clear any previously cached/wrong material values before loading Column T.
+                if (Array.isArray(products)) products.forEach(product => { product.keyMaterial = ''; });
+                renderKeyMaterialFilters();
+
+                const response = await fetchWithBackoff(KEY_MATERIAL_CSV_URL);
+                const csvText = await response.text();
+                Papa.parse(csvText, {
+                    header: true, skipEmptyLines: true,
+                    complete: function(results) {
+                        const rows = Array.isArray(results.data) ? results.data : [];
+                        const first = rows[0] || {};
+                        const keys = Object.keys(first);
+                        if (!keys.length) return;
+
+                        const normalizeHeader = value => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                        // The query above is deliberately SELECT B,T:
+                        // result field 0 = Backend Column B (product code)
+                        // result field 1 = Backend Column T (Key Material)
+                        const codeKey = keys[0];
+                        const keyMaterialKey = keys[1];
+                        if (!codeKey || !keyMaterialKey) return;
+                        if (normalizeHeader(keyMaterialKey) !== 'keymaterial') {
+                            console.warn('Backend > All Column T header is:', keyMaterialKey, 'Expected: Key Material.');
+                        }
+
+                        const nextMap = {};
+                        rows.forEach(row => {
+                            const code = String(row[codeKey] || '').trim().toLowerCase();
+                            const material = String(row[keyMaterialKey] || '').trim();
+                            if (code) nextMap[code] = material;
+                        });
+                        keyMaterialByCode = nextMap;
+                        applyKeyMaterialToProducts();
+                        renderKeyMaterialFilters();
+                        executeSearchFilter();
+                    }
+                });
+            } catch (error) {
+                console.warn('Key Material source unavailable:', error);
+                renderKeyMaterialFilters();
+            }
+        }
+
         async function fetchSheetData() {
             const statusText = document.getElementById('status-text');
             const syncStatusPill = document.getElementById('sync-status');
@@ -1256,11 +1332,12 @@
                     complete: function(results) {
                         if (results.data && results.data.length > 0) {
                             products = mapAndCleanCSVData(results.data);
+                            applyKeyMaterialToProducts();
                             localStorage.setItem('limperial_inventory', JSON.stringify(products));
                             filteredProducts = [...products];
                             const spinner = document.getElementById('loading-spinner');
                             if (spinner) spinner.classList.add('hidden');
-                            renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderLocationFilters(); handleSearchFilter();
+                            renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); handleSearchFilter();
                             if (statusText) statusText.textContent = "Synced";
                             if (syncStatusPill) syncStatusPill.className = "flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5 text-xs";
                             showNotification("Inventory fully updated.", "success");
@@ -1378,7 +1455,7 @@
                     price: activePrice, salesPrice: parsedSalesPrice, actualSalesPrice: parsedPrice, costing: parsedCosting,
                     margin: activeMargin, location: String(location).trim(), arrivalDate: String(arrivalDate).trim(),
                     aging: String(aging).trim(), promotion: cleanPromotion, pricePromotion: cleanPricePromotion,
-                    imgLink: String(imgLink).trim()
+                    keyMaterial: '', imgLink: String(imgLink).trim()
                 };
             }).filter(item => item.code || item.itemName);
         }
@@ -1386,7 +1463,7 @@
         function toggleTheme() {
             const isDark = document.body.classList.toggle('theme-dark');
             const icon = document.getElementById('theme-icon');
-            if (isDark) { if(icon) icon.className = "fa-solid fa-sun text-sm"; localStorage.setItem('limperial_theme', 'dark'); } 
+            if (isDark) { if(icon) icon.className = "fa-solid fa-sun text-sm"; localStorage.setItem('limperial_theme', 'dark'); }
             else { if(icon) icon.className = "fa-solid fa-moon text-sm"; localStorage.setItem('limperial_theme', 'light'); }
             renderProductGrid(); calculateAndDrawTotals();
         }
@@ -1568,12 +1645,14 @@
             select.innerHTML = '<option value="">All Brands</option>';
 
             if (!showCostMode) {
+                // Storefront view: flat list of consolidated brand families (no raw supplier codes exposed).
                 const mappedBrands = products.map(p => getDisplayBrand(p.brand, false)).filter(b => b && b !== '0' && b.toLowerCase() !== 'n/a');
                 const brands = [...new Set(mappedBrands)].sort();
                 brands.forEach(brand => { const opt = document.createElement('option'); opt.value = brand; opt.textContent = brand; if (brand === savedValue) opt.selected = true; select.appendChild(opt); });
                 return;
             }
 
+            // Management view: two-level Brand > Supplier tree, built straight off Column P raw data.
             const groups = {};
             products.forEach(p => {
                 const raw = String(p.brand || '').trim();
@@ -1607,6 +1686,21 @@
             });
         }
 
+        function renderKeyMaterialFilters() {
+            const select = document.getElementById('key-material-select');
+            if (!select) return;
+            const savedValue = currentKeyMaterialFilter;
+            const values = [...new Set((products || []).map(p => String(p.keyMaterial || '').trim()).filter(v => v && v.toLowerCase() !== 'n/a'))].sort((a,b) => a.localeCompare(b));
+            select.innerHTML = '<option value="">All Key Materials</option>';
+            values.forEach(value => {
+                const opt = document.createElement('option');
+                opt.value = value; opt.textContent = value;
+                if (value === savedValue) opt.selected = true;
+                select.appendChild(opt);
+            });
+            if (savedValue && !values.includes(savedValue)) { currentKeyMaterialFilter = ''; select.value = ''; }
+        }
+
         function renderLocationFilters() {
             const select = document.getElementById('location-select'); if (!select) return;
             const savedValue = currentLocFilter;
@@ -1627,6 +1721,7 @@
         function selectSubclass(sub) { currentSubclassFilter = sub; executeSearchFilter(); }
         function selectBrand(brand) { currentBrandFilter = brand; renderBrandFilters(); executeSearchFilter(); }
         function selectLocation(loc) { currentLocFilter = loc; executeSearchFilter(); }
+        function selectKeyMaterial(material) { currentKeyMaterialFilter = material; executeSearchFilter(); }
 
         function getAgingDays(item) {
             const n = parseInt(String(item && item.aging).replace(/[^0-9-]+/g, ''), 10);
@@ -1697,9 +1792,10 @@
                     else if (filterVal === 'LPH') matchesLocation = ['LH1', 'LH2', 'LH3', 'LH4'].some(loc => prodLoc.includes(loc));
                     else matchesLocation = prodLoc.includes(filterVal);
                 }
+                const matchesKeyMaterial = !currentKeyMaterialFilter || String(product.keyMaterial || '').trim() === currentKeyMaterialFilter;
                 let matchesPromo = true;
                 if (showPromoOnly) matchesPromo = product.promotion && product.promotion.toLowerCase() !== 'n/a' && product.promotion.trim() !== '';
-                return matchesSearch && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesPromo;
+                return matchesSearch && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesKeyMaterial && matchesPromo;
             });
 
             if (sortNewArrival) {
@@ -1721,9 +1817,9 @@
 
         function resetFilters() {
             const searchInput = document.getElementById('search-input'); if (searchInput) searchInput.value = '';
-            currentBrandFilter = ''; currentClassFilter = ''; currentSubclassFilter = ''; currentLocFilter = ''; showPromoOnly = false; sortNewArrival = false;
-            const classSelect = document.getElementById('class-select'); const subclassSelect = document.getElementById('subclass-select'); const brandSelect = document.getElementById('brand-select'); const locSelect = document.getElementById('location-select');
-            if (classSelect) classSelect.value = ''; if (subclassSelect) subclassSelect.value = ''; if (brandSelect) brandSelect.value = ''; if (locSelect) locSelect.value = '';
+            currentBrandFilter = ''; currentClassFilter = ''; currentSubclassFilter = ''; currentLocFilter = ''; currentKeyMaterialFilter = ''; showPromoOnly = false; sortNewArrival = false;
+            const classSelect = document.getElementById('class-select'); const subclassSelect = document.getElementById('subclass-select'); const brandSelect = document.getElementById('brand-select'); const keyMaterialSelect = document.getElementById('key-material-select'); const locSelect = document.getElementById('location-select');
+            if (classSelect) classSelect.value = ''; if (subclassSelect) subclassSelect.value = ''; if (brandSelect) brandSelect.value = ''; if (keyMaterialSelect) keyMaterialSelect.value = ''; if (locSelect) locSelect.value = '';
             const btn = document.getElementById('promo-toggle-btn');
             if (btn) {
                 btn.className = "w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-3 py-1.5 text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wider h-[30px]";
@@ -2496,6 +2592,8 @@
             }
         }
 
+            // Keep discount and management settings current for refresh recovery.
+
         function handleDiscountChange(source) {
             const pctInput = document.getElementById('discount-pct'); const flatInput = document.getElementById('discount-flat');
             discountPctValue = parseFloat(pctInput ? pctInput.value : 0) || 0;
@@ -2535,6 +2633,8 @@
         }
 
         function buildSavedInterestListRecord(name) {
+            // Capture the active document just before creating the record so the saved item
+            // always contains the latest values entered in the quotation generator.
             captureDocumentFormState(documentType);
             return {
                 id: 'SIL-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
@@ -2773,6 +2873,7 @@
                 await new Promise(resolve => setTimeout(resolve, 900));
                 closeSavedListsModal();
             } catch (e) {
+                // Keep the local copy, but clearly indicate that cloud persistence failed.
                 setSavedListSavingState('done', 'Saved on this device. Cloud save failed.');
                 showNotification("Saved on this device, but cloud save was unavailable.", "error");
                 await new Promise(resolve => setTimeout(resolve, 1200));
@@ -2786,6 +2887,7 @@
             const targetId = String(listId || '').trim();
             if (!targetId) return;
 
+            // Immediate UI feedback — never wait for the network.
             const row = rowEl || Array.from(document.querySelectorAll('[data-saved-list-id]'))
                 .find(el => String(el.dataset.savedListId || '').trim() === targetId);
             const titleEl = row?.querySelector('.saved-list-title');
@@ -2806,13 +2908,14 @@
                 deleteBtn.innerHTML = '<i class="fa-solid fa-check text-xs"></i>';
             }
 
+            // Keep the item locally marked as deleted so it remains hidden after re-render.
             savedInterestLists = savedInterestLists.map(list =>
                 String(list.id).trim() === targetId ? { ...list, deleted: true, status: 'Delete' } : list
             );
             setLocalSavedInterestLists(savedInterestLists);
 
             if (!SAVED_LISTS_API_URL) {
-                showNotification(`"${listName || 'Saved List'}" marked as deleted on this device.`, 'success');
+                showNotification(`\"${listName || 'Saved List'}\" marked as deleted on this device.`, 'success');
                 return;
             }
 
@@ -2827,11 +2930,12 @@
                     throw new Error(response?.error || 'Google Sheets did not confirm the Delete mark.');
                 }
 
-                showNotification(`"${listName || 'Saved List'}" marked Delete.`, 'success');
+                showNotification(`\"${listName || 'Saved List'}\" marked Delete.`, 'success');
                 setTimeout(() => renderSavedInterestLists(), 500);
             } catch (err) {
                 console.error('Saved-list soft delete failed:', err);
-                showNotification(`"${listName || 'Saved List'}" was marked on screen, but Column E was not updated. Please deploy the latest Apps Script.`, 'error');
+                // Do not undo the visual strike-through; tell the user exactly what failed.
+                showNotification(`\"${listName || 'Saved List'}\" was marked on screen, but Column E was not updated. Please deploy the latest Apps Script.`, 'error');
             }
         }
 
@@ -2909,7 +3013,6 @@
         }
 
         function openShareModal() {
-            // Allow opening quote modal even with 0 items so user can view template or retrieve saved lists
             const dateInputEl = document.getElementById('quote-date-input');
             if (dateInputEl && !dateInputEl.value) {
                 const dateObj = new Date(); const day = String(dateObj.getDate()).padStart(2, '0'); const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -2925,6 +3028,7 @@
                 });
             }
             updateQuotationPreview();
+            // Keep the latest quotation/document fields protected even when the user
             const modal = document.getElementById('share-modal'); const container = document.getElementById('share-modal-container');
             if (modal && container) { modal.classList.remove('pointer-events-none', 'opacity-0'); modal.classList.add('opacity-100'); container.classList.remove('scale-95'); container.classList.add('scale-100'); }
         }
@@ -2959,11 +3063,6 @@
             const doInstallDate = document.getElementById('do-install-date-input')?.value.trim() || '';
             const doQb = document.getElementById('do-qb-input')?.value.trim() || '';
 
-            
-            if (cart.length === 0) {
-                const emptyCols = 7 + (showCostMode ? 3 : 0) + (hasAnyDiscount ? 1 : 0);
-                tableRowsHtml = `<tr><td colspan="${emptyCols}" style="border: 1px solid #cbd5e1; padding: 28px 16px; text-align: center; color: #94a3b8; font-style: italic; font-size: 11px;"><i class="fa-solid fa-basket-shopping" style="margin-right: 6px; color: #dfb26c;"></i>No items currently selected. Click "Select" on showroom items, or click "Save" above to retrieve a saved list.</td></tr>`;
-            }
             cart.forEach((cartItem, idx) => {
                 const uniqueId = cartItem.type === 'set' ? cartItem.id : cartItem.item.id;
                 const noteValue = noteMap[uniqueId] || ""; const noteHtml = noteValue ? `<div style="font-weight: 700; color: #1e3a8a; font-size: 10px; margin-top: 4px; text-transform: uppercase;">${noteValue}</div>` : '';
@@ -3069,7 +3168,7 @@
                         tableRowsHtml += `
                             <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: middle; height: ${cartItem.rowHeight || 70}px;">
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: center; font-weight: 600; color: #000; font-size: 11px; position: relative;">${idx + 1}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
-                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-size: 11px; line-height: 1.4; word-break: break-word; overflow: hidden; position: relative;"><combinedNameAndBrand}${preorderHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-size: 11px; line-height: 1.4; word-break: break-word; overflow: hidden; position: relative;">${combinedNameAndBrand}${preorderHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-size: 11px; position: relative;">${descriptionHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: center; font-weight: 600; color: #000; font-size: 12px; white-space: nowrap; position: relative;">${cartItem.quantity} pcs<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 4px; text-align: center; position: relative; height: ${cartItem.rowHeight || 70}px; vertical-align: middle;">${imgColHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
@@ -3108,7 +3207,7 @@
 
             let totalTableWidth = colWidths.no + colWidths.desc + colWidths.pic + colWidths.qty + colWidths.price + colWidths.amt + colWidths.totalAmt;
             if (isInventory || isDeliveryOrder) {
-                totalTableWidth = colWidths.no + 200 + 200 + 60 + 150 + 100;
+                totalTableWidth = colWidths.no + 200 + 200 + 60 + 150 + 100; // Adjust approximate widths for inventory/delivery view
             } else {
                 if (showCostMode) totalTableWidth += colWidths.costUnit + colWidths.costTotal + colWidths.margin;
                 if (hasAnyDiscount) totalTableWidth += colWidths.discount;
@@ -3287,6 +3386,7 @@
                         </div>
                     </div>
 
+                    <!-- Product List Table -->
                     <div style="margin-bottom: 4px; width: 100%; position: relative;">
                         <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', 'Battambang', sans-serif; font-size: 10px; table-layout: fixed;">
                             <thead>
@@ -3299,6 +3399,7 @@
                         <div class="table-vertical-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: -8px; height: 10px; cursor: row-resize; z-index: 20; background: transparent;" onmousedown="initTableVerticalResize(event)"></div>
                     </div>
 
+                    <!-- Signatures Block for Inventory -->
                     <div style="display: flex; justify-content: space-between; margin-top: 40px; font-family: 'Inter', 'Battambang', sans-serif; font-size: 11px; font-weight: bold; text-align: center;">
                         <div style="width: 25%;">
                             <div style="margin-bottom: 60px;">ស្នើសុំដោយ</div>
@@ -3344,6 +3445,7 @@
                         </div>
                     </div>
 
+                    <!-- Product List Table -->
                     <div style="margin-bottom: 4px; width: 100%; position: relative;">
                         <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', 'Battambang', sans-serif; font-size: 10px; table-layout: fixed;">
                             <thead>
@@ -3356,11 +3458,13 @@
                         <div class="table-vertical-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: -8px; height: 10px; cursor: row-resize; z-index: 20; background: transparent;" onmousedown="initTableVerticalResize(event)"></div>
                     </div>
 
+                    <!-- Notice -->
                     <div style="margin-top: 14px; padding: 10px 12px; background: #fcf8f2; border: 1px dashed #dfb26c; border-radius: 4px; font-family: 'Inter', 'Battambang', sans-serif; font-size: 9px; line-height: 1.5; color: #475569;">
                         <span style="font-weight: 700; color: #0f2d4a; text-transform: uppercase;">សេចក្តីជូនដំណឹង / Notice:</span>
                         Please note that any product sold is not returnable and please inspect all items carefully upon delivery. Any damage, shortage, or discrepancy must be reported 24 hours of receiving this delivery. Once signed below, this Delivery Order confirms that the items listed have been received in good condition and in the correct quantity.
                     </div>
 
+                    <!-- Signatures Block for Delivery Order -->
                     <div style="display: flex; justify-content: space-between; margin-top: 40px; font-family: 'Inter', 'Battambang', sans-serif; font-size: 11px; font-weight: bold; text-align: center;">
                         <div style="width: 30%;">
                             <div style="margin-bottom: 60px;">ដឹកជញ្ជូនដោយ</div>
@@ -3392,6 +3496,7 @@
                         </div>
                     </div>
 
+                    <!-- Client Details Table -->
                     <div style="margin-bottom: 20px;">
                         <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', 'Battambang', sans-serif; font-size: 11px; line-height: 1.4;">
                             <tr>
@@ -3412,6 +3517,7 @@
                         </table>
                     </div>
 
+                    <!-- Product List Table -->
                     <div style="margin-bottom: 4px; width: 100%; position: relative;">
                         <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', 'Battambang', sans-serif; font-size: 10px; table-layout: fixed;">
                             <thead>
@@ -3425,6 +3531,7 @@
                         <div class="table-vertical-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: -8px; height: 10px; cursor: row-resize; z-index: 20; background: transparent;" onmousedown="initTableVerticalResize(event)"></div>
                     </div>
 
+                    <!-- Terms & Conditions Footer Block -->
                     <div style="font-family: 'Inter', 'Battambang', sans-serif; font-size: 8px; line-height: 1.4; color: #475569; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: auto;">
                         <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                             <div style="float: left; width: 48%;">
@@ -3453,6 +3560,7 @@
                             </div>
                         </div>
 
+                        <!-- Signatures Block -->
                         <div style="display: flex; justify-content: space-between; margin-top: 30px; padding-top: 16px; border-top: 1px dashed #e2e8f0;">
                             <div style="width: 40%; text-align: left;">
                                 <div style="font-size: 9px; color: #475569; margin-bottom: 25px;">Prepared By:</div>
@@ -3474,6 +3582,7 @@
 
             previewPaper.innerHTML = headerAndFooterHtml;
         }
+
 
         function closeShareModal() {
             const modal = document.getElementById('share-modal');
@@ -3509,6 +3618,142 @@
                         .catch(() => showNotification("Quotation copy failed. Please highlight and copy manually from preview.", "error"));
                 } else showNotification("Unsupported device permissions to trigger copy action.", "error");
             } finally { area.classList.add('hidden'); }
+        }
+
+        async function exportDocumentAsImage() {
+            const previewPaper = document.getElementById('quotation-live-paper');
+            if (!previewPaper) { showNotification('Document preview is not available.', 'error'); return; }
+            if (typeof html2canvas !== 'function') { showNotification('Image export library is unavailable.', 'error'); return; }
+
+            const customerName = (document.getElementById('quote-customer-input')?.value || 'Customer').trim() || 'Customer';
+            const safeCustomer = customerName.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'Customer';
+            const docTypeLabel = documentType === 'quotation' ? 'Quotation' : (documentType === 'sales_order' ? 'Sales_Order' : (documentType === 'delivery_order' ? 'Delivery_Order' : 'Inventory_Request'));
+            const dateValue = (document.getElementById('quote-date-input')?.value || '').trim().replace(/\s*[/]\s*/g, '-').replace(/[^a-z0-9_-]+/gi, '_') || new Date().toISOString().slice(0,10);
+            const fileName = `${safeCustomer}_${docTypeLabel}_${dateValue}.png`;
+            const mobile = isMobileDevice();
+
+            // On phones the live document is inside a `hidden lg:flex` preview container.
+            // html2canvas cannot reliably capture descendants of display:none, so render a
+            // visible off-screen clone for export instead of changing the on-screen layout.
+            let exportHost = null;
+            let exportPaper = null;
+            let previewTab = null;
+            let objectUrl = null;
+
+            try {
+                showNotification('Preparing document image...', 'info');
+
+                // A mobile browser may block opening a new tab after async work begins.
+                // Open the blank tab immediately while this function still has the click gesture.
+                if (mobile) {
+                    try { previewTab = window.open('', '_blank'); } catch (e) { previewTab = null; }
+                }
+
+                exportHost = document.createElement('div');
+                exportHost.style.position = 'fixed';
+                exportHost.style.left = '-100000px';
+                exportHost.style.top = '0';
+                exportHost.style.width = '760px';
+                exportHost.style.display = 'block';
+                exportHost.style.visibility = 'visible';
+                exportHost.style.pointerEvents = 'none';
+                exportHost.style.zIndex = '-1';
+                exportHost.style.background = '#ffffff';
+                document.body.appendChild(exportHost);
+
+                exportPaper = previewPaper.cloneNode(true);
+                exportPaper.removeAttribute('id');
+                exportPaper.style.width = '760px';
+                exportPaper.style.minWidth = '760px';
+                exportPaper.style.maxWidth = '760px';
+                exportPaper.style.margin = '0';
+                exportPaper.style.boxShadow = 'none';
+                exportPaper.style.position = 'relative';
+                exportPaper.style.display = 'block';
+                exportPaper.style.visibility = 'visible';
+                exportHost.appendChild(exportPaper);
+
+                exportPaper.querySelectorAll('.col-resizer-handle, .row-resizer-handle, .table-vertical-resizer-handle').forEach(el => el.remove());
+
+                // Wait for document images before rendering so phone exports do not become
+                // blank/incomplete when the network image resources are still loading.
+                const images = Array.from(exportPaper.querySelectorAll('img'));
+                await Promise.all(images.map(img => new Promise(resolve => {
+                    if (img.complete && img.naturalWidth > 0) return resolve();
+                    const done = () => { img.removeEventListener('load', done); img.removeEventListener('error', done); resolve(); };
+                    img.addEventListener('load', done, { once: true });
+                    img.addEventListener('error', done, { once: true });
+                    setTimeout(done, 5000);
+                })));
+
+                const canvas = await html2canvas(exportPaper, {
+                    scale: Math.max(2, Math.min(3, window.devicePixelRatio || 1)),
+                    useCORS: true,
+                    allowTaint: false,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    width: 760,
+                    windowWidth: 760,
+                    onclone: clonedDocument => {
+                        clonedDocument.querySelectorAll('.col-resizer-handle, .row-resizer-handle, .table-vertical-resizer-handle').forEach(el => el.remove());
+                        const clonedPaper = Array.from(clonedDocument.querySelectorAll('[id="quotation-live-paper"]'))[0];
+                        if (clonedPaper) {
+                            clonedPaper.style.width = '760px';
+                            clonedPaper.style.minWidth = '760px';
+                            clonedPaper.style.maxWidth = '760px';
+                            clonedPaper.style.boxShadow = 'none';
+                            clonedPaper.style.margin = '0';
+                        }
+                    }
+                });
+
+                const blob = await new Promise((resolve, reject) => {
+                    canvas.toBlob(result => result ? resolve(result) : reject(new Error('Unable to create PNG blob.')), 'image/png');
+                });
+
+                objectUrl = URL.createObjectURL(blob);
+                let file = null;
+                try { file = new File([blob], fileName, { type: 'image/png' }); } catch (e) { file = null; }
+
+                const canUseShare = mobile && !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+
+                if (canUseShare) {
+                    if (previewTab) { previewTab.close(); previewTab = null; }
+                    try {
+                        await navigator.share({ files: [file], title: `${docTypeLabel} — ${customerName}` });
+                        showNotification('Document image shared successfully.', 'success');
+                    } catch (shareError) {
+                        if (shareError?.name === 'AbortError') {
+                            showNotification('Image export cancelled.', 'info');
+                        } else {
+                            if (previewTab) previewTab.location.href = objectUrl;
+                            else window.open(objectUrl, '_blank');
+                            showNotification('Opened image in a new tab — tap and hold to save.', 'success');
+                        }
+                    }
+                } else if (mobile) {
+                    // Mobile browsers generally do not honor the download attribute for blob
+                    // URLs. Navigate the pre-opened tab to the image so the user can save it.
+                    if (previewTab) previewTab.location.href = objectUrl;
+                    else window.open(objectUrl, '_blank');
+                    showNotification('Opened image in a new tab — tap and hold to save.', 'success');
+                } else {
+                    const link = document.createElement('a');
+                    link.download = fileName;
+                    link.href = objectUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    showNotification('Document image exported successfully.', 'success');
+                }
+            } catch (error) {
+                console.error('Document image export failed:', error);
+                if (previewTab) previewTab.close();
+                showNotification('Image export failed. Please try again.', 'error');
+            } finally {
+                if (exportHost) exportHost.remove();
+                if (objectUrl) setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+            }
         }
 
         function printProposal() {
@@ -3643,78 +3888,5 @@
             document.addEventListener('mouseup', onMouseUp);
         }
     </script>
-
-    <!-- PWA Installation, Service Worker & Offline Connectivity Logic -->
-    <script>
-        let deferredPrompt = null;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            const installBtn = document.getElementById('pwa-install-btn');
-            if (installBtn) {
-                installBtn.classList.remove('hidden');
-                installBtn.classList.add('flex');
-            }
-        });
-
-        function triggerPWAInstall() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        showNotification("Limperial App successfully installed to Home Screen!", "success");
-                    }
-                    deferredPrompt = null;
-                    const installBtn = document.getElementById('pwa-install-btn');
-                    if (installBtn) {
-                        installBtn.classList.add('hidden');
-                        installBtn.classList.remove('flex');
-                    }
-                });
-            } else {
-                showNotification("To install on iOS: tap Share (square with arrow) and choose 'Add to Home Screen'.", "info");
-            }
-        }
-
-        window.addEventListener('appinstalled', () => {
-            showNotification("Limperial Showroom installed as an application!", "success");
-            const installBtn = document.getElementById('pwa-install-btn');
-            if (installBtn) {
-                installBtn.classList.add('hidden');
-                installBtn.classList.remove('flex');
-            }
-        });
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((reg) => {
-                        console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
-                    })
-                    .catch((err) => {
-                        console.warn('[Limperial PWA] Service Worker registration failed:', err);
-                    });
-            });
-        }
-
-        window.addEventListener('online', () => {
-            const syncStatusPill = document.getElementById('sync-status');
-            const statusText = document.getElementById('status-text');
-            if (statusText) statusText.textContent = "Reconnected";
-            if (syncStatusPill) syncStatusPill.className = "flex items-center space-x-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-1 text-xs";
-            showNotification("Internet connection restored. Synchronizing...", "success");
-            fetchSheetData();
-        });
-
-        window.addEventListener('offline', () => {
-            const syncStatusPill = document.getElementById('sync-status');
-            const statusText = document.getElementById('status-text');
-            if (statusText) statusText.textContent = "Offline Mode";
-            if (syncStatusPill) syncStatusPill.className = "flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-1 text-xs";
-            showNotification("Operating offline. All catalog & pricing tools remain active.", "info");
-        });
-    </script>
 </body>
 </html>
-Displaying index.html.
