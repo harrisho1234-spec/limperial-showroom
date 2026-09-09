@@ -1,3 +1,7 @@
+
+index.html
+
+100%
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -313,6 +317,7 @@
                         <h2 class="font-serif text-lg font-semibold text-luxury-gold">Customer Interest List</h2>
                     </div>
                     <div class="flex items-center space-x-2">
+                        <button onclick="openSavedListsModal()" class="px-2.5 py-1 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/30 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors" title="Saved Customer Lists"><i class="fa-solid fa-folder-open text-[10px]"></i> Lists</button>
                         <button id="cart-bundle-btn" onclick="promptCreateSet()" class="hidden bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-cubes mr-1"></i> Combine Set</button>
                         <span id="desktop-cart-count" class="bg-luxury-gold text-[#0a0f19] text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                     </div>
@@ -402,6 +407,7 @@
                     <h2 class="font-serif text-lg font-semibold text-luxury-gold">Customer Interest List</h2>
                 </div>
                 <div class="flex items-center space-x-2">
+                    <button onclick="openSavedListsModal()" class="px-2.5 py-1 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/30 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors" title="Saved Customer Lists"><i class="fa-solid fa-folder-open text-[10px]"></i> Lists</button>
                     <button id="mobile-cart-bundle-btn" onclick="promptCreateSet()" class="hidden bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-cubes mr-1"></i> Combine Set</button>
                     <button onclick="toggleMobileCart(false)" class="p-2 text-luxury-muted hover:text-luxury-text"><i class="fa-solid fa-xmark text-xl"></i></button>
                 </div>
@@ -673,7 +679,7 @@
                         <button onclick="printProposal()" class="py-2.5 bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover hover:to-amber-700 text-[#0a0f19] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200 shadow-lg"><i class="fa-solid fa-print mr-1.5"></i>Print/PDF Proposal</button>
                     </div>
                 </div>
-                <div class="hidden lg:flex flex-1 flex-col overflow-auto bg-luxury-dark/40 rounded-xl border border-luxury-gold/10 p-4" id="quotation-live-paper-container">
+                <div class="flex flex-1 flex-col overflow-auto bg-luxury-dark/40 rounded-xl border border-luxury-gold/10 p-2 sm:p-4 min-h-[450px]" id="quotation-live-paper-container">
                     <div class="bg-white text-slate-800 rounded-xl shadow-2xl p-8 relative mx-auto" id="quotation-live-paper" style="min-width: 760px; width: 100%;"></div>
                 </div>
             </div>
@@ -2907,7 +2913,7 @@
         }
 
         function openShareModal() {
-            if (cart.length === 0) { showNotification("Please select items to create a proposal.", "error"); return; }
+            // Allow opening quote modal even with 0 items so user can view template or retrieve saved lists
             const dateInputEl = document.getElementById('quote-date-input');
             if (dateInputEl && !dateInputEl.value) {
                 const dateObj = new Date(); const day = String(dateObj.getDate()).padStart(2, '0'); const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -2957,6 +2963,11 @@
             const doInstallDate = document.getElementById('do-install-date-input')?.value.trim() || '';
             const doQb = document.getElementById('do-qb-input')?.value.trim() || '';
 
+            
+            if (cart.length === 0) {
+                const emptyCols = 7 + (showCostMode ? 3 : 0) + (hasAnyDiscount ? 1 : 0);
+                tableRowsHtml = `<tr><td colspan="${emptyCols}" style="border: 1px solid #cbd5e1; padding: 28px 16px; text-align: center; color: #94a3b8; font-style: italic; font-size: 11px;"><i class="fa-solid fa-basket-shopping" style="margin-right: 6px; color: #dfb26c;"></i>No items currently selected. Click "Select" on showroom items, or click "Save" above to retrieve a saved list.</td></tr>`;
+            }
             cart.forEach((cartItem, idx) => {
                 const uniqueId = cartItem.type === 'set' ? cartItem.id : cartItem.item.id;
                 const noteValue = noteMap[uniqueId] || ""; const noteHtml = noteValue ? `<div style="font-weight: 700; color: #1e3a8a; font-size: 10px; margin-top: 4px; text-transform: uppercase;">${noteValue}</div>` : '';
@@ -3710,3 +3721,4 @@
     </script>
 </body>
 </html>
+Displaying index.html.
