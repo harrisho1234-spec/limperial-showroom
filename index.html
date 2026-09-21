@@ -240,7 +240,7 @@
                         <button onclick="resetFilters()" class="shrink-0 bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold hover:bg-luxury-gold/10 text-luxury-muted hover:text-luxury-gold rounded-xl w-[50px] flex items-center justify-center transition-all duration-300 shadow-sm" title="Clear All Filters"><i class="fa-solid fa-filter-circle-xmark text-lg"></i></button>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-7 gap-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-8 gap-4">
                         <div>
                             <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-gem text-luxury-gold/60 text-[9px]"></i> Category</label>
                             <select id="class-select" onchange="selectClass(this.value)" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-3 py-1.5 text-xs text-luxury-text outline-none transition-colors duration-200 cursor-pointer"><option value="">All Category</option></select>
@@ -273,6 +273,12 @@
                             <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-sparkles text-luxury-gold/60 text-[9px]"></i> Sort</label>
                             <button id="new-arrival-toggle-btn" onclick="toggleNewArrivalSort()" class="w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-3 py-1.5 text-xs flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wider h-[30px]" title="Sort items by newest arrival (lowest aging days) first">
                                 <i class="fa-solid fa-sparkles text-luxury-gold"></i> New Arrival
+                            </button>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-cubes text-luxury-gold/60 text-[9px]"></i> Catalog</label>
+                            <button id="set-only-toggle-btn" onclick="toggleSetsOnly()" class="w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-3 py-1.5 text-xs flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wider h-[30px]" title="Show only reusable created sets">
+                                <i class="fa-solid fa-cubes text-luxury-gold"></i> Set
                             </button>
                         </div>
                     </div>
@@ -317,8 +323,9 @@
                         <h2 class="font-serif text-lg font-semibold text-luxury-gold">Customer Interest List</h2>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button onclick="openSavedListsModal()" class="px-2.5 py-1 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/30 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors" title="Saved Customer Lists"><i class="fa-solid fa-folder-open text-[10px]"></i> Lists</button>
+                        <button onclick="openSavedListsModal()" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Save or retrieve the current quotation sheet"><i class="fa-solid fa-floppy-disk"></i><span>Save</span></button>
                         <button id="cart-bundle-btn" onclick="promptCreateSet()" class="hidden bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-cubes mr-1"></i> Combine Set</button>
+                        <button id="create-set-btn" onclick="openCreateSetModal()" class="hidden bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/40 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-square-plus mr-1"></i> Create Set</button>
                         <span id="desktop-cart-count" class="bg-luxury-gold text-[#0a0f19] text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                     </div>
                 </div>
@@ -407,8 +414,9 @@
                     <h2 class="font-serif text-lg font-semibold text-luxury-gold">Customer Interest List</h2>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button onclick="openSavedListsModal()" class="px-2.5 py-1 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/30 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors" title="Saved Customer Lists"><i class="fa-solid fa-folder-open text-[10px]"></i> Lists</button>
+                    <button onclick="openSavedListsModal()" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Save or retrieve the current quotation sheet"><i class="fa-solid fa-floppy-disk"></i><span>Save</span></button>
                     <button id="mobile-cart-bundle-btn" onclick="promptCreateSet()" class="hidden bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-cubes mr-1"></i> Combine Set</button>
+                    <button id="mobile-create-set-btn" onclick="openCreateSetModal()" class="hidden bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/40 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-square-plus mr-1"></i> Create Set</button>
                     <button onclick="toggleMobileCart(false)" class="p-2 text-luxury-muted hover:text-luxury-text"><i class="fa-solid fa-xmark text-xl"></i></button>
                 </div>
             </div>
@@ -471,6 +479,13 @@
                     <button id="set-name-confirm-btn" onclick="confirmCreateSet()" class="py-2.5 bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Confirm</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="create-set-modal" onclick="if(event.target === this) closeCreateSetModal()" class="fixed inset-0 bg-black/90 z-[70] backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="create-set-modal-container">
+            <div class="p-4 bg-luxury-accent/50 border-b border-luxury-gold/15 flex items-center justify-between"><div class="flex items-center space-x-2"><i class="fa-solid fa-square-plus text-luxury-gold"></i><h3 class="font-serif text-base text-luxury-gold font-semibold">Create Reusable Set</h3></div><button onclick="closeCreateSetModal()" class="p-1 text-luxury-muted hover:text-luxury-text"><i class="fa-solid fa-xmark text-lg"></i></button></div>
+            <div class="p-5 space-y-4"><p class="text-xs text-luxury-soft">Save the selected items as a reusable catalog Set. Each component keeps its original inventory information.</p><div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1.5">Set Name</label><input type="text" id="create-set-name-input" maxlength="120" placeholder="e.g. Milano Living Set" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-4 py-2.5 text-sm text-luxury-text outline-none"></div><div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1.5">Price</label><div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-luxury-gold font-bold text-sm">$</span><input type="number" id="create-set-price-input" min="0" step="0.01" placeholder="0" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl pl-8 pr-4 py-2.5 text-sm text-luxury-text outline-none"></div></div><div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1.5">Upload Set Photo</label><input type="file" id="create-set-photo-input" accept="image/*" onchange="handleCreateSetPhotoChange(event)" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-xl px-3 py-2 text-xs text-luxury-text file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-1.5 file:text-[#0a0f19] file:font-bold"><div id="create-set-photo-preview-wrap" class="hidden mt-3 rounded-xl overflow-hidden border border-luxury-gold/15 bg-luxury-dark h-36 flex items-center justify-center"><img id="create-set-photo-preview" src="" alt="Set preview" class="max-w-full max-h-full object-contain"></div><div id="create-set-photo-name" class="mt-1.5 text-[9px] text-luxury-muted truncate"></div></div><div id="create-set-saving-state" class="hidden rounded-xl border border-luxury-gold/15 bg-luxury-accent/30 p-3 text-center"><div class="w-7 h-7 mx-auto rounded-full border-2 border-luxury-gold/15 border-t-luxury-gold animate-spin"></div><div class="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-luxury-gold">Saving Set…</div></div><div class="grid grid-cols-2 gap-2 pt-1"><button onclick="closeCreateSetModal()" class="py-2.5 bg-luxury-lightBg hover:bg-luxury-accent text-luxury-soft border border-luxury-gold/10 rounded-xl text-xs font-bold uppercase tracking-wider">Cancel</button><button id="create-set-submit-btn" onclick="submitCreateReusableSet()" class="py-2.5 bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] rounded-xl text-xs font-bold uppercase tracking-wider">Create Set</button></div></div>
         </div>
     </div>
 
@@ -623,9 +638,14 @@
                     <div class="space-y-4">
                         <div class="flex items-center justify-between gap-3 border-b border-luxury-gold/20 pb-2">
                             <h4 class="text-xs font-bold text-luxury-gold uppercase tracking-widest">Document Type</h4>
-                            <button type="button" onclick="openSavedListsModal()" id="quotation-save-list-btn" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Save or retrieve the current quotation sheet">
-                                <i class="fa-solid fa-floppy-disk"></i><span>Save</span>
-                            </button>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="openSavedListsModal()" id="quotation-save-list-btn" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Save or retrieve the current quotation sheet">
+                                    <i class="fa-solid fa-floppy-disk"></i><span>Save</span>
+                                </button>
+                                <button type="button" onclick="eraseQuotationSheet()" id="quotation-erase-btn" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-luxury-dark hover:bg-red-500/10 text-luxury-muted hover:text-red-400 border border-luxury-gold/15 hover:border-red-400/30 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Erase all written information in this quotation sheet">
+                                    <i class="fa-solid fa-eraser"></i><span>Erase</span>
+                                </button>
+                            </div>
                         </div>
                         <div class="grid grid-cols-4 gap-1.5 p-1 bg-luxury-dark border border-luxury-gold/10 rounded-xl">
                             <button onclick="setDocType('quotation')" id="doc-type-quote" class="py-2 text-center rounded-lg font-bold transition-all text-luxury-gold bg-slate-900 border border-luxury-gold/20 cursor-pointer text-[10px] sm:text-xs">Quotation</button>
@@ -702,6 +722,7 @@
         let showCostMode = false;
         let showPromoOnly = false;
         let sortNewArrival = false;
+        let showSetsOnly = false;
         const NEW_ARRIVAL_MAX_AGING_DAYS = 100;
         let partnerCommType = 'pct';
         let partnerCommValue = 0;
@@ -722,7 +743,9 @@
         let keyMaterialByCode = {};
         const SAVED_LISTS_API_URL = "https://script.google.com/macros/s/AKfycbwAah-oFIyiSON0jOhjWlL1lzlr0d354bq-1OxMDY2Qz-D-rzAYFaPzTkKDNlnfz1tk/exec";
         const SAVED_LISTS_LOCAL_KEY = "limperial_saved_interest_lists";
+        const CREATED_SETS_LOCAL_KEY = "limperial_created_sets";
         let savedInterestLists = [];
+        let createdSets = [];
         let saveListsRequestToken = 0;
         let isSavingInterestList = false;
         let documentFormStates = {
@@ -1283,7 +1306,8 @@
                 } catch (e) { products = loadFallbackProducts(); }
             } else products = loadFallbackProducts();
 
-            filteredProducts = [...products];
+            createdSets = getLocalCreatedSets();
+            applyCreatedSetsToProducts();
             renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderLocationFilters(); setProductLayoutMode(productLayoutMode);
             const spinner = document.getElementById('loading-spinner');
             if (spinner) spinner.className = "hidden";
@@ -1318,14 +1342,16 @@
                         if (results.data && results.data.length > 0) {
                             products = mapAndCleanCSVData(results.data);
                             applyKeyMaterialToProducts();
-                            localStorage.setItem('limperial_inventory', JSON.stringify(products));
-                            filteredProducts = [...products];
+                            createdSets = getLocalCreatedSets();
+                            applyCreatedSetsToProducts();
+                            localStorage.setItem('limperial_inventory', JSON.stringify(products.filter(product => !product.isSet)));
                             const spinner = document.getElementById('loading-spinner');
                             if (spinner) spinner.classList.add('hidden');
                             renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); handleSearchFilter();
                             if (statusText) statusText.textContent = "Synced";
                             if (syncStatusPill) syncStatusPill.className = "flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5 text-xs";
                             showNotification("Inventory fully updated.", "success");
+                            loadCreatedSets();
                         }
                         
                         const overlay = document.getElementById('initial-loading-overlay');
@@ -1347,6 +1373,356 @@
                     overlay.classList.add('opacity-0', 'pointer-events-none');
                     setTimeout(() => overlay.classList.add('hidden'), 700);
                 }
+            }
+        }
+
+        function getLocalCreatedSets() {
+            try {
+                const raw = localStorage.getItem(CREATED_SETS_LOCAL_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed.filter(set => set && set.id) : [];
+            } catch (e) { return []; }
+        }
+
+        function setLocalCreatedSets(list) {
+            try { localStorage.setItem(CREATED_SETS_LOCAL_KEY, JSON.stringify(Array.isArray(list) ? list : [])); } catch (e) {}
+        }
+
+        function normalizeCreatedSetRecord(record) {
+            if (!record || !record.id) return null;
+            const items = Array.isArray(record.items) ? record.items.map(item => ({
+                itemId: String(item.itemId || item.id || item?.item?.id || '').trim(),
+                quantity: Math.max(1, Number(item.quantity) || 1),
+                discount: Math.max(0, Number(item.discount) || 0),
+                itemSnapshot: cloneForStorage(item.itemSnapshot || item.item || null)
+            })).filter(item => item.itemId || item.itemSnapshot) : [];
+            return {
+                id: String(record.id),
+                name: String(record.name || record.setName || 'Unnamed Set').trim() || 'Unnamed Set',
+                price: Math.max(0, Number(record.price) || 0),
+                photoUrl: String(record.photoUrl || record.imgLink || '').trim(),
+                createdAt: record.createdAt || new Date().toISOString(),
+                status: String(record.status || 'Active'),
+                items
+            };
+        }
+
+        function setProductFromCreatedSet(record) {
+            const normalized = normalizeCreatedSetRecord(record);
+            if (!normalized) return null;
+
+            const componentEntries = normalized.items.map((entry) => {
+                const component = products.find(p => !p.isSet && String(p.id) === String(entry.itemId)) || entry.itemSnapshot || null;
+                if (!component) return null;
+                const brand = getDisplayBrand(component.brand, showCostMode) || String(component.brand || '').trim() || 'Item';
+                const code = String(component.code || component.id || '').trim();
+                const quantity = Math.max(1, Number(entry.quantity) || 1);
+                const location = String(component.location || '').trim();
+                return { component, brand, code, quantity, location };
+            }).filter(Boolean);
+
+            const componentCount = componentEntries.reduce((total, entry) => total + entry.quantity, 0);
+            const componentLines = componentEntries.map(entry => {
+                const itemName = String(entry.component.itemName || entry.component.name || entry.code || 'Item').trim();
+                return `• ${itemName} (${entry.quantity} Pcs)`;
+            });
+            const componentLocations = [...new Set(componentEntries.map(entry => entry.location).filter(Boolean))];
+
+            // Keep a plain-text version for search while the list renderer uses the
+            // structured HTML version to display one component per line.
+            const componentPlainText = componentLines.join(' | ');
+            const componentHtml = componentLines.map(line => `<div class="leading-5">${line}</div>`).join('');
+
+            let componentCost = 0;
+            componentEntries.forEach(entry => {
+                componentCost += getCosting(entry.component) * entry.quantity;
+            });
+
+            return {
+                id: normalized.id,
+                code: normalized.id,
+                brand: 'Limperial Sets',
+                class: 'Set',
+                itemName: normalized.name,
+                description: componentPlainText || `${componentCount} component item${componentCount === 1 ? '' : 's'}`,
+                setComponentHtml: componentHtml,
+                qty: componentCount,
+                availabilityQty: componentCount,
+                price: normalized.price,
+                salesPrice: normalized.price,
+                actualSalesPrice: normalized.price,
+                costing: componentCost,
+                margin: normalized.price - componentCost,
+                location: componentLocations.join(' • ') || 'Created Set',
+                arrivalDate: normalized.createdAt,
+                aging: 'N/A',
+                promotion: '',
+                pricePromotion: '',
+                keyMaterial: '',
+                imgLink: normalized.photoUrl,
+                isSet: true,
+                type: 'set',
+                setId: normalized.id,
+                setName: normalized.name,
+                setPrice: normalized.price,
+                setItems: cloneForStorage(normalized.items),
+                setCreatedAt: normalized.createdAt
+            };
+        }
+
+        function applyCreatedSetsToProducts() {
+            const baseProducts = Array.isArray(products) ? products.filter(product => !product.isSet) : [];
+            const setProducts = (Array.isArray(createdSets) ? createdSets : [])
+                .map(normalizeCreatedSetRecord)
+                .filter(record => record && String(record.status || '').toLowerCase() !== 'delete')
+                .map(setProductFromCreatedSet)
+                .filter(Boolean);
+            products = [...baseProducts, ...setProducts];
+            filteredProducts = [...products];
+        }
+
+        function mergeCreatedSets(records) {
+            const byId = new Map();
+            [...(Array.isArray(createdSets) ? createdSets : []), ...(Array.isArray(records) ? records : [])].forEach(record => {
+                const normalized = normalizeCreatedSetRecord(record);
+                if (!normalized) return;
+                if (String(normalized.status || '').toLowerCase() === 'delete') byId.delete(normalized.id);
+                else byId.set(normalized.id, normalized);
+            });
+            createdSets = [...byId.values()];
+            setLocalCreatedSets(createdSets);
+            return createdSets;
+        }
+
+        async function loadCreatedSets() {
+            createdSets = getLocalCreatedSets();
+            applyCreatedSetsToProducts();
+            if (!SAVED_LISTS_API_URL) return;
+            try {
+                const response = await jsonpRequest({ action: 'listSets' });
+                if (Array.isArray(response.sets)) {
+                    mergeCreatedSets(response.sets);
+                    applyCreatedSetsToProducts();
+                    renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); executeSearchFilter();
+                }
+            } catch (e) {}
+        }
+
+        async function refreshCreatedSetsFromCloud(expectedId = '') {
+            if (!SAVED_LISTS_API_URL) return false;
+            for (let attempt = 0; attempt < 4; attempt++) {
+                try {
+                    const response = await jsonpRequest({ action: 'listSets', _cb: Date.now() });
+                    if (Array.isArray(response.sets)) {
+                        mergeCreatedSets(response.sets);
+                        applyCreatedSetsToProducts();
+                        renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); executeSearchFilter();
+                        if (!expectedId || createdSets.some(set => String(set.id) === String(expectedId))) return true;
+                    }
+                } catch (e) {}
+                await new Promise(resolve => setTimeout(resolve, 800 * (attempt + 1)));
+            }
+            return false;
+        }
+
+        async function uploadCreatedSet(record, photoDataUrl) {
+            if (!SAVED_LISTS_API_URL) return;
+            const payload = { action: 'createSet', record: { ...cloneForStorage(record), photoDataUrl: photoDataUrl || '' } };
+            await fetch(SAVED_LISTS_API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        function buildCreatedSetCartEntry(setRecord) {
+            const record = normalizeCreatedSetRecord(setRecord);
+            if (!record) return null;
+            const componentItems = [];
+            record.items.forEach(entry => {
+                const current = products.find(product => !product.isSet && String(product.id) === String(entry.itemId));
+                const snapshot = entry.itemSnapshot ? cloneForStorage(entry.itemSnapshot) : null;
+                const item = current || snapshot;
+                if (item) componentItems.push({
+                    item,
+                    quantity: Math.max(1, Number(entry.quantity) || 1),
+                    discount: Math.max(0, Number(entry.discount) || 0)
+                });
+            });
+            return {
+                id: record.id,
+                setId: record.id,
+                type: 'set',
+                setName: record.name,
+                setPrice: record.price,
+                setPhoto: record.photoUrl,
+                quantity: 1,
+                discount: 0,
+                customPrice: null,
+                rowHeight: 90,
+                items: componentItems,
+                forcePreorder: false
+            };
+        }
+
+        function getCheckedCartItems() {
+            const selectedItems = [];
+            document.querySelectorAll('.cart-item-checkbox:checked').forEach(cb => {
+                const id = cb.getAttribute('data-id');
+                const cartItem = cart.find(c => c.id === id || (c.type !== 'set' && c.item.id === id));
+                if (cartItem && !selectedItems.includes(cartItem)) selectedItems.push(cartItem);
+            });
+            return selectedItems;
+        }
+
+        function flattenCartItemsForReusableSet(selectedItems) {
+            const flat = [];
+            selectedItems.forEach(entry => {
+                if (entry.type === 'set') {
+                    entry.items.forEach(sub => flat.push({
+                        itemId: sub.item.id,
+                        quantity: Math.max(1, Number(sub.quantity) || 1) * Math.max(1, Number(entry.quantity) || 1),
+                        discount: Math.max(0, Number(sub.discount) || 0),
+                        itemSnapshot: cloneForStorage(sub.item)
+                    }));
+                } else {
+                    flat.push({
+                        itemId: entry.item.id,
+                        quantity: Math.max(1, Number(entry.quantity) || 1),
+                        discount: Math.max(0, Number(entry.discount) || 0),
+                        itemSnapshot: cloneForStorage(entry.item)
+                    });
+                }
+            });
+            const merged = new Map();
+            flat.forEach(entry => {
+                const key = String(entry.itemId || '');
+                if (!key) return;
+                const prior = merged.get(key);
+                if (prior) prior.quantity += entry.quantity;
+                else merged.set(key, { ...entry });
+            });
+            return [...merged.values()];
+        }
+
+        let pendingCreateSetPhotoDataUrl = '';
+
+        function openCreateSetModal() {
+            if (getCheckedCartItems().length < 2) { showNotification('Please tick 2 or more items first.', 'error'); return; }
+            pendingCreateSetPhotoDataUrl = '';
+            const nameInput = document.getElementById('create-set-name-input');
+            const priceInput = document.getElementById('create-set-price-input');
+            const photoInput = document.getElementById('create-set-photo-input');
+            if (nameInput) nameInput.value = '';
+            if (priceInput) priceInput.value = '';
+            if (photoInput) photoInput.value = '';
+            const previewWrap = document.getElementById('create-set-photo-preview-wrap');
+            const preview = document.getElementById('create-set-photo-preview');
+            const photoName = document.getElementById('create-set-photo-name');
+            if (previewWrap) previewWrap.classList.add('hidden');
+            if (preview) preview.src = '';
+            if (photoName) photoName.textContent = '';
+            const saving = document.getElementById('create-set-saving-state');
+            if (saving) saving.classList.add('hidden');
+            const modal = document.getElementById('create-set-modal');
+            const container = document.getElementById('create-set-modal-container');
+            if (modal && container) { modal.classList.remove('pointer-events-none', 'opacity-0'); modal.classList.add('opacity-100'); container.classList.remove('scale-95'); container.classList.add('scale-100'); }
+            setTimeout(() => nameInput?.focus(), 60);
+        }
+
+        function closeCreateSetModal() {
+            const modal = document.getElementById('create-set-modal');
+            const container = document.getElementById('create-set-modal-container');
+            if (modal && container) { modal.classList.add('pointer-events-none', 'opacity-0'); modal.classList.remove('opacity-100'); container.classList.add('scale-95'); container.classList.remove('scale-100'); }
+        }
+
+        function handleCreateSetPhotoChange(event) {
+            const file = event?.target?.files?.[0];
+            if (!file) { pendingCreateSetPhotoDataUrl = ''; return; }
+            const reader = new FileReader();
+            reader.onload = function() {
+                pendingCreateSetPhotoDataUrl = String(reader.result || '');
+                const preview = document.getElementById('create-set-photo-preview');
+                const previewWrap = document.getElementById('create-set-photo-preview-wrap');
+                const photoName = document.getElementById('create-set-photo-name');
+                if (preview) preview.src = pendingCreateSetPhotoDataUrl;
+                if (previewWrap) previewWrap.classList.remove('hidden');
+                if (photoName) photoName.textContent = file.name;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function compressCreatedSetPhoto(dataUrl) {
+            return new Promise(resolve => {
+                if (!dataUrl) return resolve('');
+                const img = new Image();
+                img.onload = function() {
+                    const maxDimension = 1200;
+                    const scale = Math.min(1, maxDimension / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+                    canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.82));
+                };
+                img.onerror = () => resolve(dataUrl);
+                img.src = dataUrl;
+            });
+        }
+
+        async function submitCreateReusableSet() {
+            const selectedItems = getCheckedCartItems();
+            if (selectedItems.length < 2) { showNotification('Please select at least 2 items to create a Set.', 'error'); return; }
+            const name = document.getElementById('create-set-name-input')?.value.trim() || '';
+            const price = parseFloat(document.getElementById('create-set-price-input')?.value || '');
+            if (!name) { showNotification('Please enter a Set Name.', 'error'); return; }
+            if (!Number.isFinite(price) || price < 0) { showNotification('Please enter a valid Set Price.', 'error'); return; }
+            if (!pendingCreateSetPhotoDataUrl) { showNotification('Please upload a Set Photo.', 'error'); return; }
+
+            const submitBtn = document.getElementById('create-set-submit-btn');
+            const saving = document.getElementById('create-set-saving-state');
+            if (submitBtn) submitBtn.disabled = true;
+            if (saving) saving.classList.remove('hidden');
+            try {
+                const photoDataUrl = await compressCreatedSetPhoto(pendingCreateSetPhotoDataUrl);
+                const record = normalizeCreatedSetRecord({
+                    id: 'SET-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7).toUpperCase(),
+                    name,
+                    price,
+                    photoUrl: photoDataUrl,
+                    createdAt: new Date().toISOString(),
+                    status: 'Active',
+                    items: flattenCartItemsForReusableSet(selectedItems)
+                });
+                if (!record.items.length) throw new Error('No valid component items were found.');
+
+                createdSets = [record, ...createdSets.filter(set => String(set.id) !== String(record.id))];
+                setLocalCreatedSets(createdSets);
+                applyCreatedSetsToProducts();
+                renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); executeSearchFilter();
+                closeCreateSetModal();
+                document.querySelectorAll('.cart-item-checkbox:checked').forEach(cb => { cb.checked = false; });
+                onCartCheckboxChange();
+                showNotification(`Created Set “${record.name}”.`, 'success');
+
+                try {
+                    await uploadCreatedSet(record, photoDataUrl);
+                    const synced = await refreshCreatedSetsFromCloud(record.id);
+                    if (!synced) showNotification('Set saved on this device. Cloud sync is still pending.', 'info');
+                } catch (cloudError) {
+                    console.error('Created Set cloud sync failed:', cloudError);
+                    showNotification('Set created locally, but Google Sheet sync failed. Please deploy the Apps Script update.', 'error');
+                }
+            } catch (error) {
+                console.error('Create Set failed:', error);
+                showNotification(error.message || 'Could not create Set.', 'error');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+                if (saving) saving.classList.add('hidden');
             }
         }
 
@@ -1752,6 +2128,24 @@
             executeSearchFilter();
         }
 
+        function toggleSetsOnly() {
+            showSetsOnly = !showSetsOnly;
+            const btn = document.getElementById('set-only-toggle-btn');
+            if (btn) {
+                if (showSetsOnly) {
+                    btn.className = "w-full bg-luxury-gold text-[#0a0f19] border border-luxury-gold rounded-xl px-3 py-1.5 text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-bold uppercase tracking-wider h-[30px]";
+                    btn.innerHTML = '<i class="fa-solid fa-cubes"></i> Sets Only';
+                    showNotification("Showing reusable created sets only.", "info");
+                } else {
+                    btn.className = "w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-3 py-1.5 text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wider h-[30px]";
+                    btn.innerHTML = '<i class="fa-solid fa-cubes text-luxury-gold"></i> Set';
+                    showNotification("Set filter deactivated.", "info");
+                }
+            }
+            currentPage = 1;
+            executeSearchFilter();
+        }
+
         function handleSearchFilter() { clearTimeout(searchTimeout); searchTimeout = setTimeout(executeSearchFilter, 150); }
 
         function executeSearchFilter() {
@@ -1781,7 +2175,8 @@
                 let matchesPromo = true;
                 if (showPromoOnly) matchesPromo = product.promotion && product.promotion.toLowerCase() !== 'n/a' && product.promotion.trim() !== '';
                 const matchesKeyMaterial = !currentKeyMaterialFilter || String(product.keyMaterial || '').trim() === currentKeyMaterialFilter;
-                return matchesSearch && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesKeyMaterial && matchesPromo;
+                const matchesSetsOnly = !showSetsOnly || !!product.isSet;
+                return matchesSearch && matchesSetsOnly && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesKeyMaterial && matchesPromo;
             });
 
             if (sortNewArrival) {
@@ -1803,7 +2198,7 @@
 
         function resetFilters() {
             const searchInput = document.getElementById('search-input'); if (searchInput) searchInput.value = '';
-            currentBrandFilter = ''; currentClassFilter = ''; currentSubclassFilter = ''; currentLocFilter = ''; currentKeyMaterialFilter = ''; showPromoOnly = false; sortNewArrival = false;
+            currentBrandFilter = ''; currentClassFilter = ''; currentSubclassFilter = ''; currentLocFilter = ''; currentKeyMaterialFilter = ''; showPromoOnly = false; sortNewArrival = false; showSetsOnly = false;
             const classSelect = document.getElementById('class-select'); const subclassSelect = document.getElementById('subclass-select'); const brandSelect = document.getElementById('brand-select'); const locSelect = document.getElementById('location-select');
             if (classSelect) classSelect.value = ''; if (subclassSelect) subclassSelect.value = ''; if (brandSelect) brandSelect.value = ''; if (locSelect) locSelect.value = '';
             const keyMaterialSelect = document.getElementById('key-material-select'); if (keyMaterialSelect) keyMaterialSelect.value = '';
@@ -1816,6 +2211,11 @@
             if (newArrivalBtn) {
                 newArrivalBtn.className = "w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-3 py-1.5 text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wider h-[30px]";
                 newArrivalBtn.innerHTML = '<i class="fa-solid fa-sparkles text-luxury-gold"></i> New Arrival';
+            }
+            const setOnlyBtn = document.getElementById('set-only-toggle-btn');
+            if (setOnlyBtn) {
+                setOnlyBtn.className = "w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-3 py-1.5 text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wider h-[30px]";
+                setOnlyBtn.innerHTML = '<i class="fa-solid fa-cubes text-luxury-gold"></i> Set';
             }
             currentPage = 1; renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); executeSearchFilter();
         }
@@ -1848,16 +2248,18 @@
             const activeBatch = filteredProducts.slice(startIdx, endIdx);
 
             activeBatch.forEach(item => {
-                const isInCart = cart.some(c => c.type !== 'set' && c.item.id === item.id);
-                const directImg = resolveGoogleDriveImg(item.imgLink); const displayBrand = getDisplayBrand(item.brand, showCostMode);
+                const isInCart = item.isSet ? cart.some(c => c.type === 'set' && (String(c.setId || c.id) === String(item.setId || item.id))) : cart.some(c => c.type !== 'set' && c.item.id === item.id);
+                const directImg = resolveGoogleDriveImg(item.imgLink); const displayBrand = item.isSet ? 'Set' : getDisplayBrand(item.brand, showCostMode);
                 
                 let qtyColor = "text-emerald-400"; let qtyBadgeBg = "bg-emerald-500/10 border-emerald-500/20";
-                if (item.qty <= 0) { qtyColor = "text-rose-400"; qtyBadgeBg = "bg-rose-500/10 border-rose-500/20"; } 
-                else if (item.qty < 5) { qtyColor = "text-amber-400"; qtyBadgeBg = "bg-amber-500/10 border-amber-500/20"; }
+                if (!item.isSet && item.qty <= 0) { qtyColor = "text-rose-400"; qtyBadgeBg = "bg-rose-500/10 border-rose-500/20"; }
+                else if (!item.isSet && item.qty < 5) { qtyColor = "text-amber-400"; qtyBadgeBg = "bg-amber-500/10 border-amber-500/20"; }
 
-                const hasPromo = item.promotion && item.promotion.toLowerCase() !== 'n/a' && item.promotion.trim() !== '';
+                const hasPromo = !item.isSet && item.promotion && item.promotion.toLowerCase() !== 'n/a' && item.promotion.trim() !== '';
                 let priceHtml = '';
-                if (hasPromo) {
+                if (item.isSet) {
+                    priceHtml = `<div class="flex flex-col sm:items-end items-start leading-none"><span class="text-[7px] sm:text-[9px] uppercase tracking-wider text-luxury-muted block font-bold mb-0.5">Set Price</span><span class="text-sm sm:text-xl font-serif text-luxury-gold font-bold">${formatCurrency(item.setPrice ?? item.price)}</span></div>`;
+                } else if (hasPromo) {
                     const matchPct = item.promotion.match(/(\d+)\s*%/); const pct = matchPct ? parseFloat(matchPct[1]) : 0;
                     let priceAfterPct = item.price;
                     if (pct > 0) priceAfterPct = getActualSalesPrice(item) * (1 - pct / 100);
@@ -1902,8 +2304,8 @@
                                 <div class="flex items-center justify-between mb-1.5">
                                     <span class="text-xs uppercase tracking-widest text-luxury-muted font-extrabold text-[10px] bg-luxury-accent/40 px-2.5 py-0.5 rounded border border-luxury-gold/10">${item.class}</span>
                                     <div class="flex items-center gap-1.5">
-                                        <span class="border px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${qtyBadgeBg} ${qtyColor}">${item.qty > 0 ? `${item.qty} In Stock` : 'Out of Stock'}</span>
-                                        ${isNewArrivalItem(item) ? `<span class="sticker-new px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">New</span>` : ''}
+                                        <span class="border px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${item.isSet ? 'bg-luxury-gold/10 border-luxury-gold/25 text-luxury-gold' : `${qtyBadgeBg} ${qtyColor}`}">${item.isSet ? `${item.availabilityQty ?? item.qty ?? 0} Pcs` : (item.qty > 0 ? `${item.qty} In Stock` : 'Out of Stock')}</span>
+                                        ${!item.isSet && isNewArrivalItem(item) ? `<span class="sticker-new px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">New</span>` : ''}
                                     </div>
                                 </div>
                                 <h4 class="font-serif text-lg text-luxury-text font-semibold leading-snug line-clamp-2 min-h-[3rem] group-hover:text-luxury-gold transition-colors duration-200">${item.itemName}</h4>
@@ -1945,12 +2347,12 @@
                                     <div class="flex flex-wrap items-center gap-1 mb-1.5">
                                         <span class="text-[8px] sm:text-[9px] uppercase tracking-widest text-luxury-muted font-extrabold bg-luxury-accent/40 px-1.5 py-0.5 rounded border border-luxury-gold/10">${item.class}</span>
                                         <span class="text-[8px] sm:text-[9px] uppercase tracking-wider text-luxury-gold font-bold bg-luxury-accent/20 px-1.5 py-0.5 rounded border border-luxury-gold/5">${displayBrand}</span>
-                                        <span class="border px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider ${qtyBadgeBg} ${qtyColor}">${item.qty > 0 ? `${item.qty} In Stock` : 'Out of Stock'}</span>
-                                        ${isNewArrivalItem(item) ? `<span class="sticker-new px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">New</span>` : ''}
+                                        <span class="border px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider ${item.isSet ? 'bg-luxury-gold/10 border-luxury-gold/25 text-luxury-gold' : `${qtyBadgeBg} ${qtyColor}`}">${item.isSet ? `${item.availabilityQty ?? item.qty ?? 0} Pcs` : (item.qty > 0 ? `${item.qty} In Stock` : 'Out of Stock')}</span>
+                                        ${!item.isSet && isNewArrivalItem(item) ? `<span class="sticker-new px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">New</span>` : ''}
                                         ${hasPromo ? `<span class="bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase"><i class="fa-solid fa-gift mr-0.5"></i>${item.promotion}</span>` : ''}
                                     </div>
                                     <h4 class="font-serif text-sm sm:text-base text-luxury-text font-semibold leading-snug line-clamp-2 group-hover:text-luxury-gold transition-colors duration-200">${item.itemName}</h4>
-                                    <div class="text-[10px] sm:text-[11px] text-luxury-soft mt-0.5 line-clamp-1 font-sans">${item.description || ''}</div>
+                                    <div class="text-[10px] sm:text-[11px] text-luxury-soft mt-0.5 font-sans ${item.isSet ? 'whitespace-normal' : 'line-clamp-1'}">${item.isSet ? (item.setComponentHtml || item.description || '') : (item.description || '')}</div>
                                     <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2 text-[9px] sm:text-[10px] text-luxury-muted">
                                         <span class="flex items-center gap-1.5"><i class="fa-solid fa-map-location-dot text-[9px] sm:text-[10px] text-luxury-gold/40"></i>Loc: <strong class="text-luxury-darker">${item.location}</strong></span>
                                         ${showCostMode ? `<span class="flex items-center gap-1.5"><i class="fa-solid fa-hourglass-half text-[9px] sm:text-[10px] text-luxury-gold/40"></i>Aging: <strong class="text-luxury-darker">${item.aging}d</strong></span><span class="flex items-center gap-1.5"><i class="fa-solid fa-calendar-day text-[9px] sm:text-[10px] text-luxury-gold/40"></i>Arrived: <strong class="text-luxury-darker">${item.arrivalDate}</strong></span>` : ''}
@@ -2048,18 +2450,20 @@
             const modal = document.getElementById('product-detail-modal'); const container = document.getElementById('product-detail-modal-container'); if (!modal || !container) return;
             const directImg = resolveGoogleDriveImg(item.imgLink); const modalImg = document.getElementById('detail-modal-image');
             if (modalImg) { if (directImg) { modalImg.src = directImg; modalImg.style.display = 'block'; } else { modalImg.src = ''; modalImg.style.display = 'none'; } }
-            document.getElementById('detail-modal-brand').textContent = getDisplayBrand(item.brand, showCostMode);
+            document.getElementById('detail-modal-brand').textContent = item.isSet ? 'Set' : getDisplayBrand(item.brand, showCostMode);
             document.getElementById('detail-modal-class').textContent = item.class; document.getElementById('detail-modal-title').textContent = item.itemName; document.getElementById('detail-modal-code-badge').textContent = 'SKU: ' + item.code;
             const descContainer = document.getElementById('detail-modal-desc-container'); const descEl = document.getElementById('detail-modal-description');
             if (descContainer && descEl) { if (item.description) { descContainer.style.display = 'flex'; descEl.textContent = item.description; } else descContainer.style.display = 'none'; }
-            document.getElementById('detail-modal-location').textContent = item.location || 'Showroom'; document.getElementById('detail-modal-qty').textContent = item.qty > 0 ? (item.qty + ' In Stock') : 'Out of Stock';
+            document.getElementById('detail-modal-location').textContent = item.location || 'Showroom'; document.getElementById('detail-modal-qty').textContent = item.isSet ? `${item.availabilityQty ?? item.qty ?? 0} Pcs` : (item.qty > 0 ? (item.qty + ' In Stock') : 'Out of Stock');
             const newBadge = document.getElementById('detail-modal-new-badge');
-            if (newBadge) { if (isNewArrivalItem(item)) newBadge.classList.remove('hidden'); else newBadge.classList.add('hidden'); }
+            if (newBadge) { if (!item.isSet && isNewArrivalItem(item)) newBadge.classList.remove('hidden'); else newBadge.classList.add('hidden'); }
             
             const modalPrice = document.getElementById('detail-modal-price');
             if (modalPrice) {
-                const hasPromo = item.promotion && item.promotion.toLowerCase() !== 'n/a' && item.promotion.trim() !== '';
-                if (hasPromo) {
+                const hasPromo = !item.isSet && item.promotion && item.promotion.toLowerCase() !== 'n/a' && item.promotion.trim() !== '';
+                if (item.isSet) {
+                    modalPrice.innerHTML = `<div><span class="text-[9px] uppercase tracking-wider text-luxury-muted block font-bold">Set Price</span><span class="text-2xl font-serif text-luxury-gold font-bold">${formatCurrency(item.setPrice ?? item.price)}</span></div>`;
+                } else if (hasPromo) {
                     const matchPct = item.promotion.match(/(\d+)\s*%/); const pct = matchPct ? parseFloat(matchPct[1]) : 0;
                     let priceAfterPct = item.price; if (pct > 0) priceAfterPct = getActualSalesPrice(item) * (1 - pct / 100); else if (item.pricePromotion) priceAfterPct = parseFloat(String(item.pricePromotion).replace(/[^0-9.-]+/g, "")) || 0;
                     modalPrice.innerHTML = `<div class="flex flex-col"><div class="flex items-center space-x-2"><span class="text-sm text-luxury-muted line-through">${formatCurrency(getActualSalesPrice(item))}</span></div><div class="flex items-baseline space-x-2 mt-0.5"><span class="text-2xl font-serif text-amber-500 font-bold">${formatCurrency(priceAfterPct)}</span><span class="text-xs font-semibold text-amber-500">(${pct > 0 ? pct + '% OFF' : 'Promo Price'})</span></div></div>`;
@@ -2073,7 +2477,7 @@
             
             const actionCont = document.getElementById('detail-modal-action-btn-container');
             if (actionCont) {
-                const isInCart = cart.some(c => c.type !== 'set' && c.item.id === item.id); actionCont.innerHTML = '';
+                const isInCart = item.isSet ? cart.some(c => c.type === 'set' && String(c.setId || c.id) === String(item.setId || item.id)) : cart.some(c => c.type !== 'set' && c.item.id === item.id); actionCont.innerHTML = '';
                 const btn = document.createElement('button'); btn.className = `px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${isInCart ? 'bg-luxury-gold text-[#0a0f19] hover:bg-luxury-goldHover' : 'bg-luxury-accent text-luxury-gold border border-luxury-gold/30 hover:bg-luxury-gold/10'}`;
                 btn.innerHTML = isInCart ? '<i class="fa-solid fa-check mr-1.5"></i>Interested' : 'Select';
                 btn.addEventListener('click', () => { toggleCartSelection(item.id); closeProductDetailModal(); }); actionCont.appendChild(btn);
@@ -2089,9 +2493,35 @@
         function toggleCartSelection(itemId) {
             const productObj = products.find(p => p.id === itemId);
             if (!productObj) return;
+
+            if (productObj.isSet) {
+                const existingIndex = cart.findIndex(c => c.type === 'set' && String(c.setId || c.id) === String(productObj.setId || productObj.id));
+                if (existingIndex > -1) {
+                    cart.splice(existingIndex, 1);
+                    showNotification(`Removed Set “${productObj.itemName}” from List.`, 'info');
+                } else {
+                    const setRecord = createdSets.find(set => String(set.id) === String(productObj.setId || productObj.id));
+                    const setEntry = buildCreatedSetCartEntry(setRecord || {
+                        id: productObj.id,
+                        name: productObj.itemName,
+                        price: productObj.setPrice ?? productObj.price,
+                        photoUrl: productObj.imgLink,
+                        items: productObj.setItems || []
+                    });
+                    if (!setEntry || !setEntry.items.length) {
+                        showNotification('This Set has no valid component items.', 'error');
+                        return;
+                    }
+                    cart.push(setEntry);
+                    showNotification(`Added Set “${productObj.itemName}” to Interest List.`, 'success');
+                }
+                updateCartVisuals(); renderProductGrid();
+                return;
+            }
+
             const existingIndex = cart.findIndex(c => c.type !== 'set' && c.item.id === productObj.id);
             const activeBrand = getDisplayBrand(productObj.brand, showCostMode);
-            if (existingIndex > -1) { cart.splice(existingIndex, 1); showNotification("Removed " + activeBrand + " " + productObj.code + " from List.", "info"); } 
+            if (existingIndex > -1) { cart.splice(existingIndex, 1); showNotification("Removed " + activeBrand + " " + productObj.code + " from List.", "info"); }
             else {
                 let initialDiscount = 0; const hasPromo = productObj.promotion && productObj.promotion.toLowerCase() !== 'n/a' && productObj.promotion.trim() !== '';
                 if (hasPromo) { const matchPct = productObj.promotion.match(/(\d+)\s*%/); if (matchPct) initialDiscount = parseFloat(matchPct[1]); else if (getActualSalesPrice(productObj) > 0 && productObj.price > 0 && productObj.price < getActualSalesPrice(productObj)) initialDiscount = Math.round((1 - (productObj.price / getActualSalesPrice(productObj))) * 100); }
@@ -2126,7 +2556,7 @@
         }
 
         function removeCartItem(id) { const index = cart.findIndex(c => c.id === id || (c.type !== 'set' && c.item.id === id)); if (index > -1) { cart.splice(index, 1); showNotification("Item removed.", "info"); } updateCartVisuals(); renderProductGrid(); }
-        function onCartCheckboxChange() { const checkedCount = document.querySelectorAll('.cart-item-checkbox:checked').length; const bundleBtn = document.getElementById('cart-bundle-btn'); const mobileBundleBtn = document.getElementById('mobile-cart-bundle-btn'); if (bundleBtn) bundleBtn.classList.toggle('hidden', checkedCount < 2); if (mobileBundleBtn) mobileBundleBtn.classList.toggle('hidden', checkedCount < 2); }
+        function onCartCheckboxChange() { const checkedCount = document.querySelectorAll('.cart-item-checkbox:checked').length; const bundleBtn = document.getElementById('cart-bundle-btn'); const createBtn = document.getElementById('create-set-btn'); const mobileBundleBtn = document.getElementById('mobile-cart-bundle-btn'); const mobileCreateBtn = document.getElementById('mobile-create-set-btn'); if (bundleBtn) bundleBtn.classList.toggle('hidden', checkedCount < 2); if (createBtn) createBtn.classList.toggle('hidden', checkedCount < 2); if (mobileBundleBtn) mobileBundleBtn.classList.toggle('hidden', checkedCount < 2); if (mobileCreateBtn) mobileCreateBtn.classList.toggle('hidden', checkedCount < 2); }
         function promptCreateSet() { editingSetId = null; document.getElementById('set-name-input').value = ''; document.getElementById('set-name-modal-title').textContent = "Name Your Set Bundle"; document.getElementById('set-name-modal').classList.remove('pointer-events-none', 'opacity-0'); document.getElementById('set-name-modal').classList.add('opacity-100'); document.getElementById('set-name-modal-container').classList.remove('scale-95'); document.getElementById('set-name-modal-container').classList.add('scale-100'); }
         function openRenameSetModal(setId) { const targetSet = cart.find(c => c.id === setId); if (!targetSet) return; editingSetId = setId; document.getElementById('set-name-input').value = targetSet.setName; document.getElementById('set-name-modal-title').textContent = "Rename Set Bundle"; document.getElementById('set-name-modal').classList.remove('pointer-events-none', 'opacity-0'); document.getElementById('set-name-modal').classList.add('opacity-100'); document.getElementById('set-name-modal-container').classList.remove('scale-95'); document.getElementById('set-name-modal-container').classList.add('scale-100'); }
         function closeSetNameModal() { document.getElementById('set-name-modal').classList.add('pointer-events-none', 'opacity-0'); document.getElementById('set-name-modal').classList.remove('opacity-100'); document.getElementById('set-name-modal-container').classList.add('scale-95'); document.getElementById('set-name-modal-container').classList.remove('scale-100'); editingSetId = null; }
@@ -2150,12 +2580,19 @@
             cart.splice(setIndex, 1); showNotification(`Set unbundled.`, "info"); updateCartVisuals(); renderProductGrid();
         }
 
+        function getSetBasePrice(cartItem, componentFallback = 0) {
+            if (cartItem && cartItem.customPrice !== null && Number.isFinite(Number(cartItem.customPrice))) return Number(cartItem.customPrice);
+            const savedSetPrice = Number(cartItem?.setPrice);
+            if (Number.isFinite(savedSetPrice) && savedSetPrice >= 0) return savedSetPrice;
+            return Number(componentFallback) || 0;
+        }
+
         function updateItemPriceDisplays(id) {
             const cartItem = cart.find(c => c.id === id || (c.type !== 'set' && c.item.id === id)); if (!cartItem) return;
             let baseActualPrice = 0; let calculatedBasePriceForSet = 0; let hasPromo = false;
             if (cartItem.type === 'set') {
                 cartItem.items.forEach(sub => { calculatedBasePriceForSet += getActualSalesPrice(sub.item) * sub.quantity; if (sub.item.promotion && sub.item.promotion.toLowerCase() !== 'n/a' && sub.item.promotion.trim() !== '') hasPromo = true; });
-                baseActualPrice = cartItem.customPrice !== null ? cartItem.customPrice : calculatedBasePriceForSet; baseActualPrice *= cartItem.quantity;
+                baseActualPrice = getSetBasePrice(cartItem, calculatedBasePriceForSet); baseActualPrice *= cartItem.quantity;
             } else {
                 const item = cartItem.item; let unitPrice = cartItem.customPrice !== null ? cartItem.customPrice : getActualSalesPrice(item);
                 baseActualPrice = unitPrice * cartItem.quantity; hasPromo = item.promotion && item.promotion.toLowerCase() !== 'n/a' && item.promotion.trim() !== '';
@@ -2194,7 +2631,7 @@
 
         function renderDesktopCartItems() {
             const container = document.getElementById('desktop-cart-items'); if (!container) return; container.innerHTML = '';
-            if (cart.length === 0) { container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center py-20 text-luxury-muted"><i class="fa-solid fa-clipboard-list text-3xl text-luxury-gold/15 mb-3 animate-pulse"></i><p class="text-sm">No items selected.</p></div>`; document.getElementById('cart-bundle-btn')?.classList.add('hidden'); return; }
+            if (cart.length === 0) { container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center py-20 text-luxury-muted"><i class="fa-solid fa-clipboard-list text-3xl text-luxury-gold/15 mb-3 animate-pulse"></i><p class="text-sm">No items selected.</p></div>`; document.getElementById('cart-bundle-btn')?.classList.add('hidden'); document.getElementById('create-set-btn')?.classList.add('hidden'); return; }
             let stockTracker = {};
             cart.forEach(cartItem => {
                 const row = document.createElement('div'); const uniqueId = cartItem.type === 'set' ? cartItem.id : cartItem.item.id;
@@ -2203,12 +2640,14 @@
                     const hasSetPromo = cartItem.items.some(sub => sub.item.promotion && sub.item.promotion.toLowerCase() !== 'n/a' && sub.item.promotion.trim() !== ''); const setDiscount = cartItem.discount || 0;
                     let calculatedBasePrice = 0; let setTotalCost = 0;
                     cartItem.items.forEach(sub => { calculatedBasePrice += getActualSalesPrice(sub.item) * sub.quantity; setTotalCost += getCosting(sub.item) * sub.quantity; });
-                    let setBasePrice = cartItem.customPrice !== null ? cartItem.customPrice : calculatedBasePrice;
+                    let setBasePrice = getSetBasePrice(cartItem, calculatedBasePrice);
                     const setTotalOriginalPrice = setBasePrice * cartItem.quantity; const setFinalPrice = setTotalOriginalPrice * (1 - setDiscount / 100);
                     const lineTotalCost = setTotalCost * cartItem.quantity; const lineMargin = setFinalPrice - lineTotalCost;
 
-                    let imgCollageHtml = ''; cartItem.items.slice(0, 3).forEach(sub => { const directSubImg = resolveGoogleDriveImg(sub.item.imgLink); if (directSubImg) imgCollageHtml += `<img src="${directSubImg}" class="w-6 h-6 object-contain rounded bg-white border border-luxury-gold/10" onerror="this.style.display='none'">`; });
-                    if (cartItem.items.length > 3) imgCollageHtml += `<span class="text-[8px] text-luxury-gold font-bold self-center">+${cartItem.items.length - 3}</span>`;
+                    const directSetImg = resolveGoogleDriveImg(cartItem.setPhoto);
+                    let imgCollageHtml = directSetImg ? `<img src="${directSetImg}" class="w-12 h-12 object-contain rounded-lg bg-white border border-luxury-gold/15" onerror="this.style.display='none'">` : '';
+                    if (!directSetImg) cartItem.items.slice(0, 3).forEach(sub => { const directSubImg = resolveGoogleDriveImg(sub.item.imgLink); if (directSubImg) imgCollageHtml += `<img src="${directSubImg}" class="w-6 h-6 object-contain rounded bg-white border border-luxury-gold/10" onerror="this.style.display='none'">`; });
+                    if (!directSetImg && cartItem.items.length > 3) imgCollageHtml += `<span class="text-[8px] text-luxury-gold font-bold self-center">+${cartItem.items.length - 3}</span>`;
                     
                     let securedMarkupDetailsSet = showCostMode ? `<div class="mt-2 mb-1 flex items-center gap-2 text-[9px] font-mono text-luxury-muted bg-luxury-dark/40 p-1.5 rounded w-fit border border-luxury-gold/5"><span>Cost: ${formatCurrency(lineTotalCost)}</span><span>|</span><span class="${lineMargin >= 0 ? 'text-emerald-400' : 'text-rose-400'}">Margin: ${formatCurrency(lineMargin)}</span></div>` : '';
 
@@ -2325,7 +2764,7 @@
 
         function renderMobileCartItems() {
             const container = document.getElementById('mobile-cart-items'); if (!container) return; container.innerHTML = '';
-            if (cart.length === 0) { container.innerHTML = `<div class="flex flex-col items-center justify-center text-center py-16 text-luxury-muted"><i class="fa-solid fa-clipboard-list text-3xl text-luxury-gold/15 mb-2"></i><p class="text-sm">Empty Interest List</p></div>`; document.getElementById('mobile-cart-bundle-btn')?.classList.add('hidden'); return; }
+            if (cart.length === 0) { container.innerHTML = `<div class="flex flex-col items-center justify-center text-center py-16 text-luxury-muted"><i class="fa-solid fa-clipboard-list text-3xl text-luxury-gold/15 mb-2"></i><p class="text-sm">Empty Interest List</p></div>`; document.getElementById('mobile-cart-bundle-btn')?.classList.add('hidden'); document.getElementById('mobile-create-set-btn')?.classList.add('hidden'); return; }
             let stockTracker = {};
             cart.forEach(cartItem => {
                 const row = document.createElement('div'); const uniqueId = cartItem.type === 'set' ? cartItem.id : cartItem.item.id;
@@ -2335,16 +2774,18 @@
                     const hasSetPromo = cartItem.items.some(sub => sub.item.promotion && sub.item.promotion.toLowerCase() !== 'n/a' && sub.item.promotion.trim() !== ''); const setDiscount = cartItem.discount || 0;
                     let calculatedBasePrice = 0; let setTotalCost = 0;
                     cartItem.items.forEach(sub => { calculatedBasePrice += getActualSalesPrice(sub.item) * sub.quantity; setTotalCost += getCosting(sub.item) * sub.quantity; });
-                    let setBasePrice = cartItem.customPrice !== null ? cartItem.customPrice : calculatedBasePrice;
+                    let setBasePrice = getSetBasePrice(cartItem, calculatedBasePrice);
                     const setTotalOriginalPrice = setBasePrice * cartItem.quantity; const setFinalPrice = setTotalOriginalPrice * (1 - setDiscount / 100);
                     const lineTotalCost = setTotalCost * cartItem.quantity; const lineMargin = setFinalPrice - lineTotalCost;
 
                     let securedMarkupDetailsSet = showCostMode ? `<div class="mt-2 mb-1 flex items-center gap-2 text-[9px] font-mono text-luxury-muted bg-luxury-dark/40 p-1.5 rounded w-fit border border-luxury-gold/5"><span>Cost: ${formatCurrency(lineTotalCost)}</span><span>|</span><span class="${lineMargin >= 0 ? 'text-emerald-400' : 'text-rose-400'}">Margin: ${formatCurrency(lineMargin)}</span></div>` : '';
+                    const directSetImgMobile = resolveGoogleDriveImg(cartItem.setPhoto);
 
                     row.innerHTML = `
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-start gap-3 flex-1 min-w-0">
                                 <input type="checkbox" class="cart-item-checkbox mt-1 border-luxury-gold rounded text-luxury-gold focus:ring-luxury-gold/50 cursor-pointer h-4 w-4 bg-luxury-dark shrink-0 hidden md:block" data-id="${uniqueId}" onchange="onCartCheckboxChange()">
+                                ${directSetImgMobile ? `<img src="${directSetImgMobile}" class="w-12 h-12 object-contain rounded-lg bg-white shrink-0 border border-luxury-gold/15" onerror="this.style.display='none'">` : ''}
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center space-x-1"><i class="fa-solid fa-cubes text-luxury-gold text-[10px]"></i><span class="text-[8px] uppercase tracking-wider text-luxury-gold font-bold">Set Bundle</span></div>
                                     <h5 class="text-xs font-serif font-semibold text-luxury-darker leading-snug line-clamp-2">${cartItem.setName}</h5>
@@ -2455,7 +2896,7 @@
             const originalSubtotal = cart.reduce((sum, cartItem) => {
                 if (cartItem.type === 'set') {
                     let calculatedBasePrice = cartItem.items.reduce((s, sub) => s + (getActualSalesPrice(sub.item) * sub.quantity), 0);
-                    let setBasePrice = cartItem.customPrice !== null ? cartItem.customPrice : calculatedBasePrice;
+                    let setBasePrice = getSetBasePrice(cartItem, calculatedBasePrice);
                     return sum + (setBasePrice * cartItem.quantity);
                 } else {
                     let unitPrice = cartItem.customPrice !== null ? cartItem.customPrice : getActualSalesPrice(cartItem.item);
@@ -2467,7 +2908,7 @@
                 const itemDiscPct = cartItem.discount || 0;
                 if (cartItem.type === 'set') {
                     let calculatedBasePrice = cartItem.items.reduce((s, sub) => s + (getActualSalesPrice(sub.item) * sub.quantity), 0);
-                    let setBasePrice = cartItem.customPrice !== null ? cartItem.customPrice : calculatedBasePrice;
+                    let setBasePrice = getSetBasePrice(cartItem, calculatedBasePrice);
                     return sum + (setBasePrice * cartItem.quantity * (itemDiscPct / 100));
                 } else {
                     let unitPrice = cartItem.customPrice !== null ? cartItem.customPrice : getActualSalesPrice(cartItem.item);
@@ -2514,7 +2955,7 @@
             const originalSubtotal = cart.reduce((sum, cartItem) => {
                 if (cartItem.type === 'set') {
                     let calculatedBasePrice = cartItem.items.reduce((s, sub) => s + (getActualSalesPrice(sub.item) * sub.quantity), 0);
-                    let setBasePrice = cartItem.customPrice !== null ? cartItem.customPrice : calculatedBasePrice;
+                    let setBasePrice = getSetBasePrice(cartItem, calculatedBasePrice);
                     return sum + (setBasePrice * cartItem.quantity);
                 } else {
                     let unitPrice = cartItem.customPrice !== null ? cartItem.customPrice : getActualSalesPrice(cartItem.item);
@@ -2526,7 +2967,7 @@
                 const itemDiscPct = cartItem.discount || 0;
                 if (cartItem.type === 'set') {
                     let calculatedBasePrice = cartItem.items.reduce((s, sub) => s + (getActualSalesPrice(sub.item) * sub.quantity), 0);
-                    let setBasePrice = cartItem.customPrice !== null ? cartItem.customPrice : calculatedBasePrice;
+                    let setBasePrice = getSetBasePrice(cartItem, calculatedBasePrice);
                     return sum + (setBasePrice * cartItem.quantity * (itemDiscPct / 100));
                 } else {
                     let unitPrice = cartItem.customPrice !== null ? cartItem.customPrice : getActualSalesPrice(cartItem.item);
@@ -2964,6 +3405,8 @@
             setDocType(restoredDocType);
             isRestoringSavedDocumentState = false;
 
+            renderQuoteItemsNotesForm();
+            restoreDocumentFormState(documentType);
             updateQuotationPreview(); closeSavedListsModal();
             showNotification(`"${selected.name || 'Saved List'}" retrieved.`, "success");
         }
@@ -2991,6 +3434,66 @@
             else { drawer.classList.add('pointer-events-none', 'opacity-0'); drawer.classList.remove('opacity-100'); content.classList.add('translate-y-full'); }
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>\"']/g, ch => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '\"': '&quot;',
+                "'": '&#39;'
+            })[ch]);
+        }
+
+        function renderQuoteItemsNotesForm() {
+            const notesForm = document.getElementById('quote-items-notes-form');
+            if (!notesForm) return;
+
+            const noteMap = {};
+            notesForm.querySelectorAll('.quote-item-note-input').forEach(input => {
+                noteMap[input.getAttribute('data-item-id')] = input.value || '';
+            });
+            notesForm.innerHTML = '';
+
+            cart.forEach((c, idx) => {
+                const itemId = c.id || (c.item ? c.item.id : idx);
+                const itemName = c.type === 'set' ? `${c.setName}` : (c.item?.itemName || '');
+                const itemCode = c.type === 'set' ? 'SET' : (c.item?.code || '');
+                const safeItemId = escapeHtml(itemId);
+                const safeItemName = escapeHtml(itemName);
+                const safeItemCode = escapeHtml(itemCode);
+                const safeNote = escapeHtml(noteMap[itemId] || '');
+                notesForm.insertAdjacentHTML('beforeend', `<div class="space-y-1 bg-luxury-dark/40 p-2.5 rounded-lg border border-luxury-gold/5"><div class="flex justify-between text-[11px] font-semibold"><span class="text-luxury-gold">${safeItemCode}</span><span class="text-luxury-muted truncate max-w-[150px]">${safeItemName}</span></div><input type="text" data-item-id="${safeItemId}" class="quote-item-note-input w-full bg-luxury-dark border border-luxury-gold/10 rounded px-2.5 py-1 text-xs text-luxury-text focus:border-luxury-gold outline-none" placeholder="e.g. Living Room" value="${safeNote}" oninput="updateQuotationPreview()"></div>`);
+            });
+        }
+
+        function eraseQuotationSheet() {
+            const modal = document.getElementById('share-modal');
+            if (!modal) return;
+
+            modal.querySelectorAll('input[id], textarea[id]').forEach(el => {
+                const inputType = String(el.type || '').toLowerCase();
+                if (!['button', 'submit', 'reset', 'file', 'checkbox', 'radio'].includes(inputType)) el.value = '';
+            });
+            modal.querySelectorAll('.quote-item-note-input').forEach(input => input.value = '');
+
+            const state = { initialized: true, fields: {}, itemNotes: {}, showPreOrderOnDoc: !!showPreOrderOnDoc };
+            modal.querySelectorAll('input[id], textarea[id], select[id]').forEach(el => {
+                if (!el || !el.id) return;
+                const inputType = String(el.type || '').toLowerCase();
+                if (['button', 'submit', 'reset', 'file'].includes(inputType)) return;
+                state.fields[el.id] = {
+                    type: inputType,
+                    value: typeof el.value === 'string' ? el.value : '',
+                    checked: inputType === 'checkbox' || inputType === 'radio' ? !!el.checked : undefined
+                };
+            });
+            documentFormStates[documentType] = state;
+
+            renderQuoteItemsNotesForm();
+            updateQuotationPreview();
+            showNotification('Quotation sheet information erased.', 'success');
+        }
+
         function openShareModal() {
             // Allow opening quote modal even with 0 items so user can view template or retrieve saved lists
             const dateInputEl = document.getElementById('quote-date-input');
@@ -2998,15 +3501,7 @@
                 const dateObj = new Date(); const day = String(dateObj.getDate()).padStart(2, '0'); const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                 dateInputEl.value = `${day} / ${monthNames[dateObj.getMonth()]} / ${dateObj.getFullYear()}`;
             }
-            const notesForm = document.getElementById('quote-items-notes-form');
-            if (notesForm) {
-                const noteMap = {}; notesForm.querySelectorAll('.quote-item-note-input').forEach(i => noteMap[i.getAttribute('data-item-id')] = i.value);
-                notesForm.innerHTML = '';
-                cart.forEach((c, idx) => {
-                    const itemId = c.id || (c.item ? c.item.id : idx); const itemName = c.type === 'set' ? `${c.setName}` : c.item.itemName; const itemCode = c.type === 'set' ? 'SET' : c.item.code;
-                    notesForm.innerHTML += `<div class="space-y-1 bg-luxury-dark/40 p-2.5 rounded-lg border border-luxury-gold/5"><div class="flex justify-between text-[11px] font-semibold"><span class="text-luxury-gold">${itemCode}</span><span class="text-luxury-muted truncate max-w-[150px]">${itemName}</span></div><input type="text" data-item-id="${itemId}" class="quote-item-note-input w-full bg-luxury-dark border border-luxury-gold/10 rounded px-2.5 py-1 text-xs text-luxury-text focus:border-luxury-gold outline-none" placeholder="e.g. Living Room" value="${noteMap[itemId] || ''}" oninput="updateQuotationPreview()"></div>`;
-                });
-            }
+            renderQuoteItemsNotesForm();
             updateQuotationPreview();
             const modal = document.getElementById('share-modal'); const container = document.getElementById('share-modal-container');
             if (modal && container) { modal.classList.remove('pointer-events-none', 'opacity-0'); modal.classList.add('opacity-100'); container.classList.remove('scale-95'); container.classList.add('scale-100'); }
@@ -3056,7 +3551,7 @@
                     const setDiscount = activeBatchPct > 0 ? activeBatchPct + (cartItem.discount || 0) : (cartItem.discount || 0);
                     let calculatedBasePrice = 0; let setTotalCost = 0;
                     cartItem.items.forEach(sub => { calculatedBasePrice += getActualSalesPrice(sub.item) * sub.quantity; setTotalCost += getCosting(sub.item) * sub.quantity; });
-                    const setBasePrice = cartItem.customPrice !== null ? cartItem.customPrice : calculatedBasePrice;
+                    const setBasePrice = getSetBasePrice(cartItem, calculatedBasePrice);
                     const setTotalOriginalPrice = setBasePrice * cartItem.quantity; const lineFinalPrice = setTotalOriginalPrice * (1 - setDiscount / 100);
                     const discountValueAmount = setTotalOriginalPrice * (setDiscount / 100);
                     const lineTotalCost = setTotalCost * cartItem.quantity; const lineMargin = lineFinalPrice - lineTotalCost;
@@ -3152,8 +3647,8 @@
                         tableRowsHtml += `
                             <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: middle; height: ${cartItem.rowHeight || 70}px;">
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: center; font-weight: 600; color: #000; font-size: 11px; position: relative;">${idx + 1}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
-                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-size: 11px; line-height: 1.4; word-break: break-word; overflow: hidden; position: relative;"><combinedNameAndBrand}${preorderHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
-                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-size: 11px; position: relative;">${descriptionHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-size: 11px; line-height: 1.4; word-break: break-word; overflow-wrap: anywhere; white-space: normal; overflow: visible; vertical-align: top; position: relative;">${combinedNameAndBrand}${preorderHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-size: 11px; line-height: 1.4; word-break: break-word; overflow-wrap: anywhere; white-space: normal; overflow: visible; vertical-align: top; position: relative;">${descriptionHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: center; font-weight: 600; color: #000; font-size: 12px; white-space: nowrap; position: relative;">${cartItem.quantity} pcs<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 4px; text-align: center; position: relative; height: ${cartItem.rowHeight || 70}px; vertical-align: middle;">${imgColHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-size: 11px; position: relative;">${noteHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
@@ -3266,7 +3761,7 @@
                         </th>
                         <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-size: 11px; position: relative; width: 200px;">
                             ពិពណ៌នាលម្អិត
-                            <div style="font-size: 9px; font-weight: normal;">Discription</div>
+                            <div style="font-size: 9px; font-weight: normal;">Description</div>
                         </th>
                         <th style="border: 1px solid #cbd5e1; padding: 6px 4px; text-align: center; font-size: 11px; position: relative; width: 60px;">
                             ចំនួន
@@ -3606,6 +4101,10 @@
             const dateValue = (document.getElementById('quote-date-input')?.value || '').trim().replace(/\s*[/]\s*/g, '-').replace(/[^a-z0-9_-]+/gi, '_') || new Date().toISOString().slice(0,10);
             const fileName = `${safeCustomer}_${docTypeLabel}_${dateValue}.png`;
             const mobile = isMobileDevice();
+            const isWideDocument = documentType === 'inventory' || documentType === 'delivery_order';
+            const exportWidth = isWideDocument
+                ? Math.max(760, Math.ceil(previewPaper.scrollWidth || previewPaper.getBoundingClientRect().width || 760))
+                : 760;
 
             let exportHost = null;
             let exportPaper = null;
@@ -3623,7 +4122,7 @@
                 exportHost.style.position = 'fixed';
                 exportHost.style.left = '-100000px';
                 exportHost.style.top = '0';
-                exportHost.style.width = '760px';
+                exportHost.style.width = `${exportWidth}px`;
                 exportHost.style.display = 'block';
                 exportHost.style.visibility = 'visible';
                 exportHost.style.pointerEvents = 'none';
@@ -3633,9 +4132,10 @@
 
                 exportPaper = previewPaper.cloneNode(true);
                 exportPaper.removeAttribute('id');
-                exportPaper.style.width = '760px';
-                exportPaper.style.minWidth = '760px';
-                exportPaper.style.maxWidth = '760px';
+                exportPaper.setAttribute('data-export-paper', 'true');
+                exportPaper.style.width = `${exportWidth}px`;
+                exportPaper.style.minWidth = `${exportWidth}px`;
+                exportPaper.style.maxWidth = `${exportWidth}px`;
                 exportPaper.style.margin = '0';
                 exportPaper.style.boxShadow = 'none';
                 exportPaper.style.position = 'relative';
@@ -3660,17 +4160,17 @@
                     allowTaint: false,
                     backgroundColor: '#ffffff',
                     logging: false,
-                    width: 760,
-                    windowWidth: 760,
+                    width: exportWidth,
+                    windowWidth: exportWidth,
                     onclone: clonedDocument => {
                         clonedDocument.querySelectorAll('.col-resizer-handle, .row-resizer-handle, .table-vertical-resizer-handle').forEach(el => el.remove());
-                        const clonedPaper = Array.from(clonedDocument.querySelectorAll('[id="quotation-live-paper"]'))[0];
+                        const clonedPaper = Array.from(clonedDocument.querySelectorAll('[data-export-paper="true"]'))[0];
                         if (clonedPaper) {
-                            clonedPaper.style.width = '760px';
-                            clonedPaper.style.minWidth = '760px';
-                            clonedPaper.style.maxWidth = '760px';
+                            clonedPaper.style.width = `${exportWidth}px`;
+                            clonedPaper.style.minWidth = `${exportWidth}px`;
+                            clonedPaper.style.maxWidth = `${exportWidth}px`;
                             clonedPaper.style.boxShadow = 'none';
-                            clonedPaper.style.margin = '0';
+                            clonedPaper.style.margin = '0 auto';
                         }
                     }
                 });
