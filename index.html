@@ -1248,15 +1248,18 @@
             const normalizeCode = value => String(value || '').trim().toLowerCase();
             products.forEach(product => {
                 const code = normalizeCode(product.code);
-                product.keyMaterial = code && Object.prototype.hasOwnProperty.call(keyMaterialByCode, code)
-                    ? String(keyMaterialByCode[code] || '').trim()
-                    : '';
+                if (code && Object.prototype.hasOwnProperty.call(keyMaterialByCode, code)) {
+                    product.keyMaterial = String(keyMaterialByCode[code] || '').trim();
+                } else if (product.keyMaterial == null) {
+                    product.keyMaterial = '';
+                }
             });
         }
 
         async function fetchKeyMaterialData() {
             try {
-                if (Array.isArray(products)) products.forEach(product => { product.keyMaterial = ''; });
+                // Keep any Key Material already loaded from the main inventory feed.
+                // The dedicated source below remains as an optional refresh/override.
                 renderKeyMaterialFilters();
 
                 const response = await fetchWithBackoff(KEY_MATERIAL_CSV_URL);
@@ -1278,7 +1281,7 @@
                         rows.forEach(row => {
                             const code = String(row[codeKey] || '').trim().toLowerCase();
                             const material = String(row[keyMaterialKey] || '').trim();
-                            if (code) nextMap[code] = material;
+                            if (code && material) nextMap[code] = material;
                         });
                         keyMaterialByCode = nextMap;
                         applyKeyMaterialToProducts();
@@ -1734,6 +1737,10 @@
                 let codeKey = findKey(['code', 'sku', 'productcode', 'itemcode']);
                 let brandKey = findKey(['brand', 'vendor', 'supplier', 'manufacturer']);
                 let classKey = findKey(['class']);
+                let keyMaterialKey = keys.find(k => {
+                    const normalized = String(k || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return normalized === 'keymaterial' || normalized.includes('keymaterial');
+                });
                 let nameKey = findKey(['itemname', 'productname', 'name', 'item']);
                 let descKey = findKey(['description', 'dimensions', 'size', 'specs']);
                 let qtyKey = findKey(['qty', 'quantity', 'stock', 'currentqty']);
@@ -1769,6 +1776,7 @@
                 let aging = (agingKey ? row[agingKey] : null) || (keys.length > 14 ? row[keys.at(14)] : null) || 'N/A';
                 let promotion = row[promoKey] ? String(row[promoKey]).trim() : '';
                 let pricePromotion = row[pricePromoKey] ? String(row[pricePromoKey]).trim() : '';
+                let keyMaterial = (keyMaterialKey ? row[keyMaterialKey] : null) || (keys.length > 19 ? row[keys.at(19)] : null) || '';
                 let imgLink = (imgKey ? row[imgKey] : null) || (photoKey ? row[photoKey] : null) || (keys.length > 4 ? row[keys.at(4)] : null) || (keys.length > 3 ? row[keys.at(3)] : null) || '';
 
                 let parsedPrice = parseFloat(String(price).replace(/[^0-9.-]+/g, "")) || 0;
@@ -1816,7 +1824,7 @@
                     price: activePrice, salesPrice: parsedSalesPrice, actualSalesPrice: parsedPrice, costing: parsedCosting,
                     margin: activeMargin, location: String(location).trim(), arrivalDate: String(arrivalDate).trim(),
                     aging: String(aging).trim(), promotion: cleanPromotion, pricePromotion: cleanPricePromotion,
-                    keyMaterial: '',
+                    keyMaterial: String(keyMaterial).trim(),
                     imgLink: String(imgLink).trim()
                 };
             }).filter(item => item.code || item.itemName);
@@ -2148,33 +2156,75 @@
 
         function handleSearchFilter() { clearTimeout(searchTimeout); searchTimeout = setTimeout(executeSearchFilter, 150); }
 
+        function getSetFilterComponents(product) {
+            if (!product || !product.isSet) return product ? [product] : [];
+            const entries = Array.isArray(product.setItems) ? product.setItems : [];
+            return entries.map(entry => {
+                const itemId = entry && (entry.itemId || entry.id || entry?.item?.id);
+                const liveItem = itemId
+                    ? products.find(item => !item.isSet && String(item.id) === String(itemId))
+                    : null;
+                return liveItem || (entry && (entry.itemSnapshot || entry.item)) || null;
+            }).filter(Boolean);
+        }
+
+        function itemMatchesLocationFilter(item, filterValue) {
+            const prodLoc = String(item?.location || '').toUpperCase().trim();
+            const filterVal = String(filterValue || '').toUpperCase().trim();
+            if (!filterVal) return true;
+            if (filterVal === 'LPL') return ['LX1', 'LX2', 'LX3', 'LX4', 'LX5'].some(loc => prodLoc.includes(loc));
+            if (filterVal === 'LPH') return ['LH1', 'LH2', 'LH3', 'LH4'].some(loc => prodLoc.includes(loc));
+            return prodLoc.includes(filterVal);
+        }
+
+        function itemMatchesBrandFilter(item, filterValue) {
+            if (!filterValue) return true;
+            const rawBrand = String(item?.brand || '').trim();
+            const displayBrand = getDisplayBrand(rawBrand, showCostMode);
+            if (String(filterValue).startsWith('GRP::')) return getDisplayBrand(rawBrand, false) === String(filterValue).slice(5);
+            if (showCostMode) return rawBrand.toLowerCase() === String(filterValue).toLowerCase();
+            return displayBrand === filterValue;
+        }
+
         function executeSearchFilter() {
             const searchInput = document.getElementById('search-input'); const searchVal = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const clearBtn = document.getElementById('clear-search-btn');
             if (clearBtn) { if (searchVal) clearBtn.classList.remove('hidden'); else clearBtn.classList.add('hidden'); }
 
             filteredProducts = products.filter(product => {
-                const displayBrand = getDisplayBrand(product.brand, showCostMode);
-                const rawBrand = String(product.brand || '').trim();
-                const matchesSearch = String(product.code || '').toLowerCase().includes(searchVal) || displayBrand.toLowerCase().includes(searchVal) || String(product.brand || '').toLowerCase().includes(searchVal) || String(product.itemName || '').toLowerCase().includes(searchVal) || String(product.location || '').toLowerCase().includes(searchVal) || String(product.description || '').toLowerCase().includes(searchVal);
-                let matchesBrand = true;
-                if (currentBrandFilter) {
-                    if (currentBrandFilter.startsWith('GRP::')) matchesBrand = getDisplayBrand(rawBrand, false) === currentBrandFilter.slice(5);
-                    else if (showCostMode) matchesBrand = rawBrand.toLowerCase() === currentBrandFilter.toLowerCase();
-                    else matchesBrand = displayBrand === currentBrandFilter;
-                }
-                const matchesClass = !currentClassFilter || getDisplayCategory(product) === currentClassFilter;
-                const matchesSubclass = !currentSubclassFilter || getDisplaySubcategory(product) === currentSubclassFilter;
-                let matchesLocation = true;
-                if (currentLocFilter) {
-                    const prodLoc = String(product.location || '').toUpperCase().trim(); const filterVal = currentLocFilter.toUpperCase().trim();
-                    if (filterVal === 'LPL') matchesLocation = ['LX1', 'LX2', 'LX3', 'LX4', 'LX5'].some(loc => prodLoc.includes(loc));
-                    else if (filterVal === 'LPH') matchesLocation = ['LH1', 'LH2', 'LH3', 'LH4'].some(loc => prodLoc.includes(loc));
-                    else matchesLocation = prodLoc.includes(filterVal);
-                }
-                let matchesPromo = true;
-                if (showPromoOnly) matchesPromo = product.promotion && product.promotion.toLowerCase() !== 'n/a' && product.promotion.trim() !== '';
-                const matchesKeyMaterial = !currentKeyMaterialFilter || String(product.keyMaterial || '').trim() === currentKeyMaterialFilter;
+                const componentItems = getSetFilterComponents(product);
+                const searchableItems = componentItems.length ? componentItems : [product];
+                const setSearchFields = product.isSet
+                    ? [String(product.itemName || ''), String(product.code || ''), String(product.description || '')].join(' ')
+                    : '';
+                const matchesSearch = !searchVal || searchableItems.some(item => {
+                    const itemDisplayBrand = getDisplayBrand(item.brand, showCostMode);
+                    return String(item.code || '').toLowerCase().includes(searchVal) ||
+                        itemDisplayBrand.toLowerCase().includes(searchVal) ||
+                        String(item.brand || '').toLowerCase().includes(searchVal) ||
+                        String(item.itemName || '').toLowerCase().includes(searchVal) ||
+                        String(item.location || '').toLowerCase().includes(searchVal) ||
+                        String(item.description || '').toLowerCase().includes(searchVal);
+                }) || setSearchFields.toLowerCase().includes(searchVal);
+
+                const matchesBrand = !currentBrandFilter || (product.isSet
+                    ? componentItems.some(item => itemMatchesBrandFilter(item, currentBrandFilter))
+                    : itemMatchesBrandFilter(product, currentBrandFilter));
+                const matchesClass = !currentClassFilter || (product.isSet
+                    ? componentItems.some(item => getDisplayCategory(item) === currentClassFilter)
+                    : getDisplayCategory(product) === currentClassFilter);
+                const matchesSubclass = !currentSubclassFilter || (product.isSet
+                    ? componentItems.some(item => getDisplaySubcategory(item) === currentSubclassFilter)
+                    : getDisplaySubcategory(product) === currentSubclassFilter);
+                const matchesLocation = !currentLocFilter || (product.isSet
+                    ? componentItems.some(item => itemMatchesLocationFilter(item, currentLocFilter))
+                    : itemMatchesLocationFilter(product, currentLocFilter));
+                const matchesPromo = !showPromoOnly || (product.isSet
+                    ? componentItems.some(item => item.promotion && String(item.promotion).toLowerCase() !== 'n/a' && String(item.promotion).trim() !== '')
+                    : !!(product.promotion && String(product.promotion).toLowerCase() !== 'n/a' && String(product.promotion).trim() !== ''));
+                const matchesKeyMaterial = !currentKeyMaterialFilter || (product.isSet
+                    ? componentItems.some(item => String(item.keyMaterial || '').trim().toLowerCase() === String(currentKeyMaterialFilter).trim().toLowerCase())
+                    : String(product.keyMaterial || '').trim().toLowerCase() === String(currentKeyMaterialFilter).trim().toLowerCase());
                 const matchesSetsOnly = !showSetsOnly || !!product.isSet;
                 return matchesSearch && matchesSetsOnly && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesKeyMaterial && matchesPromo;
             });
