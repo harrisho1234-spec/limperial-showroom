@@ -763,6 +763,24 @@
             { id: "LMP-WL-02", code: "LMP-WL-02", brand: "mef", class: "Wall Sconce", itemName: "Elysian Alabaster Wall Sconce", description: "Solid Brass Backplate, Spanish Alabaster", qty: 12, price: 680, salesPrice: 750, actualSalesPrice: 680, costing: 220, margin: 460, location: "Aisle B4", arrivalDate: "2026-04-05", aging: "21", promotion: "", imgLink: "" }
         ];
 
+        function ensureUniqueProductIds(list) {
+            if (!Array.isArray(list)) return [];
+            const used = new Set();
+            return list.map((product, index) => {
+                if (!product) return product;
+                let baseId = String(product.id || product.code || `LMP-${index + 1}`).trim();
+                baseId = baseId.replace(/[^a-zA-Z0-9_-]/g, '').trim() || `LMP-${index + 1}`;
+                let uniqueId = baseId;
+                let suffix = 2;
+                while (used.has(uniqueId)) {
+                    uniqueId = `${baseId}__ROW_${index + 1}`;
+                    if (used.has(uniqueId)) uniqueId = `${baseId}__ROW_${index + 1}_${suffix++}`;
+                }
+                used.add(uniqueId);
+                return { ...product, id: uniqueId };
+            });
+        }
+
         function loadFallbackProducts() {
             return OFFLINE_FALLBACK_PRODUCTS.map(p => {
                 let activePrice = p.price;
@@ -1304,8 +1322,7 @@
             const cachedData = localStorage.getItem('limperial_inventory');
             if (cachedData) {
                 try {
-                    products = JSON.parse(cachedData);
-                    products.forEach(p => p.id = String(p.id).replace(/[^a-zA-Z0-9_-]/g, '').trim());
+                    products = ensureUniqueProductIds(JSON.parse(cachedData));
                 } catch (e) { products = loadFallbackProducts(); }
             } else products = loadFallbackProducts();
 
@@ -1410,12 +1427,53 @@
             };
         }
 
+        function findProductForSetEntry(entry) {
+            if (!entry) return null;
+            const itemId = entry.itemId || entry.id || entry?.item?.id;
+            const snapshot = entry.itemSnapshot || entry.item || null;
+
+            // Prefer the new unique internal ID used by inventory rows.
+            if (itemId) {
+                const exact = products.find(p => !p.isSet && String(p.id) === String(itemId));
+                if (exact) return exact;
+            }
+
+            // Backward compatibility for Sets created before duplicate Codes were made independent.
+            // Use the saved snapshot to identify the exact duplicate row when possible.
+            if (snapshot) {
+                const snapshotCode = String(snapshot.code || '').trim().toLowerCase();
+                const snapshotName = String(snapshot.itemName || snapshot.name || '').trim().toLowerCase();
+                const snapshotBrand = String(snapshot.brand || '').trim().toLowerCase();
+                const snapshotLocation = String(snapshot.location || '').trim().toLowerCase();
+                const snapshotDescription = String(snapshot.description || '').trim().toLowerCase();
+                const bySnapshot = products.find(p => {
+                    if (p.isSet) return false;
+                    if (snapshotCode && String(p.code || '').trim().toLowerCase() !== snapshotCode) return false;
+                    if (snapshotName && String(p.itemName || p.name || '').trim().toLowerCase() !== snapshotName) return false;
+                    if (snapshotBrand && String(p.brand || '').trim().toLowerCase() !== snapshotBrand) return false;
+                    if (snapshotLocation && String(p.location || '').trim().toLowerCase() !== snapshotLocation) return false;
+                    if (snapshotDescription && String(p.description || '').trim().toLowerCase() !== snapshotDescription) return false;
+                    return true;
+                });
+                if (bySnapshot) return bySnapshot;
+            }
+
+            // Final legacy fallback: match the visible Code only.
+            if (itemId) {
+                const legacyCode = String(itemId).trim().toLowerCase();
+                const byCode = products.find(p => !p.isSet && String(p.code || '').trim().toLowerCase() === legacyCode);
+                if (byCode) return byCode;
+            }
+
+            return snapshot || null;
+        }
+
         function setProductFromCreatedSet(record) {
             const normalized = normalizeCreatedSetRecord(record);
             if (!normalized) return null;
 
             const componentEntries = normalized.items.map((entry) => {
-                const component = products.find(p => !p.isSet && String(p.id) === String(entry.itemId)) || entry.itemSnapshot || null;
+                const component = findProductForSetEntry(entry);
                 if (!component) return null;
                 const brand = getDisplayBrand(component.brand, showCostMode) || String(component.brand || '').trim() || 'Item';
                 const code = String(component.code || component.id || '').trim();
@@ -1544,7 +1602,7 @@
             if (!record) return null;
             const componentItems = [];
             record.items.forEach(entry => {
-                const current = products.find(product => !product.isSet && String(product.id) === String(entry.itemId));
+                const current = findProductForSetEntry(entry);
                 const snapshot = entry.itemSnapshot ? cloneForStorage(entry.itemSnapshot) : null;
                 const item = current || snapshot;
                 if (item) componentItems.push({
@@ -1816,7 +1874,10 @@
                     }
                 } else activeMargin = parsedPrice - parsedCosting;
 
-                const safeId = String(code).replace(/[^a-zA-Z0-9_-]/g, '').trim() || ("LMP-" + index);
+                // Keep the displayed Code unchanged, but give every inventory row its own internal identity.
+                // This prevents rows with the same Code from being treated as one item.
+                const safeCodeId = String(code).replace(/[^a-zA-Z0-9_-]/g, '').trim() || ("LMP-" + index);
+                const safeId = `${safeCodeId}__ROW_${index + 1}`;
 
                 return {
                     id: safeId, code: String(code).trim(), brand: String(brand).trim(), class: parsedClass || 'Other',
@@ -2159,13 +2220,7 @@
         function getSetFilterComponents(product) {
             if (!product || !product.isSet) return product ? [product] : [];
             const entries = Array.isArray(product.setItems) ? product.setItems : [];
-            return entries.map(entry => {
-                const itemId = entry && (entry.itemId || entry.id || entry?.item?.id);
-                const liveItem = itemId
-                    ? products.find(item => !item.isSet && String(item.id) === String(itemId))
-                    : null;
-                return liveItem || (entry && (entry.itemSnapshot || entry.item)) || null;
-            }).filter(Boolean);
+            return entries.map(entry => findProductForSetEntry(entry)).filter(Boolean);
         }
 
         function itemMatchesLocationFilter(item, filterValue) {
