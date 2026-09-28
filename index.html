@@ -383,7 +383,7 @@
                                 <div class="flex justify-between text-luxury-muted mt-1"><span>Partner Payout</span><span id="ledger-partner-payout" class="font-mono">-$0</span></div>
                             </div>
                             <div class="flex justify-between text-emerald-400 font-medium border-t border-dashed border-luxury-gold/5 pt-1.5">
-                                <span id="ledger-management-margin-label">Management Profit Margin</span>
+                                <span id="ledger-management-margin-label">Profit Margin</span>
                                 <span id="ledger-management-margin" class="font-mono">$0 (0%)</span>
                             </div>
                         </div>
@@ -3104,7 +3104,7 @@
             const deskLbl = document.getElementById('ledger-management-margin-label'); const mobLbl = document.getElementById('mobile-ledger-management-margin-label');
 
             if (hasPartner) { if (deskLbl) deskLbl.textContent = "Net Remaining Margin"; if (mobLbl) mobLbl.textContent = "Net Remaining Margin"; } 
-            else { if (deskLbl) deskLbl.textContent = "Management Profit Margin"; if (mobLbl) mobLbl.textContent = "Management Profit Margin"; }
+            else { if (deskLbl) deskLbl.textContent = "Profit Margin"; if (mobLbl) mobLbl.textContent = "Profit Margin"; }
 
             if (showCostMode && cart.length > 0) {
                 const colClass = netMargin >= 0 ? (isThemeDark ? 'text-emerald-400' : 'text-emerald-600') : (isThemeDark ? 'text-rose-400' : 'text-rose-600');
