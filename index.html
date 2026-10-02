@@ -295,6 +295,17 @@
                     </div>
                 </div>
 
+                <div id="recommended-sets-panel" class="hidden mb-4 bg-luxury-card border border-luxury-gold/25 rounded-2xl shadow-lg overflow-hidden transition-colors duration-300">
+                    <div class="px-4 py-3 border-b border-luxury-gold/15 bg-luxury-accent/30 flex items-center gap-2">
+                        <i class="fa-solid fa-cubes text-luxury-gold"></i>
+                        <div>
+                            <div class="text-[10px] uppercase tracking-[0.18em] text-emerald-400 font-bold">As recommended Sets</div>
+                            <div class="text-[9px] text-luxury-muted mt-0.5">Recommended Sets containing your selected item</div>
+                        </div>
+                    </div>
+                    <div id="recommended-sets-list" class="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                </div>
+
                 <div id="product-scroll-container" class="flex-1 overflow-y-auto pr-1">
                     <div id="loading-spinner" class="flex flex-col items-center justify-center py-20">
                         <div class="relative w-16 h-16">
@@ -752,6 +763,7 @@
         const CREATED_SETS_LOCAL_KEY = "limperial_created_sets";
         let savedInterestLists = [];
         let createdSets = [];
+        let recommendedFocusItemId = null;
         let saveListsRequestToken = 0;
         let isSavingInterestList = false;
         let documentFormStates = {
@@ -2601,6 +2613,114 @@
             if (m && c) { m.classList.add('pointer-events-none', 'opacity-0'); m.classList.remove('opacity-100'); c.classList.add('scale-95'); c.classList.remove('scale-100'); }
         }
 
+        function productMatchesRecommendedSetEntry(productObj, entry) {
+            if (!productObj || !entry || productObj.isSet) return false;
+
+            const itemId = String(entry.itemId || entry.id || entry?.item?.id || '').trim();
+            if (itemId && String(productObj.id) === itemId) return true;
+
+            const snapshot = entry.itemSnapshot || entry.item || null;
+            if (!snapshot) return false;
+
+            const selectedCode = String(productObj.code || '').trim().toLowerCase();
+            const selectedName = String(productObj.itemName || productObj.name || '').trim().toLowerCase();
+            const selectedBrand = String(productObj.brand || '').trim().toLowerCase();
+            const selectedLocation = String(productObj.location || '').trim().toLowerCase();
+            const selectedDescription = String(productObj.description || '').trim().toLowerCase();
+
+            const snapshotCode = String(snapshot.code || '').trim().toLowerCase();
+            const snapshotName = String(snapshot.itemName || snapshot.name || '').trim().toLowerCase();
+            const snapshotBrand = String(snapshot.brand || '').trim().toLowerCase();
+            const snapshotLocation = String(snapshot.location || '').trim().toLowerCase();
+            const snapshotDescription = String(snapshot.description || '').trim().toLowerCase();
+
+            if (selectedCode && snapshotCode && selectedCode !== snapshotCode) return false;
+            if (selectedName && snapshotName && selectedName !== snapshotName) return false;
+            if (selectedBrand && snapshotBrand && selectedBrand !== snapshotBrand) return false;
+            if (selectedLocation && snapshotLocation && selectedLocation !== snapshotLocation) return false;
+            if (selectedDescription && snapshotDescription && selectedDescription !== snapshotDescription) return false;
+
+            return !!(selectedCode && snapshotCode && selectedCode === snapshotCode && selectedName && snapshotName && selectedName === snapshotName);
+        }
+
+        function getRecommendedCreatedSets() {
+            const selectedProducts = cart
+                .filter(entry => entry && entry.type !== 'set' && entry.type !== 'service' && entry.item && !entry.item.isSet)
+                .map(entry => entry.item);
+            if (!selectedProducts.length || !Array.isArray(createdSets) || !createdSets.length) return [];
+
+            // Recommendations follow the item that was most recently selected.
+            // This keeps the panel from staying visible for an older, unrelated selection.
+            let focusProduct = null;
+            if (recommendedFocusItemId != null) {
+                focusProduct = selectedProducts.find(product => String(product.id) === String(recommendedFocusItemId)) || null;
+            }
+            if (!focusProduct) return [];
+
+            const recommended = [];
+            const seen = new Set();
+            createdSets.forEach(setRecord => {
+                const normalized = normalizeCreatedSetRecord(setRecord);
+                if (!normalized || String(normalized.status || '').toLowerCase() === 'delete') return;
+                const matches = normalized.items.some(component => productMatchesRecommendedSetEntry(focusProduct, component));
+                if (matches && !seen.has(String(normalized.id))) {
+                    seen.add(String(normalized.id));
+                    recommended.push(normalized);
+                }
+            });
+            return recommended;
+        }
+
+        function selectRecommendedSet(setId) {
+            const productObj = products.find(p => p.isSet && String(p.setId || p.id) === String(setId));
+            if (!productObj) return;
+            const alreadySelected = cart.some(entry => entry.type === 'set' && String(entry.setId || entry.id) === String(setId));
+            if (alreadySelected) {
+                showNotification(`Set “${productObj.itemName}” is already in the Interest List.`, 'info');
+                return;
+            }
+            toggleCartSelection(productObj.id);
+        }
+
+        function updateRecommendedSets() {
+            const panel = document.getElementById('recommended-sets-panel');
+            const list = document.getElementById('recommended-sets-list');
+            if (!panel || !list) return;
+
+            const recommendations = getRecommendedCreatedSets();
+            if (!recommendations.length) {
+                panel.classList.add('hidden');
+                list.innerHTML = '';
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            list.innerHTML = recommendations.map(setRecord => {
+                const setId = String(setRecord.id);
+                const isSelected = cart.some(entry => entry.type === 'set' && String(entry.setId || entry.id) === setId);
+                const buttonText = isSelected ? 'Selected' : 'Select';
+                const buttonClass = isSelected
+                    ? 'bg-luxury-gold/20 text-luxury-gold border-luxury-gold/30 cursor-default'
+                    : 'bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border-luxury-gold/25 cursor-pointer';
+                const setPhoto = resolveGoogleDriveImg(setRecord.photoUrl || '');
+                const photoHtml = setPhoto
+                    ? `<img src="${escapeHtml(setPhoto)}" alt="${escapeHtml(setRecord.name)}" class="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover border border-luxury-gold/15 bg-luxury-dark shrink-0" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.classList.remove('hidden');">`
+                    : '';
+                const fallbackHtml = `<div class="${setPhoto ? 'hidden ' : ''}w-14 h-14 sm:w-16 sm:h-16 rounded-lg border border-luxury-gold/15 bg-luxury-dark flex items-center justify-center shrink-0"><i class="fa-solid fa-cubes text-luxury-gold/50"></i></div>`;
+                return `
+                    <button type="button" onclick="selectRecommendedSet('${escapeHtml(setId)}')" class="w-full text-left p-3 rounded-xl border ${isSelected ? 'border-luxury-gold/30 bg-luxury-accent/20' : 'border-luxury-gold/10 bg-luxury-dark/60 hover:border-luxury-gold/30'} transition-all duration-200">
+                        <div class="flex items-center gap-3">
+                            ${photoHtml}${fallbackHtml}
+                            <div class="min-w-0 flex-1">
+                                <div class="text-xs font-serif font-semibold text-luxury-text truncate">${escapeHtml(setRecord.name)}</div>
+                                <div class="text-sm font-semibold text-luxury-gold mt-1">${formatCurrency(setRecord.price)}</div>
+                            </div>
+                            <span class="shrink-0 px-2 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-wider ${buttonClass}">${buttonText}</span>
+                        </div>
+                    </button>`;
+            }).join('');
+        }
+
         function toggleCartSelection(itemId) {
             const productObj = products.find(p => p.id === itemId);
             if (!productObj) return;
@@ -2632,11 +2752,15 @@
 
             const existingIndex = cart.findIndex(c => c.type !== 'set' && c.item.id === productObj.id);
             const activeBrand = getDisplayBrand(productObj.brand, showCostMode);
-            if (existingIndex > -1) { cart.splice(existingIndex, 1); showNotification("Removed " + activeBrand + " " + productObj.code + " from List.", "info"); }
-            else {
+            if (existingIndex > -1) {
+                cart.splice(existingIndex, 1);
+                recommendedFocusItemId = null;
+                showNotification("Removed " + activeBrand + " " + productObj.code + " from List.", "info");
+            } else {
                 let initialDiscount = 0; const hasPromo = productObj.promotion && productObj.promotion.toLowerCase() !== 'n/a' && productObj.promotion.trim() !== '';
                 if (hasPromo) { const matchPct = productObj.promotion.match(/(\d+)\s*%/); if (matchPct) initialDiscount = parseFloat(matchPct[1]); else if (getActualSalesPrice(productObj) > 0 && productObj.price > 0 && productObj.price < getActualSalesPrice(productObj)) initialDiscount = Math.round((1 - (productObj.price / getActualSalesPrice(productObj))) * 100); }
                 cart.push({ item: productObj, quantity: 1, discount: initialDiscount, customPrice: null, rowHeight: 70, forcePreorder: false });
+                recommendedFocusItemId = productObj.id;
                 showNotification("Added " + activeBrand + " " + productObj.code + " to Interest List.", "success");
             }
             updateCartVisuals(); renderProductGrid();
@@ -2823,6 +2947,7 @@
             const dc = document.getElementById('desktop-cart-count'); if (dc) dc.textContent = totalCount;
             const mb = document.getElementById('mobile-cart-badge'); if (mb) mb.textContent = totalCount;
             renderDesktopCartItems(); renderMobileCartItems(); calculateAndDrawTotals();
+            updateRecommendedSets();
         }
 
         function renderDesktopCartItems() {
