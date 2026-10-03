@@ -3540,6 +3540,18 @@
             });
         }
 
+        // Save large Interest Lists through POST so the payload is not limited by URL length.
+        // Apps Script receives this as a simple text/plain request, matching the existing Create Set flow.
+        async function postSavedListsRequest(payload) {
+            if (!SAVED_LISTS_API_URL) throw new Error('Saved lists API is not configured.');
+            await fetch(SAVED_LISTS_API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+        }
+
         async function loadSavedInterestLists() {
             savedInterestLists = getLocalSavedInterestLists();
             if (!SAVED_LISTS_API_URL) return;
@@ -3549,7 +3561,9 @@
                     savedInterestLists = response.lists;
                     setLocalSavedInterestLists(savedInterestLists);
                 }
-            } catch (e) {}
+            } catch (e) {
+                showNotification("Saved Lists could not be loaded from Google Sheets.", "error");
+            }
         }
 
         function openSavedListsModal() {
@@ -3650,7 +3664,7 @@
                         setLocalSavedInterestLists(savedInterestLists);
                         renderSavedInterestLists();
                     }
-                } catch (e) { showNotification("Using locally cached saved lists.", "info"); }
+                } catch (e) { showNotification("Saved Lists could not be refreshed from Google Sheets. Showing the available local data.", "error"); }
             }
         }
 
@@ -3673,6 +3687,11 @@
                 spinner?.classList.add('hidden');
                 if (status) { status.textContent = 'Done'; status.className = 'mt-3 text-sm font-bold uppercase tracking-[0.2em] text-emerald-400'; }
                 if (msg) msg.textContent = message || 'List saved successfully.';
+            } else if (state === 'error') {
+                overlay?.classList.remove('hidden');
+                spinner?.classList.add('hidden');
+                if (status) { status.textContent = 'Failed'; status.className = 'mt-3 text-sm font-bold uppercase tracking-[0.2em] text-rose-400'; }
+                if (msg) msg.textContent = message || 'The list could not be saved.';
             } else {
                 overlay?.classList.add('hidden');
                 spinner?.classList.remove('hidden');
@@ -3699,18 +3718,38 @@
                 setLocalSavedInterestLists(savedInterestLists);
 
                 if (SAVED_LISTS_API_URL) {
-                    const response = await jsonpRequest({
+                    // POST the full payload so large lists are not truncated by browser/URL limits.
+                    await postSavedListsRequest({
                         action: 'save',
                         name: record.name,
                         recordId: record.id,
                         savedAt: record.savedAt,
                         payload: JSON.stringify(record.state)
                     });
-                    if (response?.record) {
-                        const idx = savedInterestLists.findIndex(item => item.id === record.id);
-                        if (idx > -1) savedInterestLists[idx] = response.record; else savedInterestLists.unshift(response.record);
-                        setLocalSavedInterestLists(savedInterestLists);
+
+                    // Verify the exact saved record through a small GET request. This is required because
+                    // the POST uses no-cors and therefore does not expose the Apps Script response body.
+                    let cloudRecord = null;
+                    for (let attempt = 0; attempt < 5; attempt++) {
+                        try {
+                            const verifyResponse = await jsonpRequest({ action: 'get', recordId: record.id, _cb: Date.now() });
+                            if (verifyResponse?.record?.id === record.id) {
+                                cloudRecord = verifyResponse.record;
+                                break;
+                            }
+                        } catch (verifyError) {
+                            if (attempt === 4) throw verifyError;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
                     }
+
+                    if (!cloudRecord) {
+                        throw new Error('Google Sheets did not confirm the saved list.');
+                    }
+
+                    const idx = savedInterestLists.findIndex(item => item.id === record.id);
+                    if (idx > -1) savedInterestLists[idx] = cloudRecord; else savedInterestLists.unshift(cloudRecord);
+                    setLocalSavedInterestLists(savedInterestLists);
                 }
 
                 setSavedListSavingState('done', 'Saved successfully.');
@@ -3718,9 +3757,10 @@
                 await new Promise(resolve => setTimeout(resolve, 900));
                 closeSavedListsModal();
             } catch (e) {
-                setSavedListSavingState('done', 'Saved on this device. Cloud save failed.');
-                showNotification("Saved on this device, but cloud save was unavailable.", "error");
-                await new Promise(resolve => setTimeout(resolve, 1200));
+                console.error('Saved Interest List cloud save failed:', e);
+                setSavedListSavingState('error', e?.message || 'The list could not be saved to Google Sheets.');
+                showNotification("Save List failed. The list was not confirmed in Google Sheets.", "error");
+                await new Promise(resolve => setTimeout(resolve, 1400));
             } finally {
                 isSavingInterestList = false;
                 setSavedListSavingState('idle');
