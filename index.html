@@ -759,6 +759,7 @@
         const KEY_MATERIAL_CSV_URL = "https://docs.google.com/spreadsheets/d/1maKk_lPYMYval44vnorm3_awwrIh5IYPKLovn_gWYtg/gviz/tq?tqx=out:csv&sheet=All&tq=select%20B%2CT";
         let keyMaterialByCode = {};
         const SAVED_LISTS_API_URL = "https://script.google.com/macros/s/AKfycbwAah-oFIyiSON0jOhjWlL1lzlr0d354bq-1OxMDY2Qz-D-rzAYFaPzTkKDNlnfz1tk/exec";
+        const SALES_TRACKING_APP_URL = "https://harrisho1234-spec.github.io/Sale-and-purchase-tracking/";
         const SAVED_LISTS_LOCAL_KEY = "limperial_saved_interest_lists";
         const CREATED_SETS_LOCAL_KEY = "limperial_created_sets";
         let savedInterestLists = [];
@@ -3552,6 +3553,29 @@
             });
         }
 
+        async function sendSavedInterestListToSales(recordId, listName = '') {
+            const id = String(recordId || '').trim();
+            if (!id) { showNotification("This saved quotation has no record ID.", "error"); return; }
+
+            const target = window.open('about:blank', '_blank');
+            if (!target) {
+                showNotification("Your browser blocked the Sales Tracking window. Please allow pop-ups for this site and try again.", "error");
+                return;
+            }
+
+            try {
+                target.document.write('<!doctype html><title>Opening Sales Tracking…</title><body style="font-family:Arial,sans-serif;padding:32px;color:#333">Opening L\'Imperial Sales & Order Management…</body>');
+                showNotification('Checking the saved quotation before sending it to Sales Tracking…', 'info');
+                const response = await jsonpRequest({ action: 'get', recordId: id });
+                if (!response || !response.record) throw new Error('This quotation is not available in the shared saved-list database yet.');
+                target.location.replace(SALES_TRACKING_APP_URL + '#showroom-quote=' + encodeURIComponent(id));
+                showNotification('Quotation sent to Sales Tracking. It will stay as an imported draft until converted.', 'success');
+            } catch (e) {
+                try { target.close(); } catch (_) {}
+                showNotification(e?.message || 'Could not send this quotation to Sales Tracking.', 'error');
+            }
+        }
+
         async function loadSavedInterestLists() {
             savedInterestLists = getLocalSavedInterestLists();
             if (!SAVED_LISTS_API_URL) return;
@@ -3632,6 +3656,19 @@
                 button.appendChild(title); button.appendChild(meta);
                 button.addEventListener('click', () => retrieveSavedInterestList(list.id));
 
+                const sendBtn = document.createElement('button');
+                sendBtn.type = 'button';
+                sendBtn.className = 'shrink-0 h-9 w-9 rounded-lg bg-luxury-card border border-luxury-gold/20 text-luxury-gold hover:bg-luxury-gold hover:text-slate-950 transition-colors flex items-center justify-center';
+                sendBtn.title = 'Send quotation to Sales Tracking';
+                sendBtn.setAttribute('aria-label', 'Send quotation to Sales Tracking');
+                sendBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>';
+                sendBtn.onclick = function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    sendSavedInterestListToSales(list.id, list.name);
+                    return false;
+                };
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.type = 'button';
                 deleteBtn.className = 'shrink-0 h-9 w-9 rounded-lg bg-luxury-card border border-red-500/15 text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:border-red-500/30 transition-colors flex items-center justify-center';
@@ -3646,6 +3683,7 @@
                 };
 
                 row.appendChild(button);
+                row.appendChild(sendBtn);
                 row.appendChild(deleteBtn);
                 listEl.appendChild(row);
             });
