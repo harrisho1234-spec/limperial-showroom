@@ -54,7 +54,7 @@
     const mobile=window.innerWidth<768;
     const asset=(mobile&&preset.backgroundMobile)||preset.backgroundDesktop||preset.backgroundMobile;
     if(!asset||!image)return;
-    const resolved=new URL(asset,document.baseURI).href;
+    const resolved=String(asset).startsWith('data:')?String(asset):new URL(asset,document.baseURI).href;
     root.style.setProperty('--seasonal-overlay',preset.overlay||'rgba(12,18,24,0.30)');
     if(image.src!==resolved){
       image.onload=()=>layer.classList.add('is-active');
