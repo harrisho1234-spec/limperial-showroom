@@ -9,7 +9,7 @@
   const MAX_BACKGROUND_BYTES=8*1024*1024;
   const MIN_BACKGROUND_WIDTH=1920;
   const MIN_BACKGROUND_HEIGHT=1080;
-  const BACKGROUND_TYPES=new Set(['image/jpeg','image/png','image/webp']);
+  const BACKGROUND_TYPES=new Set(['image/jpeg','image/png','image/webp','image/gif']);
   const api=window.APP_CONFIG||{};
   const client=window.supabase?.createClient && api.SUPABASE_URL && api.SUPABASE_PUBLISHABLE_KEY
     ? window.supabase.createClient(api.SUPABASE_URL,api.SUPABASE_PUBLISHABLE_KEY,{
@@ -331,8 +331,8 @@
       '<div class="flex flex-wrap items-center justify-between gap-2"><div><div class="text-[11px] font-bold text-luxury-text">Custom Background Upload</div>'+
       '<div class="text-[10px] text-luxury-muted mt-0.5">Overrides the selected built-in theme for this campaign.</div></div>'+
       '<button type="button" id="sp-background-remove" class="hidden px-3 py-1.5 rounded-lg border border-red-400/30 text-red-500 text-[10px] font-bold">Remove Custom Image</button></div>'+
-      '<input id="sp-background-file" type="file" accept="image/jpeg,image/png,image/webp" class="block w-full text-xs text-luxury-muted file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-950 cursor-pointer">'+
-      '<div class="text-[10px] text-luxury-muted">Recommended: 2560 × 1440 (16:9). Minimum: 1920 × 1080. JPG, PNG or WebP, maximum 8 MB.</div>'+
+      '<input id="sp-background-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="block w-full text-xs text-luxury-muted file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-950 cursor-pointer">'+
+      '<div class="text-[10px] text-luxury-muted">Recommended: 2560 × 1440 (16:9). Minimum: 1920 × 1080. JPG, PNG, WebP or animated GIF, maximum 8 MB.</div>'+
       '<div id="sp-background-status" class="text-[10px] text-luxury-muted"></div></div>';
   }
   function currentCustomPreview(){
@@ -365,7 +365,7 @@
     const input=event.currentTarget,file=input?.files?.[0];
     if(!file)return;
     if(!BACKGROUND_TYPES.has(file.type)){
-      notify('Use a JPG, PNG or WebP background image.','error');input.value='';return;
+      notify('Use a JPG, PNG, WebP or GIF background image.','error');input.value='';return;
     }
     if(file.size>MAX_BACKGROUND_BYTES){
       notify('Background image is larger than 8 MB. Please export a smaller file.','error');input.value='';return;
@@ -448,6 +448,7 @@
   function backgroundExtension(file){
     if(file?.type==='image/png')return 'png';
     if(file?.type==='image/webp')return 'webp';
+    if(file?.type==='image/gif')return 'gif';
     return 'jpg';
   }
   function safePathPart(value){
