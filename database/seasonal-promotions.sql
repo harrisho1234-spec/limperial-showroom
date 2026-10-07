@@ -11,10 +11,31 @@ create table if not exists public.showroom_promotion_campaigns (
   end_date date not null,
   is_enabled boolean not null default false,
   discount_percent numeric,
+  theme_preset text,
   items jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.showroom_promotion_campaigns
+  add column if not exists theme_preset text;
+
+alter table public.showroom_promotion_campaigns
+  drop constraint if exists showroom_promotion_campaigns_theme_preset_check;
+
+alter table public.showroom_promotion_campaigns
+  add constraint showroom_promotion_campaigns_theme_preset_check
+  check (
+    theme_preset is null
+    or theme_preset in (
+      'international_new_year',
+      'chinese_new_year',
+      'khmer_new_year',
+      'pchum_ben',
+      'water_festival',
+      'christmas'
+    )
+  );
 
 -- Fail closed if the existing Sales Tracking authorization function is absent.
 do $$ begin
@@ -32,7 +53,15 @@ begin
      or new.start_date is null or new.end_date is null or new.end_date < new.start_date
      or new.is_enabled is null
      or (new.discount_percent is not null and
-       (new.discount_percent < 0 or new.discount_percent > 100)) then
+       (new.discount_percent < 0 or new.discount_percent > 100))
+     or (new.theme_preset is not null and new.theme_preset not in (
+       'international_new_year',
+       'chinese_new_year',
+       'khmer_new_year',
+       'pchum_ben',
+       'water_festival',
+       'christmas'
+     )) then
     raise exception 'Invalid campaign details';
   end if;
   if new.items is null or jsonb_typeof(new.items) <> 'array' then
