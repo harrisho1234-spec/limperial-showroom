@@ -76,32 +76,52 @@
             --luxury-text-darker: #ffffff; 
         }
 
-        /* Seasonal campaign background. Product cards and controls keep the existing
-           L'Imperial palette; only the showroom canvas changes behind them. */
+        /* Seasonal campaign artwork lives in its own fixed layer. This avoids
+           browser/PWA background painting quirks while leaving cards and pricing untouched. */
+        #seasonal-theme-background {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            background: var(--luxury-bg);
+        }
+        #seasonal-theme-background.is-active {
+            opacity: 1;
+        }
+        #seasonal-theme-background img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+            display: block;
+        }
+        #seasonal-theme-background .seasonal-theme-overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--seasonal-overlay, rgba(12, 18, 24, 0.30));
+        }
         body.seasonal-theme-active {
-            background-image:
-                linear-gradient(var(--seasonal-overlay, rgba(12, 18, 24, 0.30)), var(--seasonal-overlay, rgba(12, 18, 24, 0.30))),
-                var(--seasonal-bg);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+            background: var(--luxury-bg);
         }
         body.seasonal-theme-active #main-app {
+            position: relative;
+            z-index: 1;
             background: transparent;
         }
         body.seasonal-theme-active main {
             background: transparent;
         }
         @media (max-width: 767px) {
-            body.seasonal-theme-active {
-                background-attachment: scroll;
-                background-position: center top;
+            #seasonal-theme-background img {
+                object-position: center top;
             }
         }
         @media print {
-            body.seasonal-theme-active {
-                background-image: none !important;
+            #seasonal-theme-background {
+                display: none !important;
             }
         }
 
@@ -4986,8 +5006,8 @@
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
-    <script src="promotion-config.js"></script>
-    <script src="seasonal-core.js"></script>
-    <script src="seasonal-promotions.js"></script>
+    <script src="promotion-config.js?v=20261007-theme2"></script>
+    <script src="seasonal-core.js?v=20261007-theme2"></script>
+    <script src="seasonal-promotions.js?v=20261007-theme2"></script>
 </body>
 </html>
