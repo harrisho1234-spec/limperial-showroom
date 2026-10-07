@@ -1484,6 +1484,7 @@
             fetchSheetData();
             initMobileProductScrollAssist();
             initSafeBackdropClose();
+            loadQuotationSalespeople();
             loadSavedInterestLists();
             renderKeyMaterialFilters();
             fetchKeyMaterialData();
@@ -3946,6 +3947,7 @@
                 showNotification("Please select at least one product before saving the list.", "error");
                 return;
             }
+            if (!isOpening && documentType === 'quotation' && !validateQuotationRequiredInfo()) return;
             const modal = document.getElementById('saved-lists-modal');
             const container = document.getElementById('saved-lists-modal-container');
             if (!modal || !container) return;
@@ -4039,7 +4041,7 @@
                 const revision = isQuotation ? savedQuotationRevision(list) : 0;
                 const displayDocumentNo = isQuotation ? quotationDisplayNumber(documentNo, revision) : documentNo;
                 const documentLabel = savedType === 'quotation'
-                    ? 'Quotation'
+                    ? (String(documentNo).startsWith('P-') ? 'Project Quotation' : 'Showroom Quotation')
                     : (savedType === 'sales_order'
                         ? 'Sales Order'
                         : (savedType === 'delivery_order'
@@ -4136,6 +4138,7 @@
         async function saveCurrentInterestList() {
             if (isSavingInterestList) return;
             if (cart.length === 0) { showNotification("Please select at least one product before saving the list.", "error"); return; }
+            if (documentType === 'quotation' && !validateQuotationRequiredInfo()) return;
             const input = document.getElementById('saved-list-name-input');
             const name = (input?.value || '').trim();
             if (!name) { showNotification("Please enter a name for this saved list.", "error"); input?.focus(); return; }
@@ -4181,11 +4184,13 @@
                             customerName: document.getElementById('quote-customer-input')?.value || '',
                             customerPhone: document.getElementById('quote-tel-input')?.value || '',
                             salesperson: document.getElementById('quote-sales-input')?.value || '',
-                            amount: currentQuotationAmountValue()
+                            amount: currentQuotationAmountValue(),
+                            quotePrefix: getQuotationPrefix()
                         });
                         quoteNo = registration.quoteNo;
                         reservedNewQuotation = true;
                         if (quoteInput) quoteInput.value = quoteNo;
+                        syncQuotationTypeFromNumber();
                         captureDocumentFormState('quotation');
                         record.state.documentFormStates = cloneForStorage(documentFormStates);
                         record.quoteNo = quoteNo;
@@ -4411,6 +4416,9 @@
                 activeSavedQuotationName = String(selected.name || '').trim();
                 activeSavedQuotationNo = savedQuotationNumber(selected);
                 activeSavedQuotationRevision = savedQuotationRevision(selected);
+                const restoredPrefix = prefixFromQuotationNumber(activeSavedQuotationNo);
+                const prefixSelect = document.getElementById('quote-prefix-select');
+                if (prefixSelect && restoredPrefix) prefixSelect.value = restoredPrefix;
             } else {
                 clearActiveSavedQuotation();
             }
@@ -4421,6 +4429,7 @@
 
             renderQuoteItemsNotesForm();
             restoreDocumentFormState(documentType);
+            if (documentType === 'quotation') syncQuotationTypeFromNumber();
             updateQuotationNumberHelp();
             updateQuotationPreview(); closeSavedListsModal();
             showNotification(`"${selected.name || 'Saved List'}" retrieved.`, "success");
@@ -4503,7 +4512,14 @@
                 };
             });
             documentFormStates[documentType] = state;
-            if (documentType === 'quotation') clearActiveSavedQuotation();
+            if (documentType === 'quotation') {
+                clearActiveSavedQuotation();
+                const prefixSelect = document.getElementById('quote-prefix-select');
+                if (prefixSelect) {
+                    prefixSelect.value = 'S';
+                    prefixSelect.disabled = false;
+                }
+            }
 
             renderQuoteItemsNotesForm();
             updateQuotationNumberHelp();
@@ -5421,7 +5437,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261007-quoterev2', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261007-quotetype1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
@@ -5466,7 +5482,7 @@
     <script src="assets/seasonal/pchum-ben-data/10.js?v=20261007-pchumdata1"></script>
     <script src="assets/seasonal/pchum-ben-data/11.js?v=20261007-pchumdata1"></script>
     <script src="promotion-config.js?v=20261007-theme6"></script>
-    <script src="quotation-registry.js?v=20261007-quote1"></script>
+    <script src="quotation-registry.js?v=20261007-quotetype1"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
     <script src="seasonal-promotions.js?v=20261007-upload3"></script>
 </body>
