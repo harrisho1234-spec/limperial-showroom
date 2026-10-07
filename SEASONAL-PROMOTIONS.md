@@ -40,8 +40,9 @@ The seasonal artwork changes only the showroom canvas behind the existing L'Impe
 
 Super Admins and Admins can upload a campaign-specific background directly from **Management Mode → Seasonal Promotions**. Custom images are stored in the public Supabase Storage bucket `showroom-seasonal-backgrounds` and the campaign stores only the Storage object path and display name.
 
-- Allowed file types: JPG, PNG, WebP.
+- Allowed file types: JPG, PNG, WebP, animated GIF.
 - Maximum file size: 8 MB.
+- Animated GIF backgrounds play automatically in the showroom and campaign preview.
 - The editor rejects images below 1920 × 1080 to prevent full-screen pixelation. 2560 × 1440 (16:9) is recommended.
 - A selected custom background previews before saving and overrides the built-in seasonal theme while that campaign is active.
 - Removing the custom image restores the selected built-in theme. Replacing an image uploads a new unique object first; the prior object is deleted only after the campaign update succeeds.
