@@ -219,67 +219,72 @@
         <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-60px)] lg:overflow-hidden min-h-0">
             <section class="flex-1 flex flex-col min-w-0 lg:h-full lg:overflow-hidden h-full">
                 
-                <div class="bg-luxury-card border border-luxury-gold/15 rounded-2xl p-4 mb-6 shadow-xl space-y-4 shrink-0 transition-colors duration-300">
-                    <div class="flex gap-2 sm:gap-3">
-                        <div class="relative flex-1">
-                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-luxury-gold/50 text-lg"></i>
-                            <input type="text" id="search-input" placeholder="Search by Code, Name, Location or Specs..." class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl pl-12 pr-4 py-3 text-luxury-text placeholder-luxury-muted outline-none transition-all duration-300 text-base" oninput="handleSearchFilter()">
-                            <button id="clear-search-btn" onclick="clearSearch()" class="hidden absolute right-4 top-1/2 transform -translate-y-1/2 text-luxury-muted hover:text-luxury-gold"><i class="fa-solid fa-circle-xmark"></i></button>
-                        </div>
-
-                        <div class="hidden sm:flex items-center space-x-1.5 shrink-0 bg-luxury-dark border border-luxury-gold/20 rounded-xl p-1.5 h-[50px]">
-                            <button onclick="setProductLayoutMode('grid')" id="layout-grid-btn" class="h-full px-3 rounded-lg border text-xs font-bold uppercase transition-all duration-150 border-luxury-gold/10 text-luxury-muted hover:text-luxury-text"><i class="fa-solid fa-table-cells-large mr-1"></i> Grid</button>
-                            <button onclick="setProductLayoutMode('list')" id="layout-list-btn" class="h-full px-3 rounded-lg border text-xs font-bold uppercase transition-all duration-150 bg-luxury-accent text-luxury-gold border-luxury-gold/30"><i class="fa-solid fa-list mr-1"></i> List</button>
-                        </div>
-
-                        <div class="hidden sm:flex items-center space-x-1.5 shrink-0 bg-luxury-dark border border-luxury-gold/20 rounded-xl p-1.5 h-[50px]">
-                            <button onclick="exportAllCatalogImages(true)" id="export-all-price-btn" class="h-full w-10 rounded-lg border flex items-center justify-center transition-all duration-150 border-luxury-gold/10 text-luxury-muted hover:text-luxury-gold hover:border-luxury-gold/30" title="Export all shown items (with price)"><i class="fa-solid fa-tags"></i></button>
-                            <button onclick="exportAllCatalogImages(false)" id="export-all-photo-btn" class="h-full w-10 rounded-lg border flex items-center justify-center transition-all duration-150 border-luxury-gold/10 text-luxury-muted hover:text-luxury-gold hover:border-luxury-gold/30" title="Export all shown items (photos only)"><i class="fa-solid fa-image"></i></button>
-                        </div>
-
-                        <button onclick="resetFilters()" class="shrink-0 bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold hover:bg-luxury-gold/10 text-luxury-muted hover:text-luxury-gold rounded-xl w-[50px] flex items-center justify-center transition-all duration-300 shadow-sm" title="Clear All Filters"><i class="fa-solid fa-filter-circle-xmark text-lg"></i></button>
+                <!-- Product catalog search and filters: sized to the left pane, not the full viewport -->
+                <div class="bg-luxury-card border border-luxury-gold/15 rounded-2xl p-4 sm:p-5 mb-4 shadow-xl shrink-0 transition-colors duration-300 space-y-4">
+                    <!-- Search: dedicated full-width row, so long text never collides with action buttons -->
+                    <div class="relative min-w-0">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-luxury-gold/50 text-base pointer-events-none"></i>
+                        <input type="text" id="search-input" placeholder="Search code, name, location or specifications..." class="h-11 w-full min-w-0 rounded-xl bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold pl-11 pr-10 text-sm text-luxury-text placeholder-luxury-muted outline-none transition-colors duration-200" oninput="handleSearchFilter()">
+                        <button id="clear-search-btn" type="button" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-luxury-muted hover:text-luxury-gold" title="Clear search" aria-label="Clear search"><i class="fa-solid fa-circle-xmark"></i></button>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-8 gap-4">
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-gem text-luxury-gold/60 text-[9px]"></i> Category</label>
-                            <select id="class-select" onchange="selectClass(this.value)" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-3 py-1.5 text-xs text-luxury-text outline-none transition-colors duration-200 cursor-pointer"><option value="">All Category</option></select>
+                    <!-- Five dropdown filters only: use generous columns instead of eight cramped ones -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-x-3 gap-y-3 min-w-0">
+                            <div class="min-w-0">
+                                <label for="class-select" class="flex h-5 items-center gap-1.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide text-luxury-muted"><i class="fa-solid fa-gem shrink-0 text-luxury-gold/60 text-[9px]"></i><span class="truncate">Category</span></label>
+                                <select id="class-select" onchange="selectClass(this.value)" class="mt-1 h-10 min-w-0 w-full rounded-xl border border-luxury-gold/20 bg-luxury-dark px-3 text-xs text-luxury-text outline-none transition-colors duration-200 focus:border-luxury-gold cursor-pointer"><option value="">All Category</option></select>
+                            </div>
+                            <div class="min-w-0">
+                                <label for="subclass-select" class="flex h-5 items-center gap-1.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide text-luxury-muted"><i class="fa-solid fa-layer-group shrink-0 text-luxury-gold/60 text-[9px]"></i><span class="truncate">Subcategory</span></label>
+                                <select id="subclass-select" onchange="selectSubclass(this.value)" class="mt-1 h-10 min-w-0 w-full rounded-xl border border-luxury-gold/20 bg-luxury-dark px-3 text-xs text-luxury-text outline-none transition-colors duration-200 focus:border-luxury-gold cursor-pointer"><option value="">All Subcategory</option></select>
+                            </div>
+                            <div class="min-w-0">
+                                <label for="brand-select" class="flex h-5 items-center gap-1.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide text-luxury-muted"><i class="fa-solid fa-tag shrink-0 text-luxury-gold/60 text-[9px]"></i><span class="truncate">Brand / Supplier</span></label>
+                                <select id="brand-select" onchange="selectBrand(this.value)" class="mt-1 h-10 min-w-0 w-full rounded-xl border border-luxury-gold/20 bg-luxury-dark px-3 text-xs text-luxury-text outline-none transition-colors duration-200 focus:border-luxury-gold cursor-pointer"><option value="">All Brands</option></select>
+                            </div>
+                            <div class="min-w-0">
+                                <label for="key-material-select" class="flex h-5 items-center gap-1.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide text-luxury-muted"><i class="fa-solid fa-gem shrink-0 text-luxury-gold/60 text-[9px]"></i><span class="truncate">Key Material</span></label>
+                                <select id="key-material-select" onchange="selectKeyMaterial(this.value)" class="mt-1 h-10 min-w-0 w-full rounded-xl border border-luxury-gold/20 bg-luxury-dark px-3 text-xs text-luxury-text outline-none transition-colors duration-200 focus:border-luxury-gold cursor-pointer"><option value="">All Key Materials</option></select>
+                            </div>
+                            <div class="min-w-0">
+                                <label for="location-select" class="flex h-5 items-center gap-1.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide text-luxury-muted"><i class="fa-solid fa-map-location-dot shrink-0 text-luxury-gold/60 text-[9px]"></i><span class="truncate">Location</span></label>
+                                <select id="location-select" onchange="selectLocation(this.value)" class="mt-1 h-10 min-w-0 w-full rounded-xl border border-luxury-gold/20 bg-luxury-dark px-3 text-xs text-luxury-text outline-none transition-colors duration-200 focus:border-luxury-gold cursor-pointer"><option value="">All Locations</option></select>
+                            </div>
+                    </div>
+
+                    <!-- Quick filters and display tools: independent, wrapping action row -->
+                    <div class="pt-3 border-t border-luxury-gold/15 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+                        <div class="flex flex-wrap items-center gap-2 min-w-0">
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-luxury-muted mr-1">Quick Filters</span>
+                            <div class="w-[110px] sm:w-[120px] shrink-0">
+                                <button id="promo-toggle-btn" onclick="togglePromoOnlyFilter()" class="w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-2 py-1.5 text-xs flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wide h-[30px]" title="Show products on promotion">
+                                    <i class="fa-solid fa-gift text-luxury-gold"></i> Promo Only
+                                </button>
+                            </div>
+                            <div class="w-[110px] sm:w-[120px] shrink-0">
+                                <button id="new-arrival-toggle-btn" onclick="toggleNewArrivalSort()" class="w-full bg-luxury-gold text-[#0a0f19] border border-luxury-gold rounded-xl px-2 py-1.5 text-xs flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer font-bold uppercase tracking-wide h-[30px]" title="Sort newest arrival first">
+                                    <i class="fa-solid fa-sparkles"></i> Newest First
+                                </button>
+                            </div>
+                            <div class="w-[90px] shrink-0">
+                                <button id="set-only-toggle-btn" onclick="toggleSetsOnly()" class="w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-2 py-1.5 text-xs flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wide h-[30px]" title="Show reusable created sets only">
+                                    <i class="fa-solid fa-cubes text-luxury-gold"></i> Sets Only
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-luxury-gold/60 text-[9px]"></i> Subcategory</label>
-                            <select id="subclass-select" onchange="selectSubclass(this.value)" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-3 py-1.5 text-xs text-luxury-text outline-none transition-colors duration-200 cursor-pointer"><option value="">All Subcategory</option></select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-tag text-luxury-gold/60 text-[9px]"></i> Brand / Supplier</label>
-                            <select id="brand-select" onchange="selectBrand(this.value)" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-3 py-1.5 text-xs text-luxury-text outline-none transition-colors duration-200 cursor-pointer"><option value="">All Brands</option></select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-gem text-luxury-gold/60 text-[9px]"></i> Key Material</label>
-                            <select id="key-material-select" onchange="selectKeyMaterial(this.value)" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-3 py-1.5 text-xs text-luxury-text outline-none transition-colors duration-200 cursor-pointer"><option value="">All Key Materials</option></select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-map-location-dot text-luxury-gold/60 text-[9px]"></i> Location</label>
-                            <select id="location-select" onchange="selectLocation(this.value)" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-3 py-1.5 text-xs text-luxury-text outline-none transition-colors duration-200 cursor-pointer">
-                                <option value="">All Locations</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-percent text-luxury-gold/60 text-[9px]"></i> Special Offers</label>
-                            <button id="promo-toggle-btn" onclick="togglePromoOnlyFilter()" class="w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-3 py-1.5 text-xs flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wider h-[30px]">
-                                <i class="fa-solid fa-gift text-luxury-gold"></i> Promo Only
-                            </button>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-sparkles text-luxury-gold/60 text-[9px]"></i> Sort</label>
-                            <button id="new-arrival-toggle-btn" onclick="toggleNewArrivalSort()" class="w-full bg-luxury-gold text-[#0a0f19] border border-luxury-gold rounded-xl px-3 py-1.5 text-xs flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-bold uppercase tracking-wider h-[30px]" title="Sort items by newest arrival (lowest aging days) first">
-                                <i class="fa-solid fa-sparkles"></i> Newest First
-                            </button>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1 flex items-center gap-1.5"><i class="fa-solid fa-cubes text-luxury-gold/60 text-[9px]"></i> Catalog</label>
-                            <button id="set-only-toggle-btn" onclick="toggleSetsOnly()" class="w-full bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold text-luxury-muted hover:text-luxury-text rounded-xl px-3 py-1.5 text-xs flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer font-semibold uppercase tracking-wider h-[30px]" title="Show only reusable created sets">
-                                <i class="fa-solid fa-cubes text-luxury-gold"></i> Set
-                            </button>
+
+                        <div class="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
+                            <div class="hidden sm:flex items-center gap-1 shrink-0 bg-luxury-dark border border-luxury-gold/20 rounded-xl p-1 h-10" title="Product display layout">
+                                <button onclick="setProductLayoutMode('grid')" id="layout-grid-btn" class="h-full px-2.5 rounded-lg border text-xs font-bold uppercase transition-all duration-150 border-luxury-gold/10 text-luxury-muted hover:text-luxury-text"><i class="fa-solid fa-table-cells-large mr-1"></i> Grid</button>
+                                <button onclick="setProductLayoutMode('list')" id="layout-list-btn" class="h-full px-2.5 rounded-lg border text-xs font-bold uppercase transition-all duration-150 bg-luxury-accent text-luxury-gold border-luxury-gold/30"><i class="fa-solid fa-list mr-1"></i> List</button>
+                            </div>
+
+                            <div class="hidden sm:flex items-center gap-1 shrink-0 bg-luxury-dark border border-luxury-gold/20 rounded-xl p-1 h-10">
+                                <button onclick="exportAllCatalogImages(true)" id="export-all-price-btn" class="h-full w-8 rounded-lg border flex items-center justify-center transition-all duration-150 border-luxury-gold/10 text-luxury-muted hover:text-luxury-gold hover:border-luxury-gold/30" title="Export all shown items with prices" aria-label="Export all shown items with prices"><i class="fa-solid fa-tags"></i></button>
+                                <button onclick="exportAllCatalogImages(false)" id="export-all-photo-btn" class="h-full w-8 rounded-lg border flex items-center justify-center transition-all duration-150 border-luxury-gold/10 text-luxury-muted hover:text-luxury-gold hover:border-luxury-gold/30" title="Export all shown item photos" aria-label="Export all shown item photos"><i class="fa-solid fa-image"></i></button>
+                            </div>
+
+                            <button onclick="resetFilters()" class="shrink-0 bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold hover:bg-luxury-gold/10 text-luxury-muted hover:text-luxury-gold rounded-xl h-10 w-10 flex items-center justify-center transition-all duration-300 shadow-sm" title="Clear all filters" aria-label="Clear all filters"><i class="fa-solid fa-filter-circle-xmark text-base"></i></button>
                         </div>
                     </div>
                 </div>
