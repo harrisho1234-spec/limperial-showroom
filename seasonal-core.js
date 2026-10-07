@@ -2,6 +2,14 @@
 (function(root) {
   'use strict';
   const code = value => String(value || '').trim().toUpperCase();
+  const themeKeys = [
+    'international_new_year',
+    'chinese_new_year',
+    'khmer_new_year',
+    'pchum_ben',
+    'water_festival',
+    'christmas'
+  ];
   const today = (now = new Date()) => new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Phnom_Penh', year: 'numeric', month: '2-digit', day: '2-digit'
   }).format(now);
@@ -44,6 +52,7 @@
     const validDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v;
     if (!validDate(payload.start_date) || !validDate(payload.end_date) || payload.end_date < payload.start_date) return 'Choose valid start and end dates.';
     if (payload.discount_percent !== null && (!Number.isFinite(payload.discount_percent) || payload.discount_percent < 0 || payload.discount_percent > 100)) return 'Discount must be between 0 and 100%.';
+    if (payload.theme_preset && !themeKeys.includes(payload.theme_preset)) return 'Choose a valid seasonal background theme.';
     if (!payload.items.length || payload.items.length > 300) return 'Select between 1 and 300 products.';
     for (const item of payload.items) {
       const product = products.find(p => !p.isSet && code(p.code) === code(item.code));
@@ -51,7 +60,7 @@
     }
     return '';
   }
-  const api = {code, today, state, active, index, project, validate};
+  const api = {code, themeKeys, today, state, active, index, project, validate};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SeasonalCore = api;
 })(typeof window !== 'undefined' ? window : globalThis);
