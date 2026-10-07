@@ -2,7 +2,7 @@
 
 ## Production deployment — 7 October 2026
 
-Frontend deployed from merged PR #1. The Supabase migration `repair_showroom_campaign_permissions_and_validation` was applied successfully to the existing Sales Tracking project. Public REST campaign reads now return HTTP 200. Live transaction tests confirmed manager insert/update access, non-manager write rejection, public active reads and disabled campaign exclusion. All test rows were rolled back; the campaign table remains empty, ready for the first real campaign. The deployed table's existing `created_by = auth.uid()` insert check is preserved by the compatibility clause in the SQL script.
+Frontend deployed from merged PR #1. The Supabase migration `repair_showroom_campaign_permissions_and_validation` was applied successfully to the existing Sales Tracking project. Public REST campaign reads now return HTTP 200. Live transaction tests confirmed administrator insert/update access, non-admin write rejection, public active reads and disabled campaign exclusion. All test rows were rolled back; the campaign table remains empty, ready for the first real campaign. The deployed table's existing `created_by = auth.uid()` insert check is preserved by the compatibility clause in the SQL script.
 
 The security advisor reported no findings for the campaign table or validation function. It reported unrelated existing project findings, including [security-definer views](https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view), [publicly executable privileged functions](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable), and [password protection settings](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection); these were outside the campaign deployment and were not changed.
 
@@ -14,9 +14,9 @@ On 7 October 2026, a read-only request to the existing Sales Tracking project's 
 
 1. In the existing Sales Tracking Supabase project (`msxvnaintafqdgheutfu`), run [database/seasonal-promotions.sql](database/seasonal-promotions.sql) in the SQL Editor as the database administrator. It repairs policies on the campaign table only, validates new/edited campaigns, and keeps history. It does not change the existing role function or users. It is transactional and safe to rerun.
 2. Publish this repository's static files using its existing GitHub Pages deployment. No frontend build is required. The new service-worker cache version refreshes the installed app's assets; shared campaign/auth responses bypass the cache.
-3. In Management Mode, open **Seasonal Promotions**, sign in with an existing Sales Tracking Super Admin, Admin, or Manager account, and create a disabled test campaign. Verify name, dates, badge, selected products, optional percentage and per-item prices; then enable it for a date range that includes today.
+3. In Management Mode, open **Seasonal Promotions**, sign in with an existing Sales Tracking Super Admin or Admin account, and create a disabled test campaign. Verify name, dates, badge, selected products, optional percentage and per-item prices; then enable it for a date range that includes today.
 4. Open the showroom in a second signed-out browser/device. Confirm the campaign appears above the catalog. Use View All Promotions, product filters, product details and product selection. Verify the exact selected quote price. Disable the test campaign and refresh the second device; it should disappear while existing quote lines keep their prices.
-5. Verify a normal sales account cannot create/edit campaigns. Future, ended and disabled campaigns must remain invisible to signed-out visitors.
+5. Verify Manager, Sales, or any other non-admin account cannot create/edit campaigns. Future, ended and disabled campaigns must remain invisible to signed-out visitors.
 
 The SQL script was tested in an isolated PostgreSQL-compatible PGlite database, including anonymous reads without permission to execute `current_app_role`, rejected anonymous/non-manager writes, manager editing, date/status visibility, validation and rerunning the script. The live database transaction checks described above additionally passed after production deployment. An end-to-end browser save using a manager's actual sign-in was not performed.
 
@@ -38,7 +38,7 @@ The seasonal artwork changes only the showroom canvas behind the existing L'Impe
 
 ## Custom background uploads
 
-Managers can upload a campaign-specific background directly from **Management Mode → Seasonal Promotions**. Custom images are stored in the public Supabase Storage bucket `showroom-seasonal-backgrounds` and the campaign stores only the Storage object path and display name.
+Super Admins and Admins can upload a campaign-specific background directly from **Management Mode → Seasonal Promotions**. Custom images are stored in the public Supabase Storage bucket `showroom-seasonal-backgrounds` and the campaign stores only the Storage object path and display name.
 
 - Allowed file types: JPG, PNG, WebP.
 - Maximum file size: 8 MB.
