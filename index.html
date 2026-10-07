@@ -744,9 +744,27 @@
                             </label>
                         </div>
                         <h4 class="text-xs font-bold text-luxury-gold uppercase tracking-widest border-b border-luxury-gold/20 pb-2 pt-2">Client & Proposal Information</h4>
-                        <div class="grid grid-cols-3 gap-3">
-                            <div><label id="num-input-label" class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Quotation N°</label><input type="text" id="quote-no-input" readonly placeholder="Auto-generated when saved" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none font-mono opacity-75" oninput="updateQuotationPreview()"><div id="quote-no-help" class="mt-1 text-[9px] text-luxury-muted">Permanent number is assigned when this quotation is saved.</div></div>
-                            <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Salesperson</label><input type="text" id="quote-sales-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div id="quotation-type-field">
+                                <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Quotation Type</label>
+                                <select id="quote-prefix-select" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" onchange="handleQuotationPrefixChange()">
+                                    <option value="S">Showroom (S)</option>
+                                    <option value="P">Project (P)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label id="num-input-label" class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Quotation N°</label>
+                                <input type="text" id="quote-no-input" readonly placeholder="Auto-generated when saved" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none font-mono opacity-75" oninput="updateQuotationPreview()">
+                                <div id="quote-no-help" class="mt-1 text-[9px] text-luxury-muted">Showroom uses S; Project uses P. Permanent number is assigned when saved.</div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Salesperson <span class="text-rose-400">*</span></label>
+                                <div class="relative">
+                                    <input type="text" id="quote-sales-input" list="quote-salesperson-options" autocomplete="off" placeholder="Select or type salesperson" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg pl-3 pr-8 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()">
+                                    <button type="button" onclick="openSalespersonPicker()" class="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md text-luxury-gold hover:bg-luxury-accent/70" title="Show salesperson list"><i class="fa-solid fa-chevron-down text-[9px]"></i></button>
+                                    <datalist id="quote-salesperson-options"></datalist>
+                                </div>
+                            </div>
                             <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Issue Date</label><input type="text" id="quote-date-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                         </div>
                         <div id="so-deposit-fields" class="hidden space-y-3 p-3 bg-luxury-accent/30 border border-luxury-gold/10 rounded-xl">
@@ -771,7 +789,7 @@
                             <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Install Date</label><input type="text" id="do-install-date-input" placeholder="DD/MM/YYYY" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                             <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">QB</label><input type="text" id="do-qb-input" placeholder="QB Reference" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                         </div>
-                        <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Customer / Project Name</label><input type="text" id="quote-customer-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none font-semibold" oninput="updateQuotationPreview()"></div>
+                        <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Customer / Project Name <span class="text-rose-400">*</span></label><input type="text" id="quote-customer-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none font-semibold" oninput="updateQuotationPreview()"></div>
                         <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Telephone Contact</label><input type="text" id="quote-tel-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                         <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Delivery Address</label><textarea id="quote-address-input" rows="2" placeholder="Address Details" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg p-2 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></textarea></div>
                         <h4 class="text-xs font-bold text-luxury-gold uppercase tracking-widest border-b border-luxury-gold/20 pb-2 pt-2">Assign Rooms / Notes</h4>
