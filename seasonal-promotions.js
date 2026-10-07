@@ -14,13 +14,41 @@
   let campaigns=[],authorized=false,editId=null,chosen=new Map(),searchQuery='',showingAll=false;
   let loading=false, managerVisible=false, lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='';
   const rules=window.SeasonalCore;
-  let live=new Map(), liveDay='';
+  const themePresets=()=>window.SEASONAL_THEME_PRESETS||{};
+  let live=new Map(), liveDay='', activeThemeKey='', resizeTimer=null;
   function featuredMap(){
     if(liveDay!==today()){liveDay=today();live=rules.index(campaigns,liveDay);}
     return live;
   }
   const view=p=>rules.project(p,featuredMap().get(codeOf(p?.code)));
-  const redraw=()=>{renderBanner();if(typeof executeSearchFilter==='function')executeSearchFilter();};
+  function themedCampaign(){
+    return current().find(c=>c.theme_preset&&themePresets()[c.theme_preset])||null;
+  }
+  function applyTheme(){
+    const campaign=themedCampaign();
+    const preset=campaign?themePresets()[campaign.theme_preset]:null;
+    const root=document.documentElement,body=document.body;
+    if(!root||!body)return;
+    if(!preset){
+      root.style.removeProperty('--seasonal-bg');
+      root.style.removeProperty('--seasonal-overlay');
+      body.classList.remove('seasonal-theme-active');
+      delete body.dataset.seasonalTheme;
+      delete body.dataset.seasonalCampaign;
+      activeThemeKey='';
+      return;
+    }
+    const mobile=window.innerWidth<768;
+    const asset=(mobile&&preset.backgroundMobile)||preset.backgroundDesktop||preset.backgroundMobile;
+    if(!asset)return;
+    root.style.setProperty('--seasonal-bg','url("'+String(asset).replace(/"/g,'')+'")');
+    root.style.setProperty('--seasonal-overlay',preset.overlay||'rgba(12,18,24,0.30)');
+    body.classList.add('seasonal-theme-active');
+    body.dataset.seasonalTheme=campaign.theme_preset;
+    body.dataset.seasonalCampaign=campaign.name||'';
+    activeThemeKey=campaign.theme_preset;
+  }
+  const redraw=()=>{applyTheme();renderBanner();if(typeof executeSearchFilter==='function')executeSearchFilter();};
   const ui=id=>document.getElementById(id);
   const escapeHtml=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const codeOf=v=>String(v||'').trim().toUpperCase();
@@ -85,12 +113,11 @@
     if(!client||loading)return;
     loading=true;
     try{
-      const {data,error}=await client.from(TABLE).select('id,name,badge,start_date,end_date,is_enabled,discount_percent,items,created_at,updated_at').order('start_date',{ascending:false});
+      const {data,error}=await client.from(TABLE).select('id,name,badge,start_date,end_date,is_enabled,discount_percent,theme_preset,items,created_at,updated_at').order('start_date',{ascending:false});
       if(error)throw error;
       campaigns=data||[];liveDay='';loadError='';
       lastRefresh=Date.now();
-      renderBanner();
-      if(typeof executeSearchFilter==='function')executeSearchFilter();
+      redraw();
       if(authorized&&!editing)renderManager();
     }catch(e){loadError='The shared promotion service is unavailable. Please retry or contact your administrator.';console.warn('[Seasonal promotions] Load failed',e);if(authorized&&!editing)renderManager();}
     finally{loading=false;}
@@ -161,9 +188,10 @@
   }
   function campaignRow(c){
     const status=campaignState(c);
+    const theme=themePresets()[c.theme_preset];
     return '<div class="flex flex-wrap justify-between items-center gap-3 rounded-xl border border-luxury-gold/20 bg-luxury-dark/50 px-3 py-3">'+
       '<div><div class="text-sm font-semibold text-luxury-text">'+escapeHtml(c.name)+' <span class="ml-1 text-[10px] px-2 py-1 bg-luxury-accent rounded text-luxury-muted">'+escapeHtml(status)+'</span></div>'+
-      '<div class="mt-1 text-[10px] text-luxury-muted">'+escapeHtml(c.start_date)+' to '+escapeHtml(c.end_date)+' · '+campaignItems(c).length+' items'+(c.discount_percent?' · '+Number(c.discount_percent)+'% off':'')+'</div></div>'+
+      '<div class="mt-1 text-[10px] text-luxury-muted">'+escapeHtml(c.start_date)+' to '+escapeHtml(c.end_date)+' · '+campaignItems(c).length+' items'+(c.discount_percent?' · '+Number(c.discount_percent)+'% off':'')+(theme?' · Theme: '+escapeHtml(theme.label):'')+'</div></div>'+
       '<div class="flex gap-2"><button type="button" data-sp-edit="'+escapeHtml(c.id)+'" class="text-xs rounded-lg border border-luxury-gold/20 p-2 text-luxury-gold">Edit</button>'+
       '<button type="button" data-sp-toggle="'+escapeHtml(c.id)+'" class="text-xs rounded-lg border border-luxury-gold/20 p-2 text-luxury-muted">'+(c.is_enabled?'Disable':'Enable')+'</button></div></div>';
   }
@@ -207,8 +235,10 @@
       field('Badge / Label','sp-badge',c?.badge||'SEASONAL OFFER','text','e.g. Lighting Week')+
       field('Start Date','sp-start',start,'date')+field('End Date','sp-end',end,'date')+
       field('Discount % (optional)','sp-percent',c?.discount_percent??'','number','e.g. 20')+
-      '<label class="flex gap-2 items-center text-sm text-luxury-text"><input type="checkbox" id="sp-enabled" '+(c&&!c.is_enabled?'':'checked')+'> Enabled / Published</label></div>'+
+      '<label class="flex gap-2 items-center text-sm text-luxury-text"><input type="checkbox" id="sp-enabled" '+(c&&!c.is_enabled?'':'checked')+'> Enabled / Published</label>'+
+      themeSelect(c?.theme_preset||'')+'</div>'+
       '<p class="text-xs text-luxury-muted">Dates include the full day in Cambodia time. A blank discount and blank item prices only feature products. Item prices override the campaign discount; discounts do not stack. Existing quotes keep their selected prices. Selected Interest List products are included in new campaigns.</p>'+
+      '<p class="text-[10px] text-luxury-muted">The selected seasonal background appears only while this campaign is active. If multiple themed campaigns overlap, the active campaign with the latest start date controls the showroom background.</p>'+
       '<div class="rounded-xl border border-luxury-gold/15 p-3 space-y-3">'+
       '<div class="flex flex-wrap justify-between items-end gap-2"><label class="text-xs font-bold text-luxury-text">Select Products <span id="sp-count" class="text-luxury-gold"></span></label><span class="text-[10px] text-luxury-muted">Optional item-specific promotion prices</span></div>'+
       '<input id="sp-product-search" class="w-full border border-luxury-gold/20 bg-luxury-dark rounded-xl px-3 py-2.5 text-xs outline-none text-luxury-text" placeholder="Search by product code or name" value="'+escapeHtml(searchQuery)+'">'+
@@ -218,9 +248,25 @@
       '<button type="submit" id="sp-save" class="px-5 py-2.5 bg-luxury-gold text-slate-950 rounded-lg text-xs font-bold">Save Campaign</button></div>'+
       '</form></div>';
     ui('sp-product-search')?.addEventListener('input',e=>{searchQuery=e.target.value;renderPicker();});
+    ui('sp-theme')?.addEventListener('change',renderThemePreview);
+    renderThemePreview();
     ui('sp-cancel-edit')?.addEventListener('click',()=>{editId=null;editing=false;chosen.clear();renderManager();});
     ui('sp-editor-form')?.addEventListener('submit',saveCampaign);
     renderPicker();
+  }
+  function themeSelect(selected){
+    const options=Object.entries(themePresets()).map(([key,p])=>'<option value="'+escapeHtml(key)+'" '+(key===selected?'selected':'')+'>'+escapeHtml(p.label)+'</option>').join('');
+    return '<label class="text-[11px] font-bold text-luxury-muted block sm:col-span-2">Seasonal Theme'+
+      '<select id="sp-theme" class="w-full mt-1 border border-luxury-gold/20 bg-luxury-dark rounded-lg px-3 py-2.5 text-xs text-luxury-text outline-none">'+
+      '<option value="">Default L\'Imperial background</option>'+options+'</select><div id="sp-theme-preview" class="mt-2"></div></label>';
+  }
+  function renderThemePreview(){
+    const wrap=ui('sp-theme-preview');if(!wrap)return;
+    const key=ui('sp-theme')?.value||'',preset=themePresets()[key];
+    if(!preset){wrap.innerHTML='<div class="rounded-xl border border-luxury-gold/10 bg-luxury-accent/25 px-3 py-3 text-[10px] text-luxury-muted">No seasonal artwork. The normal showroom background will remain.</div>';return;}
+    const image=preset.backgroundDesktop||preset.backgroundMobile||'';
+    wrap.innerHTML='<div class="relative h-28 sm:h-36 overflow-hidden rounded-xl border border-luxury-gold/20 bg-luxury-dark bg-cover bg-center" style="background-image:linear-gradient('+escapeHtml(preset.overlay||'rgba(12,18,24,.30)')+','+escapeHtml(preset.overlay||'rgba(12,18,24,.30)')+'),url(\''+escapeHtml(image)+'\')">'+
+      '<div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/65 to-transparent text-white"><div class="text-[10px] uppercase tracking-widest font-bold">'+escapeHtml(preset.label)+'</div><div class="text-[9px] opacity-80 mt-0.5">Preview · product cards remain readable above the artwork</div></div></div>';
   }
   function field(label,id,value,type,placeholder){
     return '<label class="text-[11px] font-bold text-luxury-muted block">'+escapeHtml(label)+'<input '+(id==='sp-percent'||id==='sp-badge'?'':'required ')+'id="'+id+'" type="'+type+'" '+(type==='number'?'min="0" max="100" step="0.01"':'')+
@@ -266,6 +312,7 @@
     const start=ui('sp-start')?.value||'',end=ui('sp-end')?.value||'';
     const pv=ui('sp-percent')?.value.trim()||'';
     const pct=pv===''?null:Number(pv);
+    const theme=ui('sp-theme')?.value||null;
     if(name.length<2||name.length>120||badge.length>40){notify('Enter a campaign name and a badge of at most 40 characters.','error');return;}
     if(!start||!end||end<start){notify('Choose valid start and end dates.','error');return;}
     if(pct!=null&&(!Number.isFinite(pct)||pct<0||pct>100)){notify('Discount must be between 0 and 100%.','error');return;}
@@ -274,7 +321,7 @@
     if(items.some(i=>i.promo_price!=null&&(!Number.isFinite(i.promo_price)||i.promo_price<0))){
       notify('Promotional prices cannot be negative.','error');return;
     }
-    const payload={name,badge,start_date:start,end_date:end,is_enabled:!!ui('sp-enabled')?.checked,discount_percent:pct,items,updated_at:new Date().toISOString()};
+    const payload={name,badge,start_date:start,end_date:end,is_enabled:!!ui('sp-enabled')?.checked,discount_percent:pct,theme_preset:theme,items,updated_at:new Date().toISOString()};
     const validation=rules.validate(payload,rawProducts());if(validation){notify(validation,'error');return;}
     const btn=ui('sp-save');if(btn){btn.disabled=true;btn.textContent='Saving…';}
     const req=editId?client.from(TABLE).update(payload).eq('id',editId).eq('updated_at',editVersion).select('id'):client.from(TABLE).insert(payload).select('id');
@@ -293,6 +340,7 @@
     // Refresh at least every five minutes; date changes are checked in Cambodia time.
     ticker=setInterval(()=>{if(liveDay!==today())redraw();if(Date.now()-lastRefresh>270000)refresh();},60000);
     window.addEventListener('online',refresh);
+    window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(applyTheme,120);});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden){redraw();refresh();}});
     document.addEventListener('keydown',e=>{
       const modal=ui('seasonal-promo-modal');if(!modal||modal.classList.contains('hidden'))return;
