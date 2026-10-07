@@ -18,7 +18,7 @@
     : null;
   let campaigns=[],authorized=false,editId=null,chosen=new Map(),searchQuery='',showingAll=false;
   let loading=false, managerVisible=false, lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='';
-  let pendingBackgroundFile=null, pendingBackgroundPreviewUrl='', removeBackground=false;
+  let pendingBackgroundFile=null, pendingBackgroundPreviewUrl='', pendingBackgroundMeta='', removeBackground=false;
   let editorBackgroundPath='', editorBackgroundName='', editorBackgroundUpdatedAt=null;
   const rules=window.SeasonalCore;
   const themePresets=()=>window.SEASONAL_THEME_PRESETS||{};
@@ -274,6 +274,7 @@
   function resetBackgroundEditor(c){
     revokeBackgroundPreview();
     pendingBackgroundFile=null;
+    pendingBackgroundMeta='';
     removeBackground=false;
     editorBackgroundPath=c?.custom_background_path||'';
     editorBackgroundName=c?.custom_background_name||'';
@@ -296,7 +297,8 @@
       field('Start Date','sp-start',start,'date')+field('End Date','sp-end',end,'date')+
       field('Discount % (optional)','sp-percent',c?.discount_percent??'','number','e.g. 20')+
       '<label class="flex gap-2 items-center text-sm text-luxury-text"><input type="checkbox" id="sp-enabled" '+(c&&!c.is_enabled?'':'checked')+'> Enabled / Published</label>'+
-      themeSelect(c?.theme_preset||'')+'</div>'+
+      themeSelect(c?.theme_preset||'')+
+      backgroundUploadControl()+'</div>'+
       '<p class="text-xs text-luxury-muted">Dates include the full day in Cambodia time. A blank discount and blank item prices only feature products. Item prices override the campaign discount; discounts do not stack. Existing quotes keep their selected prices. Selected Interest List products are included in new campaigns.</p>'+
       '<p class="text-[10px] text-luxury-muted">The selected seasonal background appears only while this campaign is active. If multiple themed campaigns overlap, the active campaign with the latest start date controls the showroom background.</p>'+
       '<div class="rounded-xl border border-luxury-gold/15 p-3 space-y-3">'+
@@ -309,8 +311,11 @@
       '</form></div>';
     ui('sp-product-search')?.addEventListener('input',e=>{searchQuery=e.target.value;renderPicker();});
     ui('sp-theme')?.addEventListener('change',renderThemePreview);
+    ui('sp-background-file')?.addEventListener('change',handleBackgroundFile);
+    ui('sp-background-remove')?.addEventListener('click',removeCustomBackground);
+    renderBackgroundStatus();
     renderThemePreview();
-    ui('sp-cancel-edit')?.addEventListener('click',()=>{editId=null;editing=false;chosen.clear();renderManager();});
+    ui('sp-cancel-edit')?.addEventListener('click',()=>{resetBackgroundEditor(null);editId=null;editing=false;chosen.clear();renderManager();});
     ui('sp-editor-form')?.addEventListener('submit',saveCampaign);
     renderPicker();
   }
@@ -320,13 +325,87 @@
       '<select id="sp-theme" class="w-full mt-1 border border-luxury-gold/20 bg-luxury-dark rounded-lg px-3 py-2.5 text-xs text-luxury-text outline-none">'+
       '<option value="">Default L\'Imperial background</option>'+options+'</select><div id="sp-theme-preview" class="mt-2"></div></label>';
   }
+  function backgroundUploadControl(){
+    return '<div class="sm:col-span-2 rounded-xl border border-luxury-gold/20 bg-luxury-accent/20 p-3 space-y-2">'+
+      '<div class="flex flex-wrap items-center justify-between gap-2"><div><div class="text-[11px] font-bold text-luxury-text">Custom Background Upload</div>'+
+      '<div class="text-[10px] text-luxury-muted mt-0.5">Overrides the selected built-in theme for this campaign.</div></div>'+
+      '<button type="button" id="sp-background-remove" class="hidden px-3 py-1.5 rounded-lg border border-red-400/30 text-red-500 text-[10px] font-bold">Remove Custom Image</button></div>'+
+      '<input id="sp-background-file" type="file" accept="image/jpeg,image/png,image/webp" class="block w-full text-xs text-luxury-muted file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-950 cursor-pointer">'+
+      '<div class="text-[10px] text-luxury-muted">Recommended: 2560 × 1440 (16:9). Minimum: 1920 × 1080. JPG, PNG or WebP, maximum 8 MB.</div>'+
+      '<div id="sp-background-status" class="text-[10px] text-luxury-muted"></div></div>';
+  }
+  function currentCustomPreview(){
+    if(pendingBackgroundPreviewUrl)return pendingBackgroundPreviewUrl;
+    if(!removeBackground&&editorBackgroundPath)return storagePublicUrl(editorBackgroundPath);
+    return '';
+  }
+  function renderBackgroundStatus(){
+    const status=ui('sp-background-status'),removeBtn=ui('sp-background-remove');
+    if(!status)return;
+    const hasCustom=!!currentCustomPreview();
+    if(pendingBackgroundFile){
+      status.innerHTML='<span class="text-luxury-gold font-semibold">Ready to upload:</span> '+escapeHtml(pendingBackgroundFile.name)+(pendingBackgroundMeta?' · '+escapeHtml(pendingBackgroundMeta):'');
+    }else if(!removeBackground&&editorBackgroundPath){
+      status.innerHTML='<span class="text-luxury-gold font-semibold">Current custom image:</span> '+escapeHtml(editorBackgroundName||'Uploaded seasonal background');
+    }else{
+      status.textContent='No custom background selected. The built-in theme will be used.';
+    }
+    if(removeBtn)removeBtn.classList.toggle('hidden',!hasCustom);
+  }
+  function imageDimensions(file){
+    return new Promise((resolve,reject)=>{
+      const url=URL.createObjectURL(file),img=new Image();
+      img.onload=()=>{const dims={width:img.naturalWidth,height:img.naturalHeight};URL.revokeObjectURL(url);resolve(dims);};
+      img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Image could not be read.'));};
+      img.src=url;
+    });
+  }
+  async function handleBackgroundFile(event){
+    const input=event.currentTarget,file=input?.files?.[0];
+    if(!file)return;
+    if(!BACKGROUND_TYPES.has(file.type)){
+      notify('Use a JPG, PNG or WebP background image.','error');input.value='';return;
+    }
+    if(file.size>MAX_BACKGROUND_BYTES){
+      notify('Background image is larger than 8 MB. Please export a smaller file.','error');input.value='';return;
+    }
+    let dims;
+    try{dims=await imageDimensions(file);}catch(e){notify('The selected image could not be opened.','error');input.value='';return;}
+    if(dims.width<MIN_BACKGROUND_WIDTH||dims.height<MIN_BACKGROUND_HEIGHT){
+      notify('Background is '+dims.width+' × '+dims.height+'. Please use at least 1920 × 1080 to avoid pixelation.','error');input.value='';return;
+    }
+    revokeBackgroundPreview();
+    pendingBackgroundFile=file;
+    pendingBackgroundMeta=dims.width+' × '+dims.height+' · '+(file.size/1048576).toFixed(1)+' MB';
+    removeBackground=false;
+    pendingBackgroundPreviewUrl=URL.createObjectURL(file);
+    renderBackgroundStatus();
+    renderThemePreview();
+  }
+  function removeCustomBackground(){
+    revokeBackgroundPreview();
+    pendingBackgroundFile=null;pendingBackgroundMeta='';removeBackground=true;
+    const input=ui('sp-background-file');if(input)input.value='';
+    renderBackgroundStatus();renderThemePreview();
+  }
   function renderThemePreview(){
     const wrap=ui('sp-theme-preview');if(!wrap)return;
+    const custom=currentCustomPreview();
+    if(custom){
+      const label=pendingBackgroundFile?pendingBackgroundFile.name:(editorBackgroundName||'Custom Background');
+      wrap.innerHTML='<div class="relative h-32 sm:h-44 overflow-hidden rounded-xl border border-luxury-gold/25 bg-luxury-dark">'+
+        '<img src="'+escapeHtml(custom)+'" alt="" class="absolute inset-0 w-full h-full object-cover object-center">'+
+        '<div class="absolute inset-0 bg-black/5"></div>'+
+        '<div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white"><div class="text-[10px] uppercase tracking-widest font-bold">Custom Background</div><div class="text-[9px] opacity-85 mt-0.5">'+escapeHtml(label)+' · overrides built-in theme</div></div></div>';
+      return;
+    }
     const key=ui('sp-theme')?.value||'',preset=themePresets()[key];
     if(!preset){wrap.innerHTML='<div class="rounded-xl border border-luxury-gold/10 bg-luxury-accent/25 px-3 py-3 text-[10px] text-luxury-muted">No seasonal artwork. The normal showroom background will remain.</div>';return;}
     const image=preset.backgroundDesktop||preset.backgroundMobile||'';
-    wrap.innerHTML='<div class="relative h-28 sm:h-36 overflow-hidden rounded-xl border border-luxury-gold/20 bg-luxury-dark bg-cover bg-center" style="background-image:linear-gradient('+escapeHtml(preset.overlay||'rgba(12,18,24,.30)')+','+escapeHtml(preset.overlay||'rgba(12,18,24,.30)')+'),url(\''+escapeHtml(image)+'\')">'+
-      '<div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/65 to-transparent text-white"><div class="text-[10px] uppercase tracking-widest font-bold">'+escapeHtml(preset.label)+'</div><div class="text-[9px] opacity-80 mt-0.5">Preview · product cards remain readable above the artwork</div></div></div>';
+    wrap.innerHTML='<div class="relative h-32 sm:h-44 overflow-hidden rounded-xl border border-luxury-gold/20 bg-luxury-dark">'+
+      '<img src="'+escapeHtml(image)+'" alt="" class="absolute inset-0 w-full h-full object-cover object-center">'+
+      '<div class="absolute inset-0" style="background:'+escapeHtml(preset.overlay||'rgba(12,18,24,.30)')+'"></div>'+
+      '<div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/65 to-transparent text-white"><div class="text-[10px] uppercase tracking-widest font-bold">'+escapeHtml(preset.label)+'</div><div class="text-[9px] opacity-80 mt-0.5">Built-in theme preview · upload a custom image above to override it</div></div></div>';
   }
   function field(label,id,value,type,placeholder){
     return '<label class="text-[11px] font-bold text-luxury-muted block">'+escapeHtml(label)+'<input '+(id==='sp-percent'||id==='sp-badge'?'':'required ')+'id="'+id+'" type="'+type+'" '+(type==='number'?'min="0" max="100" step="0.01"':'')+
