@@ -646,13 +646,13 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1.5">List Name</label>
+                        <label id="saved-list-name-label" class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1.5">List Name</label>
                         <input type="text" id="saved-list-name-input" maxlength="120" placeholder="e.g. Customer A — Living Room" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-4 py-2.5 text-sm text-luxury-text outline-none transition-colors duration-200" onkeydown="if(event.key === 'Enter') saveCurrentInterestList()">
                     </div>
-                    <div class="text-[10px] text-luxury-muted">This saves the current selected products and current list settings.</div>
+                    <div id="saved-list-help" class="text-[10px] text-luxury-muted">This saves the current selected products and current list settings.</div>
                     <div class="grid grid-cols-2 gap-2 pt-1">
                         <button onclick="closeSavedListsModal()" class="py-2.5 bg-luxury-lightBg hover:bg-luxury-accent text-luxury-soft border border-luxury-gold/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Cancel</button>
-                        <button onclick="saveCurrentInterestList()" class="py-2.5 bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Save List</button>
+                        <button id="saved-list-submit-btn" onclick="saveCurrentInterestList()" class="py-2.5 bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Save List</button>
                     </div>
                 </div>
                 <div id="retrieve-lists-panel" class="hidden space-y-3">
@@ -833,6 +833,10 @@
         let recommendedFocusItemId = null;
         let saveListsRequestToken = 0;
         let isSavingInterestList = false;
+        let activeSavedQuotationId = '';
+        let activeSavedQuotationName = '';
+        let activeSavedQuotationNo = '';
+        let activeSavedQuotationRevision = 0;
         let documentFormStates = {
             quotation: { initialized: false },
             sales_order: { initialized: false },
@@ -2102,7 +2106,7 @@
                 quoteBtn.className = activeClass;
                 numLabel.textContent = "Quotation N°";
                 if (numInput) { numInput.readOnly = true; numInput.placeholder = "Auto-generated when saved"; numInput.classList.add('opacity-75'); }
-                if (numHelp) { numHelp.textContent = "Permanent number is assigned when this quotation is saved."; numHelp.classList.remove('hidden'); }
+                if (numHelp) numHelp.classList.remove('hidden');
             } else if (type === 'sales_order') {
                 soBtn.className = activeClass;
                 numLabel.textContent = "Sales Order N°"; soDepositFields.classList.remove('hidden');
@@ -2128,6 +2132,7 @@
             if (!restored && numInput) numInput.value = '';
 
             if (type === 'sales_order' && !restored) syncDepositAmountFromPct();
+            updateQuotationNumberHelp();
             updateQuotationPreview();
         }
 
@@ -3625,6 +3630,12 @@
             ).trim();
         }
 
+        function savedQuotationRevision(list) {
+            if (savedDocumentType(list) !== 'quotation') return 0;
+            const value = Number(list?.state?.quotationRevision ?? list?.quotationRevision ?? 0);
+            return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+        }
+
         function savedDocumentNumber(list) {
             const type = savedDocumentType(list);
             if (type === 'quotation') return savedQuotationNumber(list);
@@ -3633,6 +3644,48 @@
                 list?.state?.documentFormStates?.[type]?.fields?.['quote-no-input']?.value ||
                 ''
             ).trim();
+        }
+
+        function currentQuotationRevision() {
+            if (documentType !== 'quotation') return 0;
+            const currentNo = String(document.getElementById('quote-no-input')?.value || '').trim();
+            return currentNo && currentNo === activeSavedQuotationNo ? activeSavedQuotationRevision : 0;
+        }
+
+        function quotationDisplayNumber(quoteNo, revision = currentQuotationRevision()) {
+            const no = String(quoteNo || '').trim();
+            if (!no) return '';
+            return revision > 0 ? no + ' · Rev ' + revision : no;
+        }
+
+        function isEditingSavedQuotation() {
+            if (documentType !== 'quotation' || !activeSavedQuotationId || !activeSavedQuotationNo) return false;
+            const currentNo = String(document.getElementById('quote-no-input')?.value || '').trim();
+            return currentNo === activeSavedQuotationNo;
+        }
+
+        function clearActiveSavedQuotation() {
+            activeSavedQuotationId = '';
+            activeSavedQuotationName = '';
+            activeSavedQuotationNo = '';
+            activeSavedQuotationRevision = 0;
+        }
+
+        function updateQuotationNumberHelp() {
+            const help = document.getElementById('quote-no-help');
+            if (!help || documentType !== 'quotation') return;
+            const currentNo = String(document.getElementById('quote-no-input')?.value || '').trim();
+            if (!currentNo) {
+                help.textContent = 'Permanent number is assigned when this quotation is saved.';
+                return;
+            }
+            if (isEditingSavedQuotation()) {
+                help.textContent = activeSavedQuotationRevision > 0
+                    ? 'Saved as Rev ' + activeSavedQuotationRevision + '. The next save will become Rev ' + (activeSavedQuotationRevision + 1) + '.'
+                    : 'Original saved quotation. The next save will become Rev 1.';
+                return;
+            }
+            help.textContent = 'Permanent quotation number.';
         }
 
         function parseQuotationIssueDate(value) {
@@ -3662,10 +3715,11 @@
             return false;
         }
 
-        function buildSavedInterestListRecord(name) {
+        function buildSavedInterestListRecord(name, options = {}) {
             captureDocumentFormState(documentType);
+            const revision = Number(options.quotationRevision) || 0;
             return {
-                id: 'SIL-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+                id: String(options.recordId || '').trim() || ('SIL-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)),
                 name: String(name || '').trim(),
                 savedAt: new Date().toISOString(),
                 state: {
@@ -3676,6 +3730,7 @@
                     partnerCommValue,
                     hasPartner,
                     documentType,
+                    quotationRevision: documentType === 'quotation' ? Math.max(0, Math.floor(revision)) : 0,
                     documentFormStates: cloneForStorage(documentFormStates)
                 }
             };
@@ -3803,8 +3858,39 @@
             if (cart.length === 0) { showNotification("Please select at least one product before saving the list.", "error"); return; }
             document.getElementById('save-new-list-panel')?.classList.remove('hidden');
             document.getElementById('retrieve-lists-panel')?.classList.add('hidden');
+
             const input = document.getElementById('saved-list-name-input');
-            if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
+            const label = document.getElementById('saved-list-name-label');
+            const help = document.getElementById('saved-list-help');
+            const submit = document.getElementById('saved-list-submit-btn');
+            const modalTitle = document.getElementById('saved-lists-modal-title');
+            const revising = isEditingSavedQuotation();
+
+            if (revising) {
+                const nextRevision = activeSavedQuotationRevision + 1;
+                if (modalTitle) modalTitle.textContent = 'Save Quotation Revision';
+                if (label) label.textContent = 'Saved Quotation';
+                if (input) {
+                    input.value = activeSavedQuotationName || 'Saved Quotation';
+                    input.readOnly = true;
+                    input.classList.add('opacity-75');
+                }
+                if (help) help.textContent = activeSavedQuotationNo + ' will keep the same permanent number. This save will become Rev ' + nextRevision + '.';
+                if (submit) submit.textContent = 'Save Rev ' + nextRevision;
+            } else {
+                if (modalTitle) modalTitle.textContent = documentType === 'quotation' ? 'Save Quotation' : 'Save Customer List';
+                if (label) label.textContent = 'List Name';
+                if (input) {
+                    input.value = '';
+                    input.readOnly = false;
+                    input.classList.remove('opacity-75');
+                    setTimeout(() => input.focus(), 50);
+                }
+                if (help) help.textContent = documentType === 'quotation'
+                    ? 'A permanent quotation number will be assigned when this quotation is saved.'
+                    : 'This saves the current selected products and current list settings.';
+                if (submit) submit.textContent = 'Save List';
+            }
         }
 
         function formatSavedListDate(value) {
@@ -3839,6 +3925,8 @@
                 const savedType = savedDocumentType(list);
                 const isQuotation = savedType === 'quotation';
                 const documentNo = savedDocumentNumber(list);
+                const revision = isQuotation ? savedQuotationRevision(list) : 0;
+                const displayDocumentNo = isQuotation ? quotationDisplayNumber(documentNo, revision) : documentNo;
                 const documentLabel = savedType === 'quotation'
                     ? 'Quotation'
                     : (savedType === 'sales_order'
@@ -3846,7 +3934,7 @@
                         : (savedType === 'delivery_order'
                             ? 'Delivery Order'
                             : (savedType === 'inventory' ? 'Inventory' : 'Saved List')));
-                const title = document.createElement('div'); title.className = 'saved-list-title text-xs font-semibold text-luxury-text truncate'; title.textContent = documentNo ? documentNo + ' · ' + (list.name || 'Unnamed List') : (list.name || 'Unnamed List');
+                const title = document.createElement('div'); title.className = 'saved-list-title text-xs font-semibold text-luxury-text truncate'; title.textContent = displayDocumentNo ? displayDocumentNo + ' · ' + (list.name || 'Unnamed List') : (list.name || 'Unnamed List');
                 const meta = document.createElement('div'); meta.className = 'text-[9px] text-luxury-muted mt-1'; meta.textContent = `${documentLabel} • ${itemCount} selected ${itemCount === 1 ? 'item' : 'items'}${list.savedAt ? ' • ' + formatSavedListDate(list.savedAt) : ''}`;
                 button.appendChild(title); button.appendChild(meta);
                 button.addEventListener('click', () => retrieveSavedInterestList(list.id));
@@ -3947,14 +4035,22 @@
             let reservedNewQuotation = false;
 
             try {
-                record = buildSavedInterestListRecord(name);
+                const revisingExistingQuotation = isEditingSavedQuotation();
+                const nextQuotationRevision = revisingExistingQuotation ? activeSavedQuotationRevision + 1 : 0;
+                record = buildSavedInterestListRecord(name, {
+                    recordId: revisingExistingQuotation ? activeSavedQuotationId : '',
+                    quotationRevision: nextQuotationRevision
+                });
 
                 if (documentType === 'quotation') {
                     const quoteInput = document.getElementById('quote-no-input');
                     let quoteNo = String(quoteInput?.value || '').trim();
 
-                    if (quoteNo && savedInterestLists.some(item => savedQuotationNumber(item) === quoteNo)) {
-                        throw new Error('Quotation ' + quoteNo + ' is already permanently saved. Start a new quotation instead of saving a duplicate number.');
+                    if (revisingExistingQuotation) {
+                        quoteNo = activeSavedQuotationNo;
+                        record.quoteNo = quoteNo;
+                    } else if (quoteNo && savedInterestLists.some(item => savedQuotationNumber(item) === quoteNo)) {
+                        throw new Error('Quotation ' + quoteNo + ' is already permanently saved. Open that quotation and save it as a revision instead.');
                     }
 
                     if (!quoteNo) {
@@ -3986,7 +4082,9 @@
                 }
 
                 const existing = getLocalSavedInterestLists();
-                existing.unshift(record);
+                const existingIndex = existing.findIndex(item => String(item.id || '') === String(record.id || ''));
+                if (existingIndex > -1) existing[existingIndex] = record;
+                else existing.unshift(record);
                 savedInterestLists = existing;
                 setLocalSavedInterestLists(savedInterestLists);
 
@@ -4006,8 +4104,12 @@
                         try {
                             const verifyResponse = await jsonpRequest({ action: 'get', recordId: record.id, _cb: Date.now() });
                             if (verifyResponse?.record?.id === record.id) {
-                                cloudRecord = verifyResponse.record;
-                                break;
+                                const expectedRevision = documentType === 'quotation' ? savedQuotationRevision(record) : 0;
+                                const confirmedRevision = documentType === 'quotation' ? savedQuotationRevision(verifyResponse.record) : 0;
+                                if (confirmedRevision >= expectedRevision) {
+                                    cloudRecord = verifyResponse.record;
+                                    break;
+                                }
                             }
                         } catch (verifyError) {
                             if (attempt === 4) throw verifyError;
@@ -4043,10 +4145,22 @@
                     }
                 }
 
-                const successMessage = documentType === 'quotation' && record.quoteNo
-                    ? record.quoteNo + ' saved permanently.'
+                if (documentType === 'quotation' && record.quoteNo) {
+                    activeSavedQuotationId = record.id;
+                    activeSavedQuotationName = record.name;
+                    activeSavedQuotationNo = record.quoteNo;
+                    activeSavedQuotationRevision = savedQuotationRevision(record);
+                    updateQuotationNumberHelp();
+                    updateQuotationPreview();
+                }
+
+                const savedQuoteDisplay = documentType === 'quotation' && record.quoteNo
+                    ? quotationDisplayNumber(record.quoteNo, savedQuotationRevision(record))
+                    : '';
+                const successMessage = savedQuoteDisplay
+                    ? savedQuoteDisplay + ' saved.'
                     : '"' + record.name + '" saved successfully.';
-                setSavedListSavingState('done', documentType === 'quotation' && record.quoteNo ? 'Saved as ' + record.quoteNo + '.' : 'Saved successfully.');
+                setSavedListSavingState('done', savedQuoteDisplay ? 'Saved as ' + savedQuoteDisplay + '.' : 'Saved successfully.');
                 showNotification(successMessage, "success");
                 await new Promise(resolve => setTimeout(resolve, 900));
                 closeSavedListsModal();
@@ -4164,12 +4278,22 @@
             updateCartVisuals(); renderProductGrid();
 
             const restoredDocType = state.documentType || documentType || 'quotation';
+            if (restoredDocType === 'quotation') {
+                activeSavedQuotationId = String(selected.id || '').trim();
+                activeSavedQuotationName = String(selected.name || '').trim();
+                activeSavedQuotationNo = savedQuotationNumber(selected);
+                activeSavedQuotationRevision = savedQuotationRevision(selected);
+            } else {
+                clearActiveSavedQuotation();
+            }
+
             isRestoringSavedDocumentState = true;
             setDocType(restoredDocType);
             isRestoringSavedDocumentState = false;
 
             renderQuoteItemsNotesForm();
             restoreDocumentFormState(documentType);
+            updateQuotationNumberHelp();
             updateQuotationPreview(); closeSavedListsModal();
             showNotification(`"${selected.name || 'Saved List'}" retrieved.`, "success");
         }
@@ -4251,8 +4375,10 @@
                 };
             });
             documentFormStates[documentType] = state;
+            if (documentType === 'quotation') clearActiveSavedQuotation();
 
             renderQuoteItemsNotesForm();
+            updateQuotationNumberHelp();
             updateQuotationPreview();
             showNotification('Quotation sheet information erased.', 'success');
         }
@@ -4275,6 +4401,8 @@
             if (!previewPaper) return;
 
             const quoteNo = document.getElementById('quote-no-input').value || "";
+            const quoteRevision = currentQuotationRevision();
+            const quoteNoDisplay = documentType === 'quotation' ? quotationDisplayNumber(quoteNo, quoteRevision) : quoteNo;
             const salesName = document.getElementById('quote-sales-input').value || "";
             const customerName = document.getElementById('quote-customer-input').value || "";
             const tel = document.getElementById('quote-tel-input').value || "";
@@ -4285,7 +4413,7 @@
             else { const dateObj = new Date(); formattedDate = `${String(dateObj.getDate()).padStart(2, '0')} / ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateObj.getMonth()]} / ${dateObj.getFullYear()}`; }
 
             let plainText = `===================================\n          L'IMPERIAL LUXURY        \n              ${documentType === 'quotation' ? 'QUOTATION' : (documentType === 'sales_order' ? 'SALES ORDER' : (documentType === 'delivery_order' ? 'DELIVERY ORDER' : 'INVENTORY REQUEST'))}            \n===================================\n`;
-            if (quoteNo) plainText += `${documentType === 'quotation' ? 'No' : (documentType === 'sales_order' ? 'SO No' : (documentType === 'delivery_order' ? 'DO No' : 'Req No'))}: ${quoteNo}\n`;
+            if (quoteNoDisplay) plainText += `${documentType === 'quotation' ? 'No' : (documentType === 'sales_order' ? 'SO No' : (documentType === 'delivery_order' ? 'DO No' : 'Req No'))}: ${quoteNoDisplay}\n`;
             plainText += `Date: ${formattedDate}\n`; if (salesName) plainText += `Sales: ${salesName}\n`;
             if (customerName || tel || address) { plainText += `-----------------------------------\n`; if (customerName) plainText += `Client: ${customerName}\n`; if (tel) plainText += `Tel: ${tel}\n`; if (address) plainText += `Address: ${address}\n`; }
             plainText += `-----------------------------------\nItems:\n`;
@@ -4727,7 +4855,7 @@
                             <h2 style="font-family: 'Playfair Display', 'Battambang', serif; font-size: 28px; font-weight: 700; color: #0f2d4a; margin: 0; line-height: 1;">${documentType === 'quotation' ? 'Quotation' : 'Sales Order'}</h2>
                         </div>
                         <div style="text-align: right; font-family: 'Inter', 'Battambang', sans-serif; font-size: 11px; color: #334155; line-height: 1.5;">
-                            <div style="color: #ef4444; font-weight: 700; font-size: 13px; margin-bottom: 3px;">${documentType === 'quotation' ? 'N°' : 'SO N°'}: <span>${quoteNo}</span></div>
+                            <div style="color: #ef4444; font-weight: 700; font-size: 13px; margin-bottom: 3px;">${documentType === 'quotation' ? 'N°' : 'SO N°'}: <span>${documentType === 'quotation' ? quoteNoDisplay : quoteNo}</span></div>
                             <div>Issue Date: <span style="font-weight: 600;">${formattedDate}</span></div>
                             <div>Sales: <span style="font-weight: 600;">${salesName}</span></div>
                         </div>
@@ -5165,7 +5293,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261007-inputselect1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261007-quoterev1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
