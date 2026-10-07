@@ -3689,12 +3689,92 @@
             activeSavedQuotationRevision = 0;
         }
 
+        function getQuotationPrefix() {
+            const select = document.getElementById('quote-prefix-select');
+            const value = String(select?.value || 'S').trim().toUpperCase();
+            return value === 'P' ? 'P' : 'S';
+        }
+
+        function quotationTypeLabel(prefix = getQuotationPrefix()) {
+            return prefix === 'P' ? 'Project' : 'Showroom';
+        }
+
+        function prefixFromQuotationNumber(value) {
+            const match = String(value || '').trim().toUpperCase().match(/^([SP])-/);
+            return match ? match[1] : '';
+        }
+
+        function syncQuotationTypeFromNumber() {
+            const select = document.getElementById('quote-prefix-select');
+            const currentNo = String(document.getElementById('quote-no-input')?.value || '').trim();
+            const prefix = prefixFromQuotationNumber(currentNo);
+            if (select && prefix) select.value = prefix;
+            if (select) select.disabled = !!currentNo;
+        }
+
+        function handleQuotationPrefixChange() {
+            const select = document.getElementById('quote-prefix-select');
+            const currentNo = String(document.getElementById('quote-no-input')?.value || '').trim();
+            if (currentNo) {
+                const prefix = prefixFromQuotationNumber(currentNo) || 'S';
+                if (select) select.value = prefix;
+                showNotification('Quotation type is locked after a permanent quotation number is assigned.', 'info');
+                return;
+            }
+            updateQuotationNumberHelp();
+            updateQuotationPreview();
+        }
+
+        function openSalespersonPicker() {
+            const input = document.getElementById('quote-sales-input');
+            if (!input) return;
+            input.focus();
+            try {
+                if (typeof input.showPicker === 'function') input.showPicker();
+            } catch (_) {}
+        }
+
+        async function loadQuotationSalespeople() {
+            const list = document.getElementById('quote-salesperson-options');
+            if (!list || !window.QuotationRegistry?.listSalespeople) return;
+            try {
+                const people = await window.QuotationRegistry.listSalespeople();
+                list.innerHTML = '';
+                people.forEach(person => {
+                    const option = document.createElement('option');
+                    option.value = person.displayName;
+                    option.label = person.role === 'manager' ? person.displayName + ' · Manager' : person.displayName;
+                    list.appendChild(option);
+                });
+            } catch (err) {
+                console.warn('Salesperson list could not be loaded:', err);
+            }
+        }
+
+        function validateQuotationRequiredInfo() {
+            if (documentType !== 'quotation') return true;
+            const customer = String(document.getElementById('quote-customer-input')?.value || '').trim();
+            const salesperson = String(document.getElementById('quote-sales-input')?.value || '').trim();
+            const missing = [];
+            if (!customer) missing.push('Customer / Project Name');
+            if (!salesperson) missing.push('Salesperson');
+            if (!missing.length) return true;
+
+            showNotification('Complete quotation information first: ' + missing.join(' and ') + '.', 'error');
+            const target = !customer
+                ? document.getElementById('quote-customer-input')
+                : document.getElementById('quote-sales-input');
+            target?.focus();
+            return false;
+        }
+
         function updateQuotationNumberHelp() {
             const help = document.getElementById('quote-no-help');
             if (!help || documentType !== 'quotation') return;
             const currentNo = String(document.getElementById('quote-no-input')?.value || '').trim();
             if (!currentNo) {
-                help.textContent = 'Permanent number is assigned when this quotation is saved.';
+                const prefix = getQuotationPrefix();
+                help.textContent = quotationTypeLabel(prefix) + ' quotation will use ' + prefix + '-YYMM-##. Permanent number is assigned when saved.';
                 return;
             }
             if (isEditingSavedQuotation()) {
@@ -3703,7 +3783,7 @@
                     : 'Original saved quotation. The next save will become Rev 1.';
                 return;
             }
-            help.textContent = 'Permanent quotation number.';
+            help.textContent = quotationTypeLabel(prefixFromQuotationNumber(currentNo) || getQuotationPrefix()) + ' permanent quotation number.';
         }
 
         function parseQuotationIssueDate(value) {
