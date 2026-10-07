@@ -91,11 +91,11 @@
       '<p class="text-xs text-luxury-muted mt-1">'+list.length+' featured products · Promotions end automatically on their campaign dates</p></div>'+
       '<button type="button" id="seasonal-view-all" class="px-3 py-2 rounded-xl text-xs font-bold border border-luxury-gold/30 bg-luxury-accent/40 text-luxury-gold hover:bg-luxury-accent">'+(showingAll?'Show Normal Catalog':'View All Promotions')+' <i class="fa-solid fa-arrow-right ml-1"></i></button></div>'+
       (showingAll?'<p class="text-xs text-luxury-muted">Showing seasonal promotion items in the catalog below. Other search filters still work.</p>':
-        '<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">'+featured.map(p=>{
+        '<div class="flex gap-3 overflow-x-auto pb-2">'+featured.map(p=>{
           const prom=p._seasonalCampaign||{};
           const direct=typeof resolveGoogleDriveImg==='function'?resolveGoogleDriveImg(p.imgLink):p.imgLink;
           const url=escapeHtml(direct||'');
-          return '<div class="border border-luxury-gold/20 rounded-xl overflow-hidden bg-luxury-card min-w-0">'+
+          return '<div class="border border-luxury-gold/20 rounded-xl overflow-hidden bg-luxury-card shrink-0 w-40 sm:w-44">'+
             '<button type="button" data-promo-open="'+escapeHtml(p.id)+'" class="w-full text-left">'+
             '<div class="relative h-28 sm:h-32 bg-white flex items-center justify-center overflow-hidden">'+
               (url?'<img class="max-h-full max-w-full object-contain" loading="lazy" src="'+url+'" alt="">':'<i class="fa-solid fa-gem text-luxury-gold/40 text-3xl"></i>')+
@@ -251,7 +251,7 @@
     renderPicker();
   }
   function field(label,id,value,type,placeholder){
-    return '<label class="text-[11px] font-bold text-luxury-muted block">'+escapeHtml(label)+'<input required="'+(id==='sp-percent'?'false':'true')+'" id="'+id+'" type="'+type+'" '+(type==='number'?'min="0" max="100" step="0.01"':'')+
+    return '<label class="text-[11px] font-bold text-luxury-muted block">'+escapeHtml(label)+'<input '+(id==='sp-percent'?'':'required ')+'id="'+id+'" type="'+type+'" '+(type==='number'?'min="0" max="100" step="0.01"':'')+
       ' value="'+escapeHtml(value)+'" placeholder="'+escapeHtml(placeholder||'')+'" class="w-full mt-1 border border-luxury-gold/20 bg-luxury-dark rounded-lg px-3 py-2.5 text-xs text-luxury-text outline-none"></label>';
   }
   function renderPicker(){
