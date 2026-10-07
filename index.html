@@ -4254,6 +4254,9 @@
                                 await window.QuotationRegistry.confirm({
                                     recordId: record.id,
                                     quoteNo: record.quoteNo,
+                                    name: record.name,
+                                    savedAt: record.savedAt,
+                                    amount: currentQuotationAmountValue(),
                                     state: cloudRecord.state || record.state
                                 });
                                 confirmed = true;
@@ -5438,7 +5441,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261007-quotetype1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261007-revisionhistory1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
@@ -5483,7 +5486,7 @@
     <script src="assets/seasonal/pchum-ben-data/10.js?v=20261007-pchumdata1"></script>
     <script src="assets/seasonal/pchum-ben-data/11.js?v=20261007-pchumdata1"></script>
     <script src="promotion-config.js?v=20261007-theme6"></script>
-    <script src="quotation-registry.js?v=20261007-quotetype1"></script>
+    <script src="quotation-registry.js?v=20261007-revisionhistory1"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
     <script src="seasonal-promotions.js?v=20261007-upload3"></script>
 </body>
