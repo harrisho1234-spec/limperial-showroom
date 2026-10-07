@@ -3757,7 +3757,8 @@
                 people.forEach(person => {
                     const option = document.createElement('option');
                     option.value = person.displayName;
-                    option.label = person.role === 'manager' ? person.displayName + ' · Manager' : person.displayName;
+                    const roleLabel = String(person.role || '').replace(/_/g, ' ').replace(/w/g, ch => ch.toUpperCase());
+                    option.label = roleLabel ? person.displayName + ' · ' + roleLabel : person.displayName;
                     list.appendChild(option);
                 });
             } catch (err) {
@@ -3822,7 +3823,7 @@
             if (documentType !== 'quotation') return true;
             const no = String(document.getElementById('quote-no-input')?.value || '').trim();
             if (no) return true;
-            showNotification('Save this quotation first. A permanent S-YYMM-## number is required before you can ' + actionLabel + '.', 'error');
+            showNotification('Save this quotation first. A permanent ' + getQuotationPrefix() + '-YYMM-## number is required before you can ' + actionLabel + '.', 'error');
             openSavedListsModal('save');
             return false;
         }
@@ -4000,7 +4001,7 @@
                     setTimeout(() => input.focus(), 50);
                 }
                 if (help) help.textContent = documentType === 'quotation'
-                    ? 'A permanent quotation number will be assigned when this quotation is saved.'
+                    ? quotationTypeLabel(getQuotationPrefix()) + ' quotation will be assigned a permanent ' + getQuotationPrefix() + '-YYMM-## number when saved.'
                     : 'This saves the current selected products and current list settings.';
                 if (submit) submit.textContent = 'Save List';
             }
