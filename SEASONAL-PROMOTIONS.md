@@ -20,6 +20,22 @@ On 7 October 2026, a read-only request to the existing Sales Tracking project's 
 
 The SQL script was tested in an isolated PostgreSQL-compatible PGlite database, including anonymous reads without permission to execute `current_app_role`, rejected anonymous/non-manager writes, manager editing, date/status visibility, validation and rerunning the script. The live database transaction checks described above additionally passed after production deployment. An end-to-end browser save using a manager's actual sign-in was not performed.
 
+## Seasonal background themes
+
+Each campaign can optionally choose one reusable **Theme Preset**. Theme artwork is stored with the showroom app under `assets/seasonal/`; campaigns store only the preset key, so public visitors never upload or execute arbitrary artwork.
+
+Available presets:
+- International New Year
+- Chinese New Year
+- Khmer New Year
+- Pchum Ben
+- Water Festival
+- Christmas
+
+The background is applied only while an enabled campaign is active for the current Cambodia date. When multiple active themed campaigns overlap, the same campaign priority used for seasonal product pricing decides the background: latest start date first, then latest creation time, then campaign ID. This keeps one deterministic background rather than stacking themes.
+
+The seasonal artwork changes only the showroom canvas behind the existing L'Imperial interface. Product cards, quotation pricing, source inventory values, customer lists and saved quotations are not changed. The generated WebP artwork is cached by the PWA service worker for reliable installed-app use. A campaign with **Default L'Imperial background** leaves the normal showroom background unchanged.
+
 ## Management and pricing
 
 - Unlock Management Mode → Seasonal Promotions → sign in → New Campaign. Products already selected in the Interest List are included; search to add or remove products. Up to 300 products per campaign.
