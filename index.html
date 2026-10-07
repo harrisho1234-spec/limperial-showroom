@@ -76,6 +76,35 @@
             --luxury-text-darker: #ffffff; 
         }
 
+        /* Seasonal campaign background. Product cards and controls keep the existing
+           L'Imperial palette; only the showroom canvas changes behind them. */
+        body.seasonal-theme-active {
+            background-image:
+                linear-gradient(var(--seasonal-overlay, rgba(12, 18, 24, 0.30)), var(--seasonal-overlay, rgba(12, 18, 24, 0.30))),
+                var(--seasonal-bg);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+        body.seasonal-theme-active #main-app {
+            background: transparent;
+        }
+        body.seasonal-theme-active main {
+            background: transparent;
+        }
+        @media (max-width: 767px) {
+            body.seasonal-theme-active {
+                background-attachment: scroll;
+                background-position: center top;
+            }
+        }
+        @media print {
+            body.seasonal-theme-active {
+                background-image: none !important;
+            }
+        }
+
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--luxury-bg); }
         ::-webkit-scrollbar-thumb { background: #dfb26c44; border-radius: 4px; }
