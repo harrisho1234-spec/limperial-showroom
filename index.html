@@ -212,6 +212,7 @@
                         </label>
                     </div>
 
+                    <button type="button" id="seasonal-promotions-manage-button" class="hidden rounded-xl border border-luxury-gold/30 px-3 py-2 text-xs font-bold text-luxury-gold">Seasonal Promotions</button>
                     <div id="sync-status" class="flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-1 text-xs">
                         <span class="relative flex h-1.5 w-1.5">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -331,6 +332,7 @@
                         <p class="mt-4 text-sm tracking-wider text-luxury-gold uppercase font-semibold">Retrieving Limperial Inventory...</p>
                     </div>
 
+                    <section id="seasonal-promotions-section" aria-label="Seasonal promotions" class="hidden mb-5 p-3 sm:p-4 border border-luxury-gold/20 rounded-2xl bg-luxury-card"></section>
                     <div id="empty-state" class="hidden text-center py-16 bg-luxury-card rounded-2xl border border-luxury-gold/10 transition-colors duration-300">
                         <i class="fa-solid fa-box-open text-4xl text-luxury-gold/40 mb-4"></i>
                         <h3 class="text-lg font-serif text-luxury-gold">No Products Match Your Query</h3>
@@ -818,7 +820,7 @@
         function loadFallbackProducts() {
             return OFFLINE_FALLBACK_PRODUCTS.map(p => {
                 let activePrice = p.price;
-                const matchPct = p.promotion ? p.promotion.match(/(\d+)\s*%/) : null;
+                const matchPct = p.promotion ? p.promotion.match(/(\d+(?:\.\d+)?)\s*%/) : null;
                 const pct = matchPct ? parseFloat(matchPct[1]) : 0;
                 if (pct > 0) activePrice = p.price * (1 - pct / 100);
                 else if (p.pricePromotion) activePrice = parseFloat(p.pricePromotion) || p.price;
@@ -869,6 +871,10 @@
             const fallback = parseFloat(item.price);
             return !isNaN(fallback) ? fallback : 0;
         };
+
+        function escapePromotionLabel(item) {
+            return String(item._seasonalCampaign?.badge || item.promotion || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
 
         const getCosting = (item) => { const parsed = parseFloat(item.costing); return !isNaN(parsed) ? parsed : 0; };
 
@@ -951,6 +957,7 @@
         }
 
         function buildCatalogExportMarkup(item, includePrice) {
+            item = window.SeasonalPromos?.view(item) || item;
             const directImg = resolveGoogleDriveImg(item.imgLink);
             const hasPromo = item.promotion && item.promotion.toLowerCase() !== 'n/a' && item.promotion.trim() !== '';
             let priceBlockHtml = '';
@@ -959,7 +966,7 @@
                 let displayPrice = item.price;
                 let strikeHtml = '';
                 if (hasPromo) {
-                    const matchPct = item.promotion.match(/(\d+)\s*%/);
+                    const matchPct = item.promotion.match(/(\d+(?:\.\d+)?)\s*%/);
                     const pct = matchPct ? parseFloat(matchPct[1]) : 0;
                     if (pct > 0) displayPrice = getActualSalesPrice(item) * (1 - pct / 100);
                     else if (item.pricePromotion) {
@@ -992,7 +999,7 @@
             <div id="export-target-${item.id}" style="width: 800px; display: flex; background-color: #0d0d0f; border-radius: 18px; overflow: hidden; font-family: 'Inter', 'Battambang', sans-serif; color: #f2ede0; border: 1px solid rgba(223, 178, 108, 0.18);">
                 <div style="width: 50%; background-color: #17161a; position: relative; display: flex; align-items: center; justify-content: center; min-height: 460px;">
                     ${imageHtml}
-                    ${hasPromo ? `<div style="position: absolute; top: 20px; right: 20px; background: rgba(245, 158, 11, 0.16); color: #fbbf24; padding: 6px 12px; border-radius: 4px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(245, 158, 11, 0.35);">${item.promotion}</div>` : ''}
+                    ${hasPromo ? `<div style="position: absolute; top: 20px; right: 20px; background: rgba(245, 158, 11, 0.16); color: #fbbf24; padding: 6px 12px; border-radius: 4px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(245, 158, 11, 0.35);">${escapePromotionLabel(item)}</div>` : ''}
                 </div>
                 <div style="width: 50%; position: relative; min-height: 460px; overflow: hidden; ${bgFallback}">
                     ${bgImageHtml}
@@ -1574,6 +1581,7 @@
                 .filter(Boolean);
             products = [...baseProducts, ...setProducts];
             filteredProducts = [...products];
+            window.SeasonalPromos?.catalogUpdated();
         }
 
         function mergeCreatedSets(records) {
@@ -1902,7 +1910,7 @@
                     if (promoPrice > 0) {
                         activePrice = promoPrice; activeMargin = activePrice - parsedCosting;
                     } else {
-                        const matchPct = cleanPromotion.match(/(\d+)\s*%/);
+                        const matchPct = cleanPromotion.match(/(\d+(?:\.\d+)?)\s*%/);
                         const pct = matchPct ? parseFloat(matchPct[1]) : 0;
                         if (pct > 0) { activePrice = parsedPrice * (1 - pct / 100); activeMargin = activePrice - parsedCosting; }
                     }
@@ -2050,7 +2058,7 @@
             const checkbox = document.getElementById('manager-toggle');
             if (checkbox.checked) openPasscodeModal();
             else {
-                showCostMode = false; currentBrandFilter = ''; showNotification("Management Mode locked.", "success"); handlePartnerToggle(false);
+                showCostMode = false; window.SeasonalPromos?.setManagerMode(false); currentBrandFilter = ''; showNotification("Management Mode locked.", "success"); handlePartnerToggle(false);
                 renderBrandFilters(); renderLocationFilters(); executeSearchFilter(); updateCartVisuals(); renderProductGrid(); updateQuotationPreview();
             }
         }
@@ -2072,7 +2080,7 @@
         function verifyPasscode() {
             const input = document.getElementById('passcode-input'); if (!input) return;
             if (input.value === '300920') {
-                showCostMode = true; currentBrandFilter = ''; const checkbox = document.getElementById('manager-toggle'); if (checkbox) checkbox.checked = true;
+                showCostMode = true; window.SeasonalPromos?.setManagerMode(true); currentBrandFilter = ''; const checkbox = document.getElementById('manager-toggle'); if (checkbox) checkbox.checked = true;
                 closePasscodeModal(); showNotification("Management Mode unlocked.", "info");
                 renderLocationFilters(); renderBrandFilters(); executeSearchFilter(); updateCartVisuals(); renderProductGrid(); updateQuotationPreview();
             } else {
@@ -2276,6 +2284,7 @@
         }
 
         function executeSearchFilter() {
+            window.SeasonalPromos?.catalogUpdated();
             const searchInput = document.getElementById('search-input'); const searchVal = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const clearBtn = document.getElementById('clear-search-btn');
             if (clearBtn) { if (searchVal) clearBtn.classList.remove('hidden'); else clearBtn.classList.add('hidden'); }
@@ -2308,14 +2317,14 @@
                 const matchesLocation = !currentLocFilter || (product.isSet
                     ? componentItems.some(item => itemMatchesLocationFilter(item, currentLocFilter))
                     : itemMatchesLocationFilter(product, currentLocFilter));
-                const matchesPromo = !showPromoOnly || (product.isSet
+                const matchesPromo = !showPromoOnly || window.SeasonalPromos?.isFeatured(product) || (product.isSet
                     ? componentItems.some(item => item.promotion && String(item.promotion).toLowerCase() !== 'n/a' && String(item.promotion).trim() !== '')
                     : !!(product.promotion && String(product.promotion).toLowerCase() !== 'n/a' && String(product.promotion).trim() !== ''));
                 const matchesKeyMaterial = !currentKeyMaterialFilter || (product.isSet
                     ? componentItems.some(item => String(item.keyMaterial || '').trim().toLowerCase() === String(currentKeyMaterialFilter).trim().toLowerCase())
                     : String(product.keyMaterial || '').trim().toLowerCase() === String(currentKeyMaterialFilter).trim().toLowerCase());
                 const matchesSetsOnly = !showSetsOnly || !!product.isSet;
-                return matchesSearch && matchesSetsOnly && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesKeyMaterial && matchesPromo;
+                return (!window.SeasonalPromos?.showingAll || window.SeasonalPromos.isFeatured(product)) && matchesSearch && matchesSetsOnly && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesKeyMaterial && matchesPromo;
             });
 
             if (sortNewArrival) {
@@ -2336,6 +2345,7 @@
         function clearSearch() { const searchInput = document.getElementById('search-input'); if (searchInput) searchInput.value = ''; executeSearchFilter(); }
 
         function resetFilters() {
+            window.SeasonalPromos?.reset();
             const searchInput = document.getElementById('search-input'); if (searchInput) searchInput.value = '';
             currentBrandFilter = ''; currentClassFilter = ''; currentSubclassFilter = ''; currentLocFilter = ''; currentKeyMaterialFilter = ''; showPromoOnly = false; sortNewArrival = false; showSetsOnly = false;
             const classSelect = document.getElementById('class-select'); const subclassSelect = document.getElementById('subclass-select'); const brandSelect = document.getElementById('brand-select'); const locSelect = document.getElementById('location-select');
@@ -2386,7 +2396,8 @@
             const startIdx = (currentPage - 1) * itemsPerPage; const endIdx = itemsPerPage === -1 ? filteredProducts.length : startIdx + itemsPerPage;
             const activeBatch = filteredProducts.slice(startIdx, endIdx);
 
-            activeBatch.forEach(item => {
+            activeBatch.forEach(sourceItem => {
+                const item = window.SeasonalPromos?.view(sourceItem) || sourceItem;
                 const isInCart = item.isSet ? cart.some(c => c.type === 'set' && (String(c.setId || c.id) === String(item.setId || item.id))) : cart.some(c => c.type !== 'set' && c.item.id === item.id);
                 const directImg = resolveGoogleDriveImg(item.imgLink); const displayBrand = item.isSet ? 'Set' : getDisplayBrand(item.brand, showCostMode);
                 
@@ -2399,7 +2410,7 @@
                 if (item.isSet) {
                     priceHtml = `<div class="flex flex-col sm:items-end items-start leading-none"><span class="text-[7px] sm:text-[9px] uppercase tracking-wider text-luxury-muted block font-bold mb-0.5">Set Price</span><span class="text-sm sm:text-xl font-serif text-luxury-gold font-bold">${formatCurrency(item.setPrice ?? item.price)}</span></div>`;
                 } else if (hasPromo) {
-                    const matchPct = item.promotion.match(/(\d+)\s*%/); const pct = matchPct ? parseFloat(matchPct[1]) : 0;
+                    const matchPct = item.promotion.match(/(\d+(?:\.\d+)?)\s*%/); const pct = matchPct ? parseFloat(matchPct[1]) : 0;
                     let priceAfterPct = item.price;
                     if (pct > 0) priceAfterPct = getActualSalesPrice(item) * (1 - pct / 100);
                     else if (item.pricePromotion) {
@@ -2436,7 +2447,7 @@
                             <div class="h-64 w-full bg-luxury-dark relative overflow-hidden flex items-center justify-center p-2">
                                 ${imgRender}
                                 <span class="absolute top-3 left-3 bg-luxury-accent/95 text-luxury-gold text-[10px] font-bold px-2.5 py-1 rounded tracking-widest uppercase border border-luxury-gold/30 backdrop-blur-sm shadow-md">${displayBrand}</span>
-                                ${hasPromo ? `<span class="absolute top-3 right-3 bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2.5 py-1 rounded tracking-wider uppercase backdrop-blur-sm shadow-md"><i class="fa-solid fa-gift mr-1"></i>${item.promotion}</span>` : ''}
+                                ${(hasPromo || item._seasonalCampaign) ? `<span class="absolute top-3 right-3 bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2.5 py-1 rounded tracking-wider uppercase backdrop-blur-sm shadow-md"><i class="fa-solid fa-gift mr-1"></i>${escapePromotionLabel(item)}</span>` : ''}
                                 <span class="absolute bottom-3 left-3 bg-luxury-dark/95 text-luxury-gold text-[11px] font-mono px-2.5 py-1 rounded tracking-wide border border-luxury-gold/20 backdrop-blur-sm">${item.code || 'CODE'}</span>
                             </div>
                             <div class="p-4">
@@ -2488,7 +2499,7 @@
                                         <span class="text-[8px] sm:text-[9px] uppercase tracking-wider text-luxury-gold font-bold bg-luxury-accent/20 px-1.5 py-0.5 rounded border border-luxury-gold/5">${displayBrand}</span>
                                         <span class="border px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider ${item.isSet ? 'bg-luxury-gold/10 border-luxury-gold/25 text-luxury-gold' : `${qtyBadgeBg} ${qtyColor}`}">${item.isSet ? `${item.availabilityQty ?? item.qty ?? 0} Pcs` : (item.qty > 0 ? `${item.qty} In Stock` : 'Out of Stock')}</span>
                                         ${!item.isSet && isNewArrivalItem(item) ? `<span class="sticker-new px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">New</span>` : ''}
-                                        ${hasPromo ? `<span class="bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase"><i class="fa-solid fa-gift mr-0.5"></i>${item.promotion}</span>` : ''}
+                                        ${(hasPromo || item._seasonalCampaign) ? `<span class="bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase"><i class="fa-solid fa-gift mr-0.5"></i>${escapePromotionLabel(item)}</span>` : ''}
                                     </div>
                                     <h4 class="font-serif text-sm sm:text-base text-luxury-text font-semibold leading-snug line-clamp-2 group-hover:text-luxury-gold transition-colors duration-200">${item.itemName}</h4>
                                     <div class="text-[10px] sm:text-[11px] text-luxury-soft mt-0.5 font-sans ${item.isSet ? 'whitespace-normal' : 'line-clamp-1'}">${item.isSet ? (item.setComponentHtml || item.description || '') : (item.description || '')}</div>
@@ -2585,7 +2596,8 @@
         }
 
         function openProductDetailModal(productId) {
-            const item = products.find(p => p.id === productId); if (!item) return;
+            const sourceItem = products.find(p => p.id === productId); if (!sourceItem) return;
+            const item = window.SeasonalPromos?.view(sourceItem) || sourceItem;
             const modal = document.getElementById('product-detail-modal'); const container = document.getElementById('product-detail-modal-container'); if (!modal || !container) return;
             const directImg = resolveGoogleDriveImg(item.imgLink); const modalImg = document.getElementById('detail-modal-image');
             if (modalImg) { if (directImg) { modalImg.src = directImg; modalImg.style.display = 'block'; } else { modalImg.src = ''; modalImg.style.display = 'none'; } }
@@ -2603,7 +2615,7 @@
                 if (item.isSet) {
                     modalPrice.innerHTML = `<div><span class="text-[9px] uppercase tracking-wider text-luxury-muted block font-bold">Set Price</span><span class="text-2xl font-serif text-luxury-gold font-bold">${formatCurrency(item.setPrice ?? item.price)}</span></div>`;
                 } else if (hasPromo) {
-                    const matchPct = item.promotion.match(/(\d+)\s*%/); const pct = matchPct ? parseFloat(matchPct[1]) : 0;
+                    const matchPct = item.promotion.match(/(\d+(?:\.\d+)?)\s*%/); const pct = matchPct ? parseFloat(matchPct[1]) : 0;
                     let priceAfterPct = item.price; if (pct > 0) priceAfterPct = getActualSalesPrice(item) * (1 - pct / 100); else if (item.pricePromotion) priceAfterPct = parseFloat(String(item.pricePromotion).replace(/[^0-9.-]+/g, "")) || 0;
                     modalPrice.innerHTML = `<div class="flex flex-col"><div class="flex items-center space-x-2"><span class="text-sm text-luxury-muted line-through">${formatCurrency(getActualSalesPrice(item))}</span></div><div class="flex items-baseline space-x-2 mt-0.5"><span class="text-2xl font-serif text-amber-500 font-bold">${formatCurrency(priceAfterPct)}</span><span class="text-xs font-semibold text-amber-500">(${pct > 0 ? pct + '% OFF' : 'Promo Price'})</span></div></div>`;
                 } else modalPrice.innerHTML = `<div><span class="text-[9px] uppercase tracking-wider text-luxury-muted block font-bold">Actual Sales Price</span><span class="text-2xl font-serif text-luxury-gold font-bold">${formatCurrency(item.price)}</span></div>`;
@@ -2738,7 +2750,8 @@
         }
 
         function toggleCartSelection(itemId) {
-            const productObj = products.find(p => p.id === itemId);
+            const sourceItem = products.find(p => p.id === itemId);
+            const productObj = window.SeasonalPromos?.view(sourceItem) || sourceItem;
             if (!productObj) return;
 
             if (productObj.isSet) {
@@ -2774,8 +2787,9 @@
                 showNotification("Removed " + activeBrand + " " + productObj.code + " from List.", "info");
             } else {
                 let initialDiscount = 0; const hasPromo = productObj.promotion && productObj.promotion.toLowerCase() !== 'n/a' && productObj.promotion.trim() !== '';
-                if (hasPromo) { const matchPct = productObj.promotion.match(/(\d+)\s*%/); if (matchPct) initialDiscount = parseFloat(matchPct[1]); else if (getActualSalesPrice(productObj) > 0 && productObj.price > 0 && productObj.price < getActualSalesPrice(productObj)) initialDiscount = Math.round((1 - (productObj.price / getActualSalesPrice(productObj))) * 100); }
-                cart.push({ item: productObj, quantity: 1, discount: initialDiscount, customPrice: null, rowHeight: 70, forcePreorder: false });
+                if (hasPromo) { const matchPct = productObj.promotion.match(/(\d+(?:\.\d+)?)\s*%/); if (matchPct) initialDiscount = parseFloat(matchPct[1]); else if (getActualSalesPrice(productObj) > 0 && productObj.price > 0 && productObj.price < getActualSalesPrice(productObj)) initialDiscount = Math.round((1 - (productObj.price / getActualSalesPrice(productObj))) * 100); }
+                cart.push({ item: {...productObj}, quantity: 1, discount: initialDiscount, customPrice: null, rowHeight: 70, forcePreorder: false });
+                window.SeasonalPromos?.afterAddToCart(itemId);
                 recommendedFocusItemId = productObj.id;
                 showNotification("Added " + activeBrand + " " + productObj.code + " to Interest List.", "success");
             }
@@ -4942,5 +4956,9 @@
             showNotification("Operating offline. All catalog & pricing tools remain active.", "info");
         });
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+    <script src="promotion-config.js"></script>
+    <script src="seasonal-core.js"></script>
+    <script src="seasonal-promotions.js"></script>
 </body>
 </html>

@@ -1,9 +1,12 @@
 // Limperial Luxury Showroom Service Worker - V25 Clean Slate
-const CACHE_NAME = 'limperial-v3';
+const CACHE_NAME = 'limperial-v4-seasonal-1';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
+  './promotion-config.js',
+  './seasonal-core.js',
+  './seasonal-promotions.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -44,8 +47,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
+  // Never cache authenticated or time-sensitive campaign responses.
+  if (new URL(request.url).hostname.endsWith('.supabase.co')) return;
 
-  if (request.mode === 'navigate' || request.destination === 'document') {
+  const isDocument = request.mode === 'navigate' || request.destination === 'document';
+  const isLocalScript = new URL(request.url).origin === self.location.origin && new URL(request.url).pathname.endsWith('.js');
+  if (isDocument || isLocalScript) {
     event.respondWith(
       fetch(request)
         .then((networkResponse) => {
@@ -55,7 +62,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => caches.match('./index.html'))
+        .catch(() => caches.match(isDocument ? './index.html' : request))
     );
     return;
   }
