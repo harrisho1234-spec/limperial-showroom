@@ -1,8 +1,14 @@
 # Seasonal promotions
 
-## Deployment required
+## Production deployment — 7 October 2026
 
-The showroom now loads the seasonal promotion manager. **The shared database must also be updated before public campaigns work.**
+Frontend deployed from merged PR #1. The Supabase migration `repair_showroom_campaign_permissions_and_validation` was applied successfully to the existing Sales Tracking project. Public REST campaign reads now return HTTP 200. Live transaction tests confirmed manager insert/update access, non-manager write rejection, public active reads and disabled campaign exclusion. All test rows were rolled back; the campaign table remains empty, ready for the first real campaign. The deployed table's existing `created_by = auth.uid()` insert check is preserved by the compatibility clause in the SQL script.
+
+The security advisor reported no findings for the campaign table or validation function. It reported unrelated existing project findings, including [security-definer views](https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view), [publicly executable privileged functions](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable), and [password protection settings](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection); these were outside the campaign deployment and were not changed.
+
+## Re-deployment procedure
+
+The showroom loads the seasonal promotion manager. Future environments need both the frontend and the database script below.
 
 On 7 October 2026, a read-only request to the existing Sales Tracking project's `showroom_promotion_campaigns` table returned HTTP 401 / `42501: permission denied for function current_app_role`. The table is present, but its public policy incorrectly reaches a manager-only function. Do not grant that function to anonymous visitors as a workaround.
 
@@ -12,7 +18,7 @@ On 7 October 2026, a read-only request to the existing Sales Tracking project's 
 4. Open the showroom in a second signed-out browser/device. Confirm the campaign appears above the catalog. Use View All Promotions, product filters, product details and product selection. Verify the exact selected quote price. Disable the test campaign and refresh the second device; it should disappear while existing quote lines keep their prices.
 5. Verify a normal sales account cannot create/edit campaigns. Future, ended and disabled campaigns must remain invisible to signed-out visitors.
 
-The SQL script was tested in an isolated PostgreSQL-compatible PGlite database, including anonymous reads without permission to execute `current_app_role`, rejected anonymous/non-manager writes, manager editing, date/status visibility, validation and rerunning the script. Production SQL execution and authenticated production campaign creation require database-admin/manager access and are not verified by those local tests.
+The SQL script was tested in an isolated PostgreSQL-compatible PGlite database, including anonymous reads without permission to execute `current_app_role`, rejected anonymous/non-manager writes, manager editing, date/status visibility, validation and rerunning the script. The live database transaction checks described above additionally passed after production deployment. An end-to-end browser save using a manager's actual sign-in was not performed.
 
 ## Management and pricing
 
@@ -34,3 +40,4 @@ The existing orphaned `seasonal-promotions.js` already targeted the Sales Tracki
 ## Verification
 
 Use Node 24.15+ and pnpm: `pnpm install --frozen-lockfile`, then `pnpm test`. The tests cover pure campaign rules, the actual showroom DOM and cart/filter integration, manager forms and conflicts, all browser script syntax, and isolated database permissions. Local desktop/browser preview uses fixture campaigns only; it must not be mistaken for production persistence verification.
+
