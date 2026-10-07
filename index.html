@@ -3574,7 +3574,7 @@
 
         function savedDocumentType(list) {
             const type = String(list?.state?.documentType || '').trim().toLowerCase();
-            return ['quotation', 'sales_order', 'inventory', 'delivery_order'].includes(type) ? type : 'quotation';
+            return ['quotation', 'sales_order', 'inventory', 'delivery_order'].includes(type) ? type : 'saved_list';
         }
 
         function savedQuotationNumber(list) {
@@ -3589,6 +3589,7 @@
         function savedDocumentNumber(list) {
             const type = savedDocumentType(list);
             if (type === 'quotation') return savedQuotationNumber(list);
+            if (!['sales_order', 'inventory', 'delivery_order'].includes(type)) return '';
             return String(
                 list?.state?.documentFormStates?.[type]?.fields?.['quote-no-input']?.value ||
                 ''
@@ -3803,7 +3804,9 @@
                     ? 'Quotation'
                     : (savedType === 'sales_order'
                         ? 'Sales Order'
-                        : (savedType === 'delivery_order' ? 'Delivery Order' : 'Inventory'));
+                        : (savedType === 'delivery_order'
+                            ? 'Delivery Order'
+                            : (savedType === 'inventory' ? 'Inventory' : 'Saved List')));
                 const title = document.createElement('div'); title.className = 'saved-list-title text-xs font-semibold text-luxury-text truncate'; title.textContent = documentNo ? documentNo + ' · ' + (list.name || 'Unnamed List') : (list.name || 'Unnamed List');
                 const meta = document.createElement('div'); meta.className = 'text-[9px] text-luxury-muted mt-1'; meta.textContent = `${documentLabel} • ${itemCount} selected ${itemCount === 1 ? 'item' : 'items'}${list.savedAt ? ' • ' + formatSavedListDate(list.savedAt) : ''}`;
                 button.appendChild(title); button.appendChild(meta);
