@@ -566,14 +566,10 @@
     <div id="saved-lists-modal" onclick="if(event.target === this) closeSavedListsModal()" class="fixed inset-0 bg-black/90 z-[80] backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="saved-lists-modal-container">
             <div class="p-4 bg-luxury-accent/50 border-b border-luxury-gold/15 flex items-center justify-between">
-                <div class="flex items-center space-x-2"><i class="fa-solid fa-floppy-disk text-luxury-gold"></i><h3 class="font-serif text-base text-luxury-gold font-semibold">Saved Customer Lists</h3></div>
+                <div class="flex items-center space-x-2"><i class="fa-solid fa-floppy-disk text-luxury-gold"></i><h3 id="saved-lists-modal-title" class="font-serif text-base text-luxury-gold font-semibold">Saved Customer Lists</h3></div>
                 <button onclick="closeSavedListsModal()" class="p-1 text-luxury-muted hover:text-luxury-text transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="p-5 space-y-4">
-                <div id="saved-lists-menu" class="grid grid-cols-2 gap-3">
-                    <button onclick="openSaveNewListPanel()" class="py-3 bg-luxury-dark hover:bg-luxury-accent text-luxury-soft hover:text-luxury-gold border border-luxury-gold/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"><i class="fa-solid fa-plus mr-1.5"></i>Save as New</button>
-                    <button onclick="openRetrieveListsPanel()" class="py-3 bg-luxury-dark hover:bg-luxury-accent text-luxury-soft hover:text-luxury-gold border border-luxury-gold/20 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"><i class="fa-solid fa-clock-rotate-left mr-1.5"></i>Retrieve</button>
-                </div>
                 <div id="save-new-list-panel" class="hidden space-y-3 relative">
                     <div id="saved-list-saving-overlay" class="hidden absolute inset-0 z-20 bg-luxury-card/95 backdrop-blur-sm rounded-xl flex items-center justify-center">
                         <div class="text-center py-6 px-6">
@@ -588,14 +584,14 @@
                     </div>
                     <div class="text-[10px] text-luxury-muted">This saves the current selected products and current list settings.</div>
                     <div class="grid grid-cols-2 gap-2 pt-1">
-                        <button onclick="openSavedListsMenu()" class="py-2.5 bg-luxury-lightBg hover:bg-luxury-accent text-luxury-soft border border-luxury-gold/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Back</button>
+                        <button onclick="closeSavedListsModal()" class="py-2.5 bg-luxury-lightBg hover:bg-luxury-accent text-luxury-soft border border-luxury-gold/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Cancel</button>
                         <button onclick="saveCurrentInterestList()" class="py-2.5 bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Save List</button>
                     </div>
                 </div>
                 <div id="retrieve-lists-panel" class="hidden space-y-3">
                     <div class="flex items-center justify-between"><span class="text-[10px] uppercase tracking-wider text-luxury-muted font-bold">Saved Lists</span><span id="saved-lists-count" class="text-[10px] text-luxury-gold font-semibold"></span></div>
                     <div id="saved-lists-list" class="max-h-72 overflow-y-auto space-y-2"><div class="text-center py-8 text-xs text-luxury-muted">Loading saved lists...</div></div>
-                    <button onclick="openSavedListsMenu()" class="w-full py-2.5 bg-luxury-lightBg hover:bg-luxury-accent text-luxury-soft border border-luxury-gold/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Back</button>
+                    <button onclick="closeSavedListsModal()" class="w-full py-2.5 bg-luxury-lightBg hover:bg-luxury-accent text-luxury-soft border border-luxury-gold/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Close</button>
                 </div>
             </div>
         </div>
@@ -656,6 +652,9 @@
                         <div class="flex items-center justify-between gap-3 border-b border-luxury-gold/20 pb-2">
                             <h4 class="text-xs font-bold text-luxury-gold uppercase tracking-widest">Document Type</h4>
                             <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="openSavedListsModal('open')" id="quotation-open-list-btn" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Open a previously saved quotation or customer list">
+                                    <i class="fa-solid fa-folder-open"></i><span>Open</span>
+                                </button>
                                 <button type="button" onclick="openSavedListsModal()" id="quotation-save-list-btn" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Save or retrieve the current quotation sheet">
                                     <i class="fa-solid fa-floppy-disk"></i><span>Save</span>
                                 </button>
@@ -3590,13 +3589,23 @@
             }
         }
 
-        function openSavedListsModal() {
+        function openSavedListsModal(mode = 'save') {
+            // "Open" is a direct shortcut to saved quotations, even when the cart is empty.
+            // "Save" skips the previous Save / Retrieve menu and opens the save form.
+            const isOpening = mode === 'open';
+            if (!isOpening && cart.length === 0) {
+                showNotification("Please select at least one product before saving the list.", "error");
+                return;
+            }
             const modal = document.getElementById('saved-lists-modal');
             const container = document.getElementById('saved-lists-modal-container');
             if (!modal || !container) return;
-            openSavedListsMenu();
+            const title = document.getElementById('saved-lists-modal-title');
+            if (title) title.textContent = isOpening ? 'Open Saved List' : 'Save Customer List';
             modal.classList.remove('pointer-events-none', 'opacity-0'); modal.classList.add('opacity-100');
             container.classList.remove('scale-95'); container.classList.add('scale-100');
+            if (isOpening) openRetrieveListsPanel();
+            else openSaveNewListPanel();
         }
 
         function closeSavedListsModal() {
@@ -3607,15 +3616,8 @@
             container.classList.add('scale-95'); container.classList.remove('scale-100');
         }
 
-        function openSavedListsMenu() {
-            document.getElementById('saved-lists-menu')?.classList.remove('hidden');
-            document.getElementById('save-new-list-panel')?.classList.add('hidden');
-            document.getElementById('retrieve-lists-panel')?.classList.add('hidden');
-        }
-
         function openSaveNewListPanel() {
             if (cart.length === 0) { showNotification("Please select at least one product before saving the list.", "error"); return; }
-            document.getElementById('saved-lists-menu')?.classList.add('hidden');
             document.getElementById('save-new-list-panel')?.classList.remove('hidden');
             document.getElementById('retrieve-lists-panel')?.classList.add('hidden');
             const input = document.getElementById('saved-list-name-input');
@@ -3690,7 +3692,6 @@
         }
 
         async function openRetrieveListsPanel() {
-            document.getElementById('saved-lists-menu')?.classList.add('hidden');
             document.getElementById('save-new-list-panel')?.classList.add('hidden');
             document.getElementById('retrieve-lists-panel')?.classList.remove('hidden');
             renderSavedInterestLists();
