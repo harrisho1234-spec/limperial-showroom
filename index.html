@@ -745,7 +745,7 @@
                         </div>
                         <h4 class="text-xs font-bold text-luxury-gold uppercase tracking-widest border-b border-luxury-gold/20 pb-2 pt-2">Client & Proposal Information</h4>
                         <div class="grid grid-cols-3 gap-3">
-                            <div><label id="num-input-label" class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Quotation N°</label><input type="text" id="quote-no-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none font-mono" oninput="updateQuotationPreview()"></div>
+                            <div><label id="num-input-label" class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Quotation N°</label><input type="text" id="quote-no-input" readonly placeholder="Auto-generated when saved" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none font-mono opacity-75" oninput="updateQuotationPreview()"><div id="quote-no-help" class="mt-1 text-[9px] text-luxury-muted">Permanent number is assigned when this quotation is saved.</div></div>
                             <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Salesperson</label><input type="text" id="quote-sales-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                             <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Issue Date</label><input type="text" id="quote-date-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                         </div>
@@ -2051,7 +2051,7 @@
 
             documentType = type;
             const quoteBtn = document.getElementById('doc-type-quote'); const soBtn = document.getElementById('doc-type-so'); const invBtn = document.getElementById('doc-type-inv'); const doBtn = document.getElementById('doc-type-do');
-            const numLabel = document.getElementById('num-input-label'); const soDepositFields = document.getElementById('so-deposit-fields'); const doExtraFields = document.getElementById('do-extra-fields');
+            const numLabel = document.getElementById('num-input-label'); const numInput = document.getElementById('quote-no-input'); const numHelp = document.getElementById('quote-no-help'); const soDepositFields = document.getElementById('so-deposit-fields'); const doExtraFields = document.getElementById('do-extra-fields');
             
             const activeClass = "py-2 text-center rounded-lg font-bold transition-all text-luxury-gold bg-slate-900 border border-luxury-gold/20 cursor-pointer text-[10px] sm:text-xs";
             const inactiveClass = "py-2 text-center rounded-lg font-semibold transition-all text-luxury-muted hover:text-luxury-text cursor-pointer text-[10px] sm:text-xs";
@@ -2062,15 +2062,23 @@
             if (type === 'quotation') {
                 quoteBtn.className = activeClass;
                 numLabel.textContent = "Quotation N°";
+                if (numInput) { numInput.readOnly = true; numInput.placeholder = "Auto-generated when saved"; numInput.classList.add('opacity-75'); }
+                if (numHelp) { numHelp.textContent = "Permanent number is assigned when this quotation is saved."; numHelp.classList.remove('hidden'); }
             } else if (type === 'sales_order') {
                 soBtn.className = activeClass;
                 numLabel.textContent = "Sales Order N°"; soDepositFields.classList.remove('hidden');
+                if (numInput) { numInput.readOnly = false; numInput.placeholder = "Enter Sales Order No."; numInput.classList.remove('opacity-75'); }
+                if (numHelp) numHelp.classList.add('hidden');
             } else if (type === 'delivery_order') {
                 doBtn.className = activeClass;
                 numLabel.textContent = "Delivery Order N°"; doExtraFields.classList.remove('hidden');
+                if (numInput) { numInput.readOnly = false; numInput.placeholder = "Enter Delivery Order No."; numInput.classList.remove('opacity-75'); }
+                if (numHelp) numHelp.classList.add('hidden');
             } else {
                 invBtn.className = activeClass;
                 numLabel.textContent = "Request N°";
+                if (numInput) { numInput.readOnly = false; numInput.placeholder = "Enter Request No."; numInput.classList.remove('opacity-75'); }
+                if (numHelp) numHelp.classList.add('hidden');
             }
 
             const restored = restoreDocumentFormState(type);
@@ -3556,6 +3564,41 @@
 
         function cloneForStorage(value) {
             try { return JSON.parse(JSON.stringify(value)); } catch (e) { return value; }
+        }
+
+        function savedQuotationNumber(list) {
+            return String(
+                list?.quoteNo ||
+                list?.state?.documentFormStates?.quotation?.fields?.['quote-no-input']?.value ||
+                ''
+            ).trim();
+        }
+
+        function parseQuotationIssueDate(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return new Date().toISOString().slice(0, 10);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+            const match = raw.match(/^(\d{1,2})\s*\/\s*([A-Za-z]{3,9})\s*\/\s*(\d{4})$/);
+            if (!match) return new Date().toISOString().slice(0, 10);
+            const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+            const month = months[match[2].slice(0,3).toLowerCase()];
+            if (!month) return new Date().toISOString().slice(0, 10);
+            return match[3] + '-' + String(month).padStart(2,'0') + '-' + String(Number(match[1])).padStart(2,'0');
+        }
+
+        function currentQuotationAmountValue() {
+            const raw = String(document.getElementById('ledger-net')?.textContent || '').replace(/[^0-9.-]/g, '');
+            const amount = Number(raw);
+            return Number.isFinite(amount) && amount >= 0 ? amount : null;
+        }
+
+        function requirePermanentQuotationNumber(actionLabel = 'continue') {
+            if (documentType !== 'quotation') return true;
+            const no = String(document.getElementById('quote-no-input')?.value || '').trim();
+            if (no) return true;
+            showNotification('Save this quotation first. A permanent S-YYMM-## number is required before you can ' + actionLabel + '.', 'error');
+            openSavedListsModal('save');
+            return false;
         }
 
         function buildSavedInterestListRecord(name) {
