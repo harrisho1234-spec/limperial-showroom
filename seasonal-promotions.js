@@ -24,15 +24,28 @@
   function themedCampaign(){
     return current().find(c=>c.theme_preset&&themePresets()[c.theme_preset])||null;
   }
+  function ensureThemeLayer(){
+    let layer=ui('seasonal-theme-background');
+    if(layer)return layer;
+    layer=document.createElement('div');
+    layer.id='seasonal-theme-background';
+    layer.setAttribute('aria-hidden','true');
+    layer.innerHTML='<img id="seasonal-theme-background-image" alt="" decoding="async"><div class="seasonal-theme-overlay"></div>';
+    document.body.prepend(layer);
+    return layer;
+  }
   function applyTheme(){
     const campaign=themedCampaign();
     const preset=campaign?themePresets()[campaign.theme_preset]:null;
     const root=document.documentElement,body=document.body;
     if(!root||!body)return;
+    const layer=ensureThemeLayer();
+    const image=ui('seasonal-theme-background-image');
     if(!preset){
-      root.style.removeProperty('--seasonal-bg');
       root.style.removeProperty('--seasonal-overlay');
       body.classList.remove('seasonal-theme-active');
+      layer.classList.remove('is-active');
+      if(image)image.removeAttribute('src');
       delete body.dataset.seasonalTheme;
       delete body.dataset.seasonalCampaign;
       activeThemeKey='';
@@ -40,9 +53,16 @@
     }
     const mobile=window.innerWidth<768;
     const asset=(mobile&&preset.backgroundMobile)||preset.backgroundDesktop||preset.backgroundMobile;
-    if(!asset)return;
-    root.style.setProperty('--seasonal-bg','url("'+String(asset).replace(/"/g,'')+'")');
+    if(!asset||!image)return;
+    const resolved=new URL(asset,document.baseURI).href;
     root.style.setProperty('--seasonal-overlay',preset.overlay||'rgba(12,18,24,0.30)');
+    if(image.src!==resolved){
+      image.onload=()=>layer.classList.add('is-active');
+      image.onerror=()=>{layer.classList.remove('is-active');console.warn('[Seasonal promotions] Theme artwork failed to load:',resolved);};
+      image.src=resolved;
+    }else if(image.complete&&image.naturalWidth){
+      layer.classList.add('is-active');
+    }
     body.classList.add('seasonal-theme-active');
     body.dataset.seasonalTheme=campaign.theme_preset;
     body.dataset.seasonalCampaign=campaign.name||'';
