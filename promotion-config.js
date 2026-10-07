@@ -28,9 +28,9 @@ window.SEASONAL_THEME_PRESETS = {
   },
   pchum_ben: {
     label: 'Pchum Ben',
-    backgroundDesktop: 'assets/seasonal/pchum-ben-generated.jpg',
-    backgroundMobile: 'assets/seasonal/pchum-ben-generated.jpg',
-    overlay: 'rgba(46, 35, 22, 0.12)'
+    backgroundDesktop: 'data:image/jpeg;base64,' + (window.PCHUM_BEN_IMAGE_CHUNKS || []).join(''),
+    backgroundMobile: 'data:image/jpeg;base64,' + (window.PCHUM_BEN_IMAGE_CHUNKS || []).join(''),
+    overlay: 'rgba(46, 35, 22, 0.10)'
   },
   water_festival: {
     label: 'Water Festival',
