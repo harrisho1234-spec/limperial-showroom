@@ -16,7 +16,7 @@
   async function register(input={}){
     const recordId=String(input.recordId||'').trim();
     if(!recordId)throw new Error('Missing saved quotation record ID.');
-    const {data,error}=await requireClient().rpc('register_showroom_quotation',{
+    const {data,error}=await requireClient().rpc('register_showroom_quotation_v2',{
       p_source_record_id:recordId,
       p_source_name:String(input.name||'').trim()||null,
       p_issue_date:input.issueDate||null,
@@ -25,12 +25,26 @@
       p_customer_name:String(input.customerName||'').trim()||null,
       p_customer_phone:String(input.customerPhone||'').trim()||null,
       p_salesperson:String(input.salesperson||'').trim()||null,
-      p_amount:Number.isFinite(Number(input.amount))?Number(input.amount):null
+      p_amount:Number.isFinite(Number(input.amount))?Number(input.amount):null,
+      p_quote_prefix:['S','P'].includes(String(input.quotePrefix||'S').trim().toUpperCase())
+        ? String(input.quotePrefix||'S').trim().toUpperCase()
+        : 'S'
     });
     if(error)throw error;
     const row=Array.isArray(data)?data[0]:data;
     if(!row?.quote_no)throw new Error('Quotation number was not returned.');
     return {id:row.id,quoteNo:String(row.quote_no)};
+  }
+
+  async function listSalespeople(){
+    const {data,error}=await requireClient().rpc('list_showroom_salespeople');
+    if(error)throw error;
+    return (Array.isArray(data)?data:[])
+      .map(row=>({
+        displayName:String(row?.display_name||'').trim(),
+        role:String(row?.role||'').trim()
+      }))
+      .filter(row=>row.displayName);
   }
 
   async function confirm(input={}){
@@ -44,5 +58,5 @@
     return true;
   }
 
-  window.QuotationRegistry=Object.freeze({register,confirm});
+  window.QuotationRegistry=Object.freeze({register,confirm,listSalespeople});
 })();
