@@ -27,7 +27,7 @@ to authenticated
 using (
   bucket_id='showroom-seasonal-backgrounds'
   and (storage.foldername(name))[1]='campaigns'
-  and (select public.current_app_role()) in ('super_admin','admin','manager')
+  and (select public.current_app_role()) in ('super_admin','admin')
 );
 
 drop policy if exists showroom_seasonal_backgrounds_manager_insert on storage.objects;
@@ -38,7 +38,7 @@ with check (
   bucket_id='showroom-seasonal-backgrounds'
   and (storage.foldername(name))[1]='campaigns'
   and lower(storage.extension(name)) in ('jpg','jpeg','png','webp')
-  and (select public.current_app_role()) in ('super_admin','admin','manager')
+  and (select public.current_app_role()) in ('super_admin','admin')
 );
 
 drop policy if exists showroom_seasonal_backgrounds_manager_update on storage.objects;
@@ -48,13 +48,13 @@ to authenticated
 using (
   bucket_id='showroom-seasonal-backgrounds'
   and (storage.foldername(name))[1]='campaigns'
-  and (select public.current_app_role()) in ('super_admin','admin','manager')
+  and (select public.current_app_role()) in ('super_admin','admin')
 )
 with check (
   bucket_id='showroom-seasonal-backgrounds'
   and (storage.foldername(name))[1]='campaigns'
   and lower(storage.extension(name)) in ('jpg','jpeg','png','webp')
-  and (select public.current_app_role()) in ('super_admin','admin','manager')
+  and (select public.current_app_role()) in ('super_admin','admin')
 );
 
 drop policy if exists showroom_seasonal_backgrounds_manager_delete on storage.objects;
@@ -64,7 +64,7 @@ to authenticated
 using (
   bucket_id='showroom-seasonal-backgrounds'
   and (storage.foldername(name))[1]='campaigns'
-  and (select public.current_app_role()) in ('super_admin','admin','manager')
+  and (select public.current_app_role()) in ('super_admin','admin')
 );
 
 create or replace function public.validate_showroom_campaign()
