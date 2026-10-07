@@ -36,6 +36,20 @@ The background is applied only while an enabled campaign is active for the curre
 
 The seasonal artwork changes only the showroom canvas behind the existing L'Imperial interface. Product cards, quotation pricing, source inventory values, customer lists and saved quotations are not changed. The generated WebP artwork is cached by the PWA service worker for reliable installed-app use. A campaign with **Default L'Imperial background** leaves the normal showroom background unchanged.
 
+## Custom background uploads
+
+Managers can upload a campaign-specific background directly from **Management Mode → Seasonal Promotions**. Custom images are stored in the public Supabase Storage bucket `showroom-seasonal-backgrounds` and the campaign stores only the Storage object path and display name.
+
+- Allowed file types: JPG, PNG, WebP.
+- Maximum file size: 8 MB.
+- The editor rejects images below 1920 × 1080 to prevent full-screen pixelation. 2560 × 1440 (16:9) is recommended.
+- A selected custom background previews before saving and overrides the built-in seasonal theme while that campaign is active.
+- Removing the custom image restores the selected built-in theme. Replacing an image uploads a new unique object first; the prior object is deleted only after the campaign update succeeds.
+- Storage write policies allow only authenticated Sales Tracking roles `super_admin`, `admin`, and `manager`. The bucket is public only for reading/serving the active showroom artwork.
+- Supabase Storage requests bypass the PWA cache, so newly uploaded images do not require a showroom rebuild.
+
+For a new environment, run `database/seasonal-promotions.sql` first and then `database/seasonal-background-uploads.sql`.
+
 ## Management and pricing
 
 - Unlock Management Mode → Seasonal Promotions → sign in → New Campaign. Products already selected in the Interest List are included; search to add or remove products. Up to 300 products per campaign.
