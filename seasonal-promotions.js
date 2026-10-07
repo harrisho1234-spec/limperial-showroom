@@ -346,7 +346,7 @@
       const modal=ui('seasonal-promo-modal');if(!modal||modal.classList.contains('hidden'))return;
       if(e.key==='Escape')closeManager();
       if(e.key==='Tab'){
-        const controls=[...modal.querySelectorAll('button:not(:disabled),input:not(:disabled)')].filter(el=>el.getClientRects().length);
+        const controls=[...modal.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled)')].filter(el=>el.getClientRects().length);
         const first=controls[0],last=controls[controls.length-1];
         if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
         else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
