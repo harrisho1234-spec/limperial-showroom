@@ -13,7 +13,7 @@ values (
   'showroom-seasonal-backgrounds',
   true,
   8388608,
-  array['image/jpeg','image/png','image/webp']::text[]
+  array['image/jpeg','image/png','image/webp','image/gif']::text[]
 )
 on conflict (id) do update
 set public=true,
@@ -37,7 +37,7 @@ to authenticated
 with check (
   bucket_id='showroom-seasonal-backgrounds'
   and (storage.foldername(name))[1]='campaigns'
-  and lower(storage.extension(name)) in ('jpg','jpeg','png','webp')
+  and lower(storage.extension(name)) in ('jpg','jpeg','png','webp','gif')
   and (select public.current_app_role()) in ('super_admin','admin')
 );
 
@@ -53,7 +53,7 @@ using (
 with check (
   bucket_id='showroom-seasonal-backgrounds'
   and (storage.foldername(name))[1]='campaigns'
-  and lower(storage.extension(name)) in ('jpg','jpeg','png','webp')
+  and lower(storage.extension(name)) in ('jpg','jpeg','png','webp','gif')
   and (select public.current_app_role()) in ('super_admin','admin')
 );
 
