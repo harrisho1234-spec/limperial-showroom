@@ -4742,6 +4742,7 @@
         }
 
         function copyQuoteToClipboard() {
+            if (!requirePermanentQuotationNumber('copy or issue it')) return;
             const area = document.getElementById('quote-textarea');
             if (!area) return;
             area.classList.remove('hidden');
@@ -4768,6 +4769,7 @@
 
         
         async function exportDocumentAsImage() {
+            if (!requirePermanentQuotationNumber('export it')) return;
             const previewPaper = document.getElementById('quotation-live-paper');
             if (!previewPaper) { showNotification('Document preview is not available.', 'error'); return; }
             if (typeof html2canvas !== 'function') { showNotification('Image export library is unavailable.', 'error'); return; }
@@ -4900,6 +4902,7 @@
         }
 
         function printProposal() {
+            if (!requirePermanentQuotationNumber('print or issue it')) return;
             const previewPaper = document.getElementById('quotation-live-paper');
             const previewContent = previewPaper.innerHTML;
             const currentPaperWidth = previewPaper.style.width || '100%';
@@ -5121,6 +5124,7 @@
     <script src="assets/seasonal/pchum-ben-data/10.js?v=20261007-pchumdata1"></script>
     <script src="assets/seasonal/pchum-ben-data/11.js?v=20261007-pchumdata1"></script>
     <script src="promotion-config.js?v=20261007-theme6"></script>
+    <script src="quotation-registry.js?v=20261007-quote1"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
     <script src="seasonal-promotions.js?v=20261007-upload3"></script>
 </body>
