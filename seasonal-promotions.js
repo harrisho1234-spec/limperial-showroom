@@ -4,7 +4,12 @@
 (function(){
   'use strict';
   const TABLE='showroom_promotion_campaigns';
+  const BUCKET='showroom-seasonal-backgrounds';
   const ROLES=['super_admin','admin','manager'];
+  const MAX_BACKGROUND_BYTES=8*1024*1024;
+  const MIN_BACKGROUND_WIDTH=1920;
+  const MIN_BACKGROUND_HEIGHT=1080;
+  const BACKGROUND_TYPES=new Set(['image/jpeg','image/png','image/webp']);
   const api=window.APP_CONFIG||{};
   const client=window.supabase?.createClient && api.SUPABASE_URL && api.SUPABASE_PUBLISHABLE_KEY
     ? window.supabase.createClient(api.SUPABASE_URL,api.SUPABASE_PUBLISHABLE_KEY,{
@@ -13,6 +18,8 @@
     : null;
   let campaigns=[],authorized=false,editId=null,chosen=new Map(),searchQuery='',showingAll=false;
   let loading=false, managerVisible=false, lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='';
+  let pendingBackgroundFile=null, pendingBackgroundPreviewUrl='', removeBackground=false;
+  let editorBackgroundPath='', editorBackgroundName='', editorBackgroundUpdatedAt=null;
   const rules=window.SeasonalCore;
   const themePresets=()=>window.SEASONAL_THEME_PRESETS||{};
   let live=new Map(), liveDay='', activeThemeKey='', resizeTimer=null;
@@ -21,8 +28,28 @@
     return live;
   }
   const view=p=>rules.project(p,featuredMap().get(codeOf(p?.code)));
+  function storagePublicUrl(path){
+    if(!client||!path)return '';
+    const {data}=client.storage.from(BUCKET).getPublicUrl(path);
+    return data?.publicUrl||'';
+  }
+  function backgroundForCampaign(c){
+    if(!c)return null;
+    if(c.custom_background_path){
+      const url=storagePublicUrl(c.custom_background_path);
+      if(url)return {
+        label:c.custom_background_name||'Custom Background',
+        backgroundDesktop:url,
+        backgroundMobile:url,
+        overlay:'rgba(28,20,12,0.08)',
+        custom:true
+      };
+    }
+    const preset=themePresets()[c.theme_preset];
+    return preset?{...preset,custom:false}:null;
+  }
   function themedCampaign(){
-    return current().find(c=>c.theme_preset&&themePresets()[c.theme_preset])||null;
+    return current().find(c=>c.custom_background_path||(c.theme_preset&&themePresets()[c.theme_preset]))||null;
   }
   function ensureThemeLayer(){
     let layer=ui('seasonal-theme-background');
@@ -36,7 +63,7 @@
   }
   function applyTheme(){
     const campaign=themedCampaign();
-    const preset=campaign?themePresets()[campaign.theme_preset]:null;
+    const preset=backgroundForCampaign(campaign);
     const root=document.documentElement,body=document.body;
     if(!root||!body)return;
     const layer=ensureThemeLayer();
@@ -64,9 +91,9 @@
       layer.classList.add('is-active');
     }
     body.classList.add('seasonal-theme-active');
-    body.dataset.seasonalTheme=campaign.theme_preset;
+    body.dataset.seasonalTheme=campaign.custom_background_path?'custom':(campaign.theme_preset||'');
     body.dataset.seasonalCampaign=campaign.name||'';
-    activeThemeKey=campaign.theme_preset;
+    activeThemeKey=campaign.custom_background_path||campaign.theme_preset||'';
   }
   const redraw=()=>{applyTheme();renderBanner();if(typeof executeSearchFilter==='function')executeSearchFilter();};
   const ui=id=>document.getElementById(id);
@@ -133,7 +160,7 @@
     if(!client||loading)return;
     loading=true;
     try{
-      const {data,error}=await client.from(TABLE).select('id,name,badge,start_date,end_date,is_enabled,discount_percent,theme_preset,items,created_at,updated_at').order('start_date',{ascending:false});
+      const {data,error}=await client.from(TABLE).select('id,name,badge,start_date,end_date,is_enabled,discount_percent,theme_preset,custom_background_path,custom_background_name,custom_background_updated_at,items,created_at,updated_at').order('start_date',{ascending:false});
       if(error)throw error;
       campaigns=data||[];liveDay='';loadError='';
       lastRefresh=Date.now();
@@ -209,9 +236,10 @@
   function campaignRow(c){
     const status=campaignState(c);
     const theme=themePresets()[c.theme_preset];
+    const backgroundLabel=c.custom_background_path?' · Custom background':(theme?' · Theme: '+escapeHtml(theme.label):'');
     return '<div class="flex flex-wrap justify-between items-center gap-3 rounded-xl border border-luxury-gold/20 bg-luxury-dark/50 px-3 py-3">'+
       '<div><div class="text-sm font-semibold text-luxury-text">'+escapeHtml(c.name)+' <span class="ml-1 text-[10px] px-2 py-1 bg-luxury-accent rounded text-luxury-muted">'+escapeHtml(status)+'</span></div>'+
-      '<div class="mt-1 text-[10px] text-luxury-muted">'+escapeHtml(c.start_date)+' to '+escapeHtml(c.end_date)+' · '+campaignItems(c).length+' items'+(c.discount_percent?' · '+Number(c.discount_percent)+'% off':'')+(theme?' · Theme: '+escapeHtml(theme.label):'')+'</div></div>'+
+      '<div class="mt-1 text-[10px] text-luxury-muted">'+escapeHtml(c.start_date)+' to '+escapeHtml(c.end_date)+' · '+campaignItems(c).length+' items'+(c.discount_percent?' · '+Number(c.discount_percent)+'% off':'')+backgroundLabel+'</div></div>'+
       '<div class="flex gap-2"><button type="button" data-sp-edit="'+escapeHtml(c.id)+'" class="text-xs rounded-lg border border-luxury-gold/20 p-2 text-luxury-gold">Edit</button>'+
       '<button type="button" data-sp-toggle="'+escapeHtml(c.id)+'" class="text-xs rounded-lg border border-luxury-gold/20 p-2 text-luxury-muted">'+(c.is_enabled?'Disable':'Enable')+'</button></div></div>';
   }
@@ -240,8 +268,20 @@
     notify('Campaign '+(!existing.is_enabled?'enabled':'disabled')+'.','success');
     await refresh();
   }
+  function revokeBackgroundPreview(){
+    if(pendingBackgroundPreviewUrl){URL.revokeObjectURL(pendingBackgroundPreviewUrl);pendingBackgroundPreviewUrl='';}
+  }
+  function resetBackgroundEditor(c){
+    revokeBackgroundPreview();
+    pendingBackgroundFile=null;
+    removeBackground=false;
+    editorBackgroundPath=c?.custom_background_path||'';
+    editorBackgroundName=c?.custom_background_name||'';
+    editorBackgroundUpdatedAt=c?.custom_background_updated_at||null;
+  }
   function editCampaign(c){
     editing=true;editVersion=c?.updated_at||null;editId=c?.id||null;chosen=new Map(campaignItems(c||{}).map(item=>[codeOf(item.code),{code:codeOf(item.code),promo_price:item.promo_price??null}]));
+    resetBackgroundEditor(c||null);
     if(!c&&typeof cart!=='undefined'){cart.filter(line=>line.type!=='set'&&line.item?.code).slice(0,300).forEach(line=>{const key=codeOf(line.item.code);chosen.set(key,{code:key,promo_price:null});});}
     searchQuery='';drawEditor(c||null);
   }
