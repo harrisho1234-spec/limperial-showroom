@@ -48,10 +48,13 @@
   }
 
   async function confirm(input={}){
-    const {data,error}=await requireClient().rpc('confirm_showroom_quotation',{
+    const {data,error}=await requireClient().rpc('confirm_showroom_quotation_v2',{
       p_source_record_id:String(input.recordId||'').trim(),
       p_quote_no:String(input.quoteNo||'').trim(),
-      p_source_payload:input.state||{}
+      p_source_payload:input.state||{},
+      p_source_name:String(input.name||'').trim()||null,
+      p_saved_at:input.savedAt||new Date().toISOString(),
+      p_amount:Number.isFinite(Number(input.amount))?Number(input.amount):null
     });
     if(error)throw error;
     if(data!==true)throw new Error('Quotation history could not be confirmed.');
