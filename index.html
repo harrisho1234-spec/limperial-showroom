@@ -3775,7 +3775,9 @@
                 button.type = 'button';
                 button.className = 'min-w-0 flex-1 text-left p-1';
                 const itemCount = Array.isArray(list.state?.cart) ? list.state.cart.reduce((n,item) => n + (Number(item.quantity)||0), 0) : 0;
-                const title = document.createElement('div'); title.className = 'saved-list-title text-xs font-semibold text-luxury-text truncate'; title.textContent = list.name || 'Unnamed List';
+                const quoteNo = savedQuotationNumber(list);
+                const isQuotation = String(list.state?.documentType || '').toLowerCase() === 'quotation';
+                const title = document.createElement('div'); title.className = 'saved-list-title text-xs font-semibold text-luxury-text truncate'; title.textContent = quoteNo ? quoteNo + ' · ' + (list.name || 'Unnamed List') : (list.name || 'Unnamed List');
                 const meta = document.createElement('div'); meta.className = 'text-[9px] text-luxury-muted mt-1'; meta.textContent = `${itemCount} selected ${itemCount === 1 ? 'item' : 'items'}${list.savedAt ? ' • ' + formatSavedListDate(list.savedAt) : ''}`;
                 button.appendChild(title); button.appendChild(meta);
                 button.addEventListener('click', () => retrieveSavedInterestList(list.id));
@@ -3808,7 +3810,7 @@
 
                 row.appendChild(button);
                 row.appendChild(sendBtn);
-                row.appendChild(deleteBtn);
+                if (!isQuotation) row.appendChild(deleteBtn);
                 listEl.appendChild(row);
             });
         }
