@@ -758,7 +758,7 @@
                                 <div id="quote-no-help" class="mt-1 text-[9px] text-luxury-muted">Showroom uses S; Project uses P. Permanent number is assigned when saved.</div>
                             </div>
                             <div>
-                                <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Salesperson <span class="text-rose-400">*</span></label>
+                                <label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Salesperson <span id="quote-sales-required" class="text-rose-400">*</span></label>
                                 <div class="relative">
                                     <input type="text" id="quote-sales-input" list="quote-salesperson-options" autocomplete="off" placeholder="Select or type salesperson" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg pl-3 pr-8 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()">
                                     <button type="button" onclick="openSalespersonPicker()" class="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md text-luxury-gold hover:bg-luxury-accent/70" title="Show salesperson list"><i class="fa-solid fa-chevron-down text-[9px]"></i></button>
@@ -789,7 +789,7 @@
                             <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Install Date</label><input type="text" id="do-install-date-input" placeholder="DD/MM/YYYY" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                             <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">QB</label><input type="text" id="do-qb-input" placeholder="QB Reference" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                         </div>
-                        <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Customer / Project Name <span class="text-rose-400">*</span></label><input type="text" id="quote-customer-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none font-semibold" oninput="updateQuotationPreview()"></div>
+                        <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Customer / Project Name <span id="quote-customer-required" class="text-rose-400">*</span></label><input type="text" id="quote-customer-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none font-semibold" oninput="updateQuotationPreview()"></div>
                         <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Telephone Contact</label><input type="text" id="quote-tel-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                         <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Delivery Address</label><textarea id="quote-address-input" rows="2" placeholder="Address Details" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg p-2 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></textarea></div>
                         <h4 class="text-xs font-bold text-luxury-gold uppercase tracking-widest border-b border-luxury-gold/20 pb-2 pt-2">Assign Rooms / Notes</h4>
@@ -2113,12 +2113,19 @@
             documentType = type;
             const quoteBtn = document.getElementById('doc-type-quote'); const soBtn = document.getElementById('doc-type-so'); const invBtn = document.getElementById('doc-type-inv'); const doBtn = document.getElementById('doc-type-do');
             const numLabel = document.getElementById('num-input-label'); const numInput = document.getElementById('quote-no-input'); const numHelp = document.getElementById('quote-no-help'); const soDepositFields = document.getElementById('so-deposit-fields'); const doExtraFields = document.getElementById('do-extra-fields');
+            const quotationTypeField = document.getElementById('quotation-type-field');
+            const quotePrefixSelect = document.getElementById('quote-prefix-select');
+            const customerRequired = document.getElementById('quote-customer-required');
+            const salesRequired = document.getElementById('quote-sales-required');
             
             const activeClass = "py-2 text-center rounded-lg font-bold transition-all text-luxury-gold bg-slate-900 border border-luxury-gold/20 cursor-pointer text-[10px] sm:text-xs";
             const inactiveClass = "py-2 text-center rounded-lg font-semibold transition-all text-luxury-muted hover:text-luxury-text cursor-pointer text-[10px] sm:text-xs";
 
             quoteBtn.className = inactiveClass; soBtn.className = inactiveClass; invBtn.className = inactiveClass; doBtn.className = inactiveClass;
             soDepositFields.classList.add('hidden'); doExtraFields.classList.add('hidden');
+            quotationTypeField?.classList.toggle('hidden', type !== 'quotation');
+            customerRequired?.classList.toggle('hidden', type !== 'quotation');
+            salesRequired?.classList.toggle('hidden', type !== 'quotation');
 
             if (type === 'quotation') {
                 quoteBtn.className = activeClass;
@@ -2148,6 +2155,12 @@
             // no saved form state yet, start its number blank instead of carrying
             // over the number from the previous tab (especially a permanent quote).
             if (!restored && numInput) numInput.value = '';
+            if (type === 'quotation') {
+                if (!restored && quotePrefixSelect) quotePrefixSelect.value = 'S';
+                syncQuotationTypeFromNumber();
+            } else if (quotePrefixSelect) {
+                quotePrefixSelect.disabled = false;
+            }
 
             if (type === 'sales_order' && !restored) syncDepositAmountFromPct();
             updateQuotationNumberHelp();
