@@ -4033,9 +4033,12 @@
             setSavedListSavingState('saving', 'Saving your Customer Interest List…');
             let record = null;
             let reservedNewQuotation = false;
+            let revisingExistingQuotation = false;
+            let previousSavedRecord = null;
+            let previousQuotationRevision = activeSavedQuotationRevision;
 
             try {
-                const revisingExistingQuotation = isEditingSavedQuotation();
+                revisingExistingQuotation = isEditingSavedQuotation();
                 const nextQuotationRevision = revisingExistingQuotation ? activeSavedQuotationRevision + 1 : 0;
                 record = buildSavedInterestListRecord(name, {
                     recordId: revisingExistingQuotation ? activeSavedQuotationId : '',
@@ -4083,7 +4086,10 @@
 
                 const existing = getLocalSavedInterestLists();
                 const existingIndex = existing.findIndex(item => String(item.id || '') === String(record.id || ''));
-                if (existingIndex > -1) existing[existingIndex] = record;
+                if (existingIndex > -1) {
+                    previousSavedRecord = cloneForStorage(existing[existingIndex]);
+                    existing[existingIndex] = record;
+                }
                 else existing.unshift(record);
                 savedInterestLists = existing;
                 setLocalSavedInterestLists(savedInterestLists);
@@ -4166,6 +4172,17 @@
                 closeSavedListsModal();
             } catch (e) {
                 console.error('Saved Interest List cloud save failed:', e);
+                if (revisingExistingQuotation && record && previousSavedRecord) {
+                    const local = getLocalSavedInterestLists();
+                    const revisionIndex = local.findIndex(item => String(item.id || '') === String(record.id || ''));
+                    if (revisionIndex > -1) local[revisionIndex] = previousSavedRecord;
+                    else local.unshift(previousSavedRecord);
+                    savedInterestLists = local;
+                    setLocalSavedInterestLists(savedInterestLists);
+                    activeSavedQuotationRevision = previousQuotationRevision;
+                    updateQuotationNumberHelp();
+                    updateQuotationPreview();
+                }
                 if (reservedNewQuotation && record) {
                     savedInterestLists = savedInterestLists.filter(item => String(item.id) !== String(record.id));
                     setLocalSavedInterestLists(savedInterestLists);
@@ -5293,7 +5310,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261007-quoterev1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261007-quoterev2', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
