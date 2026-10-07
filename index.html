@@ -566,7 +566,7 @@
         </div>
     </div>
 
-    <div id="create-set-modal" onclick="if(event.target === this) closeCreateSetModal()" class="fixed inset-0 bg-black/90 z-[70] backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div id="create-set-modal" class="fixed inset-0 bg-black/90 z-[70] backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="create-set-modal-container">
             <div class="p-4 bg-luxury-accent/50 border-b border-luxury-gold/15 flex items-center justify-between"><div class="flex items-center space-x-2"><i class="fa-solid fa-square-plus text-luxury-gold"></i><h3 class="font-serif text-base text-luxury-gold font-semibold">Create Reusable Set</h3></div><button onclick="closeCreateSetModal()" class="p-1 text-luxury-muted hover:text-luxury-text"><i class="fa-solid fa-xmark text-lg"></i></button></div>
             <div class="p-5 space-y-4"><p class="text-xs text-luxury-soft">Save the selected items as a reusable catalog Set. Each component keeps its original inventory information.</p><div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1.5">Set Name</label><input type="text" id="create-set-name-input" maxlength="120" placeholder="e.g. Milano Living Set" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-4 py-2.5 text-sm text-luxury-text outline-none"></div><div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1.5">Price</label><div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-luxury-gold font-bold text-sm">$</span><input type="number" id="create-set-price-input" min="0" step="0.01" placeholder="0" class="w-full bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl pl-8 pr-4 py-2.5 text-sm text-luxury-text outline-none"></div></div><div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1.5">Upload Set Photo</label><input type="file" id="create-set-photo-input" accept="image/*" onchange="handleCreateSetPhotoChange(event)" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-xl px-3 py-2 text-xs text-luxury-text file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-1.5 file:text-[#0a0f19] file:font-bold"><div id="create-set-photo-preview-wrap" class="hidden mt-3 rounded-xl overflow-hidden border border-luxury-gold/15 bg-luxury-dark h-36 flex items-center justify-center"><img id="create-set-photo-preview" src="" alt="Set preview" class="max-w-full max-h-full object-contain"></div><div id="create-set-photo-name" class="mt-1.5 text-[9px] text-luxury-muted truncate"></div></div><div id="create-set-saving-state" class="hidden rounded-xl border border-luxury-gold/15 bg-luxury-accent/30 p-3 text-center"><div class="w-7 h-7 mx-auto rounded-full border-2 border-luxury-gold/15 border-t-luxury-gold animate-spin"></div><div class="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-luxury-gold">Saving Set…</div></div><div class="grid grid-cols-2 gap-2 pt-1"><button onclick="closeCreateSetModal()" class="py-2.5 bg-luxury-lightBg hover:bg-luxury-accent text-luxury-soft border border-luxury-gold/10 rounded-xl text-xs font-bold uppercase tracking-wider">Cancel</button><button id="create-set-submit-btn" onclick="submitCreateReusableSet()" class="py-2.5 bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] rounded-xl text-xs font-bold uppercase tracking-wider">Create Set</button></div></div>
@@ -630,7 +630,7 @@
         </div>
     </div>
 
-    <div id="saved-lists-modal" onclick="if(event.target === this) closeSavedListsModal()" class="fixed inset-0 bg-black/90 z-[80] backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div id="saved-lists-modal" class="fixed inset-0 bg-black/90 z-[80] backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="saved-lists-modal-container">
             <div class="p-4 bg-luxury-accent/50 border-b border-luxury-gold/15 flex items-center justify-between">
                 <div class="flex items-center space-x-2"><i class="fa-solid fa-floppy-disk text-luxury-gold"></i><h3 id="saved-lists-modal-title" class="font-serif text-base text-luxury-gold font-semibold">Saved Customer Lists</h3></div>
@@ -664,7 +664,7 @@
         </div>
     </div>
 
-    <div id="product-detail-modal" onclick="if(event.target === this) closeProductDetailModal()" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
+    <div id="product-detail-modal" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-2xl shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col md:flex-row my-auto overflow-hidden" id="product-detail-modal-container">
             <div class="w-full md:w-1/2 bg-luxury-dark flex items-center justify-center p-4 relative min-h-[300px]">
                 <img id="detail-modal-image" src="" alt="" class="w-full h-full object-contain rounded-lg">
@@ -707,7 +707,7 @@
         </div>
     </div>
 
-    <div id="share-modal" onclick="if(event.target === this) closeShareModal()" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
+    <div id="share-modal" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-7xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300 my-auto" id="share-modal-container">
             <div class="p-4 bg-luxury-accent/50 border-b border-luxury-gold/15 flex items-center justify-between">
                 <div class="flex items-center space-x-2"><i class="fa-solid fa-file-invoice text-luxury-gold"></i><h3 class="font-serif text-lg text-luxury-gold font-semibold">Generate L'Imperial Quotation Sheet</h3></div>
@@ -1403,6 +1403,44 @@
             }
         }
 
+        function initSafeBackdropClose() {
+            const bindings = [
+                ['create-set-modal', () => closeCreateSetModal()],
+                ['saved-lists-modal', () => closeSavedListsModal()],
+                ['product-detail-modal', () => closeProductDetailModal()],
+                ['share-modal', () => closeShareModal()]
+            ];
+
+            bindings.forEach(([modalId, closeHandler]) => {
+                const modal = document.getElementById(modalId);
+                if (!modal || modal.dataset.safeBackdropBound === 'true') return;
+                modal.dataset.safeBackdropBound = 'true';
+
+                let pointerStartedOnBackdrop = false;
+
+                modal.addEventListener('pointerdown', (event) => {
+                    pointerStartedOnBackdrop = event.target === modal;
+                });
+
+                modal.addEventListener('pointerup', (event) => {
+                    const shouldClose = pointerStartedOnBackdrop && event.target === modal;
+                    pointerStartedOnBackdrop = false;
+                    if (shouldClose) closeHandler();
+                });
+
+                modal.addEventListener('pointercancel', () => {
+                    pointerStartedOnBackdrop = false;
+                });
+
+                // Prevent a synthetic click after selecting/dragging text from being
+                // interpreted as a backdrop close. Closing is handled by pointerup
+                // only when both pointerdown and pointerup occurred on the backdrop.
+                modal.addEventListener('click', (event) => {
+                    if (event.target === modal) event.stopPropagation();
+                });
+            });
+        }
+
         function bootstrapDashboardEngine() {
             const savedTheme = localStorage.getItem('limperial_theme');
             const icon = document.getElementById('theme-icon');
@@ -1423,6 +1461,7 @@
             if (spinner) spinner.className = "hidden";
             fetchSheetData();
             initMobileProductScrollAssist();
+            initSafeBackdropClose();
             loadSavedInterestLists();
             renderKeyMaterialFilters();
             fetchKeyMaterialData();
@@ -5126,7 +5165,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261007-quote2', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261007-inputselect1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
