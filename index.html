@@ -5079,7 +5079,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261007-upload3', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261007-quote1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
