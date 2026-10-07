@@ -3875,13 +3875,46 @@
 
             try {
                 const record = buildSavedInterestListRecord(name);
+
+                if (documentType === 'quotation') {
+                    const quoteInput = document.getElementById('quote-no-input');
+                    let quoteNo = String(quoteInput?.value || '').trim();
+
+                    if (!quoteNo) {
+                        if (!window.QuotationRegistry?.register) {
+                            throw new Error('Quotation numbering service is unavailable. Please refresh and try again.');
+                        }
+                        setSavedListSavingState('saving', 'Assigning permanent quotation number…');
+                        const registration = await window.QuotationRegistry.register({
+                            recordId: record.id,
+                            name: record.name,
+                            issueDate: parseQuotationIssueDate(document.getElementById('quote-date-input')?.value),
+                            savedAt: record.savedAt,
+                            state: record.state,
+                            customerName: document.getElementById('quote-customer-input')?.value || '',
+                            customerPhone: document.getElementById('quote-tel-input')?.value || '',
+                            salesperson: document.getElementById('quote-sales-input')?.value || '',
+                            amount: currentQuotationAmountValue()
+                        });
+                        quoteNo = registration.quoteNo;
+                        if (quoteInput) quoteInput.value = quoteNo;
+                        captureDocumentFormState('quotation');
+                        record.state.documentFormStates = cloneForStorage(documentFormStates);
+                        record.quoteNo = quoteNo;
+                        updateQuotationPreview();
+                    } else {
+                        record.quoteNo = quoteNo;
+                    }
+                }
+
                 const existing = getLocalSavedInterestLists();
                 existing.unshift(record);
                 savedInterestLists = existing;
                 setLocalSavedInterestLists(savedInterestLists);
 
                 if (SAVED_LISTS_API_URL) {
-                    // POST the full payload so large lists are not truncated by browser/URL limits.
+                    setSavedListSavingState('saving', documentType === 'quotation' ? 'Saving quotation to shared history…' : 'Saving your Customer Interest List…');
+
                     await postSavedListsRequest({
                         action: 'save',
                         name: record.name,
@@ -3890,8 +3923,6 @@
                         payload: JSON.stringify(record.state)
                     });
 
-                    // Verify the exact saved record through a small GET request. This is required because
-                    // the POST uses no-cors and therefore does not expose the Apps Script response body.
                     let cloudRecord = null;
                     for (let attempt = 0; attempt < 5; attempt++) {
                         try {
@@ -3906,23 +3937,45 @@
                         await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
                     }
 
-                    if (!cloudRecord) {
-                        throw new Error('Google Sheets did not confirm the saved list.');
-                    }
+                    if (!cloudRecord) throw new Error('Google Sheets did not confirm the saved list.');
 
                     const idx = savedInterestLists.findIndex(item => item.id === record.id);
-                    if (idx > -1) savedInterestLists[idx] = cloudRecord; else savedInterestLists.unshift(cloudRecord);
+                    const mergedCloudRecord = record.quoteNo ? { ...cloudRecord, quoteNo: record.quoteNo } : cloudRecord;
+                    if (idx > -1) savedInterestLists[idx] = mergedCloudRecord; else savedInterestLists.unshift(mergedCloudRecord);
                     setLocalSavedInterestLists(savedInterestLists);
+
+                    if (documentType === 'quotation' && record.quoteNo && window.QuotationRegistry?.confirm) {
+                        let confirmed = false;
+                        for (let attempt = 0; attempt < 3 && !confirmed; attempt++) {
+                            try {
+                                await window.QuotationRegistry.confirm({
+                                    recordId: record.id,
+                                    quoteNo: record.quoteNo,
+                                    state: cloudRecord.state || record.state
+                                });
+                                confirmed = true;
+                            } catch (confirmError) {
+                                if (attempt === 2) console.error('Quotation history confirmation failed:', confirmError);
+                                else await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+                            }
+                        }
+                        if (!confirmed) {
+                            showNotification('Quotation was saved, but permanent history confirmation is still pending.', 'error');
+                        }
+                    }
                 }
 
-                setSavedListSavingState('done', 'Saved successfully.');
-                showNotification(`"${record.name}" saved successfully.`, "success");
+                const successMessage = documentType === 'quotation' && record.quoteNo
+                    ? record.quoteNo + ' saved permanently.'
+                    : '"' + record.name + '" saved successfully.';
+                setSavedListSavingState('done', documentType === 'quotation' && record.quoteNo ? 'Saved as ' + record.quoteNo + '.' : 'Saved successfully.');
+                showNotification(successMessage, "success");
                 await new Promise(resolve => setTimeout(resolve, 900));
                 closeSavedListsModal();
             } catch (e) {
                 console.error('Saved Interest List cloud save failed:', e);
-                setSavedListSavingState('error', e?.message || 'The list could not be saved to Google Sheets.');
-                showNotification("Save List failed. The list was not confirmed in Google Sheets.", "error");
+                setSavedListSavingState('error', e?.message || 'The list could not be saved.');
+                showNotification(e?.message || "Save failed. The quotation was not confirmed.", "error");
                 await new Promise(resolve => setTimeout(resolve, 1400));
             } finally {
                 isSavingInterestList = false;
