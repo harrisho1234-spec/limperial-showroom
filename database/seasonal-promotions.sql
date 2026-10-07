@@ -119,11 +119,11 @@ for select to anon, authenticated using (
 -- Role lookup is deliberately limited to authenticated users.
 create policy showroom_campaign_manager_read on public.showroom_promotion_campaigns
 for select to authenticated using (
-  (select public.current_app_role()) in ('super_admin','admin','manager')
+  (select public.current_app_role()) in ('super_admin','admin')
 );
 create policy showroom_campaign_manager_insert on public.showroom_promotion_campaigns
 for insert to authenticated with check (
-  (select public.current_app_role()) in ('super_admin','admin','manager')
+  (select public.current_app_role()) in ('super_admin','admin')
 );
 -- Preserve the deployed Sales Tracking table's existing author check when present.
 do $$ begin
@@ -131,15 +131,15 @@ do $$ begin
     and table_name='showroom_promotion_campaigns' and column_name='created_by') then
     execute $policy$alter policy showroom_campaign_manager_insert
       on public.showroom_promotion_campaigns with check (
-        (select public.current_app_role()) in ('super_admin','admin','manager')
+        (select public.current_app_role()) in ('super_admin','admin')
         and created_by = (select auth.uid()))$policy$;
   end if;
 end $$;
 create policy showroom_campaign_manager_update on public.showroom_promotion_campaigns
 for update to authenticated using (
-  (select public.current_app_role()) in ('super_admin','admin','manager')
+  (select public.current_app_role()) in ('super_admin','admin')
 ) with check (
-  (select public.current_app_role()) in ('super_admin','admin','manager')
+  (select public.current_app_role()) in ('super_admin','admin')
 );
 commit;
 
