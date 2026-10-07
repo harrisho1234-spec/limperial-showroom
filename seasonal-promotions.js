@@ -12,82 +12,41 @@
       })
     : null;
   let campaigns=[],authorized=false,editId=null,chosen=new Map(),searchQuery='',showingAll=false;
-  let loading=false, managerVisible=false, lastRefresh=0, ticker=null;
+  let loading=false, managerVisible=false, lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='';
+  const rules=window.SeasonalCore;
+  let live=new Map(), liveDay='';
+  function featuredMap(){
+    if(liveDay!==today()){liveDay=today();live=rules.index(campaigns,liveDay);}
+    return live;
+  }
+  const view=p=>rules.project(p,featuredMap().get(codeOf(p?.code)));
+  const redraw=()=>{renderBanner();if(typeof executeSearchFilter==='function')executeSearchFilter();};
   const ui=id=>document.getElementById(id);
   const escapeHtml=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const codeOf=v=>String(v||'').trim().toUpperCase();
-  function today(){
-    const p=Intl.DateTimeFormat('en-US',{timeZone:'Asia/Phnom_Penh',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
-    const get=x=>p.find(i=>i.type===x)?.value||'';
-    return get('year')+'-'+get('month')+'-'+get('day');
-  }
-  const round2=n=>Math.round((Number(n)+Number.EPSILON)*100)/100;
+  const today=()=>rules.today();
   const price=n=>'$'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:0});
   const rawProducts=()=>typeof products!=='undefined'&&Array.isArray(products)?products:[];
-  const active=c=>!!c.is_enabled&&c.start_date<=today()&&c.end_date>=today();
   const campaignItems=c=>Array.isArray(c.items)?c.items:[];
-  const campaignState=c=>!c.is_enabled?'Disabled':c.start_date>today()?'Scheduled':c.end_date<today()?'Ended':'Active';
-  const current=()=>campaigns.filter(active).sort((a,b)=>b.start_date.localeCompare(a.start_date)||b.created_at.localeCompare(a.created_at));
+  const campaignState=c=>rules.state(c);
+  const current=()=>rules.active(campaigns);
   function notify(msg,type){if(typeof showNotification==='function')showNotification(msg,type||'info');}
-  function featuredMap(){
-    const found=new Map();
-    current().forEach(c=>{
-      campaignItems(c).forEach(item=>{
-        const code=codeOf(item.code);
-        if(code&&!found.has(code))found.set(code,{campaign:c,item});
-      });
-    });
-    return found;
-  }
-  function applyProductPromos(){
-    const live=featuredMap();
-    rawProducts().forEach(item=>{
-      if(item.isSet)return;
-      if(!item._seasonalBaseline){
-        item._seasonalBaseline={price:item.price,promotion:item.promotion,pricePromotion:item.pricePromotion};
-      }
-      const original=item._seasonalBaseline;
-      item.price=original.price;
-      item.promotion=original.promotion;
-      item.pricePromotion=original.pricePromotion;
-      delete item._seasonalCampaign;
-      const match=live.get(codeOf(item.code));
-      if(!match)return;
-      const base=Number(item.actualSalesPrice)||Number(original.price)||0;
-      const fixed=match.item.promo_price==null||match.item.promo_price===''?null:Number(match.item.promo_price);
-      const pct=Number(match.campaign.discount_percent)||0;
-      let target=null;
-      if(fixed!=null&&Number.isFinite(fixed)&&fixed>=0&&fixed<base){
-        target=round2(fixed);
-        item.promotion='SPECIAL PRICE';
-        item.pricePromotion=String(target);
-      }else if(pct>0){
-        target=round2(base*(1-pct/100));
-        item.promotion=pct+'% OFF';
-        item.pricePromotion='';
-      }
-      if(target!==null)item.price=target;
-      else item.promotion=String(match.campaign.badge||'SEASONAL OFFER');
-      item._seasonalCampaign={id:match.campaign.id,title:match.campaign.name,badge:match.campaign.badge,
-        percent:pct,fixedPrice:fixed,actualPromoPrice:target};
-    });
-  }
   function isFeatured(product){return !!featuredMap().get(codeOf(product?.code));}
   function cards(){
     const matches=featuredMap();
-    return rawProducts().filter(p=>!p.isSet&&matches.has(codeOf(p.code)));
+    return rawProducts().filter(p=>!p.isSet&&matches.has(codeOf(p.code))).map(view);
   }
   function renderBanner(){
     const box=ui('seasonal-promotions-section');
     if(!box)return;
     const list=cards();
-    if(!list.length){box.classList.add('hidden');box.innerHTML='';return;}
+    if(!list.length&&!showingAll){box.classList.add('hidden');box.innerHTML='';return;}
     box.classList.remove('hidden');
     const names=[...new Set(current().map(c=>c.name))];
     const featured=showingAll?[]:list.slice(0,8);
     box.innerHTML='<div class="flex flex-wrap justify-between gap-3 items-center mb-3"><div>'+
       '<div class="text-[10px] tracking-[.16em] uppercase font-bold text-luxury-gold"><i class="fa-solid fa-star mr-1"></i> Seasonal Promotion</div>'+
-      '<h3 class="font-serif font-semibold text-luxury-text text-lg sm:text-xl">'+escapeHtml(names.join(' · '))+'</h3>'+
+      '<h3 class="font-serif font-semibold text-luxury-text text-lg sm:text-xl">'+escapeHtml(names.join(' · ')||'Seasonal Promotions')+'</h3>'+
       '<p class="text-xs text-luxury-muted mt-1">'+list.length+' featured products · Promotions end automatically on their campaign dates</p></div>'+
       '<button type="button" id="seasonal-view-all" class="px-3 py-2 rounded-xl text-xs font-bold border border-luxury-gold/30 bg-luxury-accent/40 text-luxury-gold hover:bg-luxury-accent">'+(showingAll?'Show Normal Catalog':'View All Promotions')+' <i class="fa-solid fa-arrow-right ml-1"></i></button></div>'+
       (showingAll?'<p class="text-xs text-luxury-muted">Showing seasonal promotion items in the catalog below. Other search filters still work.</p>':
@@ -107,11 +66,16 @@
         }).join('')+'</div>');
     ui('seasonal-view-all')?.addEventListener('click',toggleAll);
     box.querySelectorAll('[data-promo-open]').forEach(el=>el.addEventListener('click',()=>openProductDetailModal(el.dataset.promoOpen)));
-    box.querySelectorAll('[data-promo-select]').forEach(el=>el.addEventListener('click',()=>toggleCartSelection(el.dataset.promoSelect)));
+    box.querySelectorAll('[data-promo-select]').forEach(el=>{
+      const selected=typeof cart!=='undefined'&&cart.some(line=>line.type!=='set'&&String(line.item?.id)===el.dataset.promoSelect);
+      el.textContent=selected?'Remove from List':'Select';
+      el.setAttribute('aria-pressed',String(selected));
+      el.addEventListener('click',()=>{toggleCartSelection(el.dataset.promoSelect);renderBanner();});
+    });
   }
   function toggleAll(){
     showingAll=!showingAll;
-    if(showingAll&&typeof resetFilters==='function')resetFilters();
+    // Keep the customer's search, category, brand, location and sort selections.
     if(typeof executeSearchFilter==='function')executeSearchFilter();
     renderBanner();
     const target=showingAll?ui('product-grid'):ui('seasonal-promotions-section');
@@ -123,23 +87,22 @@
     try{
       const {data,error}=await client.from(TABLE).select('id,name,badge,start_date,end_date,is_enabled,discount_percent,items,created_at,updated_at').order('start_date',{ascending:false});
       if(error)throw error;
-      campaigns=data||[];
+      campaigns=data||[];liveDay='';loadError='';
       lastRefresh=Date.now();
-      applyProductPromos();renderBanner();
+      renderBanner();
       if(typeof executeSearchFilter==='function')executeSearchFilter();
-      if(authorized)renderManager();
-    }catch(e){console.warn('[Seasonal promotions] Load failed',e);if(authorized)notify('Could not refresh promotion campaigns: '+e.message,'error');}
+      if(authorized&&!editing)renderManager();
+    }catch(e){loadError='The shared promotion service is unavailable. Please retry or contact your administrator.';console.warn('[Seasonal promotions] Load failed',e);if(authorized&&!editing)renderManager();}
     finally{loading=false;}
   }
   function afterAddToCart(id){
-    const p=rawProducts().find(x=>String(x.id)===String(id));
+    const p=view(rawProducts().find(x=>String(x.id)===String(id)));
     const promo=p?._seasonalCampaign;if(!promo)return;
     const line=typeof cart!=='undefined'&&Array.isArray(cart)?cart.find(c=>c.item?.id===id):null;
     if(!line)return;
-    if(promo.fixedPrice!=null&&promo.actualPromoPrice!=null&&Number.isFinite(promo.actualPromoPrice)){
-      line.customPrice=promo.actualPromoPrice;
-      line.discount=0;
-    }else if(promo.percent>0){line.customPrice=null;line.discount=promo.percent;}
+    if(promo.actualPromoPrice!=null&&Number.isFinite(promo.actualPromoPrice)){
+      line.customPrice=promo.actualPromoPrice;line.discount=0;
+    }
   }
   function setManagerMode(on){
     managerVisible=!!on;
@@ -147,22 +110,24 @@
     if(btn)btn.classList.toggle('hidden',!managerVisible);
     if(!managerVisible){
       closeManager();
-      authorized=false;editId=null;chosen.clear();
+      authorized=false;editId=null;editing=false;chosen.clear();
       client?.auth.signOut().catch(()=>{});
     }
   }
   function modalHtml(){
-    return '<div id="seasonal-promo-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[95] p-3 sm:p-6 overflow-y-auto">'+
+    return '<div role="dialog" aria-modal="true" aria-label="Seasonal Promotion Manager" id="seasonal-promo-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[95] p-3 sm:p-6 overflow-y-auto">'+
       '<div class="relative max-w-4xl rounded-2xl border border-luxury-gold/25 bg-luxury-card shadow-2xl mx-auto my-4">'+
       '<div class="flex items-center justify-between border-b border-luxury-gold/15 p-4"><div><div class="font-serif text-luxury-gold font-bold text-lg">Seasonal Promotion Manager</div><div class="text-[10px] text-luxury-muted mt-1">Shared campaigns · Sales Tracking management accounts only</div></div>'+
-      '<button type="button" id="sp-close" class="p-2 text-luxury-muted hover:text-luxury-gold"><i class="fa-solid fa-xmark"></i></button></div>'+
+      '<button type="button" id="sp-close" aria-label="Close promotion manager" class="p-2 text-luxury-muted hover:text-luxury-gold"><i class="fa-solid fa-xmark"></i></button></div>'+
       '<div class="p-4 sm:p-5 space-y-4" id="seasonal-promo-modal-content"></div></div></div>';
   }
-  function closeManager(){ui('seasonal-promo-modal')?.classList.add('hidden');}
+  function closeManager(){ui('seasonal-promo-modal')?.classList.add('hidden');ui('seasonal-promotions-manage-button')?.focus();}
   async function openManager(){
     if(!managerVisible){notify('Unlock Management Mode first.','error');return;}
     if(!client){notify('Promotion database service is not available.','error');return;}
     ui('seasonal-promo-modal')?.classList.remove('hidden');
+    ui('sp-close')?.focus();
+    renderLogin();
     const existing=await client.auth.getUser();
     if(existing.data?.user) {
       const permitted=await checkRole();
@@ -187,10 +152,12 @@
   async function login(event){
     event.preventDefault();
     const btn=ui('sp-sign-in');if(btn)btn.disabled=true;
+    try{
     const {error}=await client.auth.signInWithPassword({email:ui('sp-email')?.value||'',password:ui('sp-password')?.value||''});
     if(error){renderLogin(error.message);return;}
     if(!(await checkRole())){await client.auth.signOut();renderLogin('This account does not have Super Admin, Admin, or Manager access.');return;}
     authorized=true;await refresh();renderManager();
+    }catch(e){renderLogin('Sign-in could not complete. Please try again.');}
   }
   function campaignRow(c){
     const status=campaignState(c);
@@ -203,27 +170,31 @@
   function renderManager(){
     if(!authorized)return;
     const el=ui('seasonal-promo-modal-content');if(!el)return;
-    el.innerHTML='<div class="flex justify-between items-center"><span class="text-xs text-luxury-muted">'+campaigns.length+' campaigns (including history)</span>'+
+    el.innerHTML=(loadError?'<div role="alert" class="p-3 text-sm text-red-600">'+escapeHtml(loadError)+' <button type="button" id="sp-retry" class="underline">Retry</button></div>':'')+'<div class="flex justify-between items-center"><span class="text-xs text-luxury-muted">'+campaigns.length+' campaigns (including history)</span>'+
       '<div class="flex gap-2"><button id="sp-create" class="px-3 py-2 bg-luxury-gold text-slate-950 rounded-lg text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>New Campaign</button>'+
       '<button id="sp-logout" class="px-3 py-2 border border-luxury-gold/20 rounded-lg text-xs text-luxury-muted">Sign Out</button></div></div>'+
       '<div class="space-y-2 max-h-64 overflow-y-auto">'+(campaigns.length?campaigns.map(campaignRow).join(''):'<p class="text-xs text-luxury-muted text-center p-8">No seasonal promotions yet. Create the first campaign.</p>')+'</div>'+
       '<div id="sp-editor"></div>';
     ui('sp-create')?.addEventListener('click',()=>editCampaign(null));
-    ui('sp-logout')?.addEventListener('click',async()=>{authorized=false;await client.auth.signOut();renderLogin();});
+    ui('sp-retry')?.addEventListener('click',refresh);
+    ui('sp-logout')?.addEventListener('click',async()=>{authorized=false;editing=false;editId=null;chosen.clear();await client.auth.signOut();campaigns=campaigns.filter(c=>campaignState(c)==='Active');liveDay='';renderLogin();refresh();});
     el.querySelectorAll('[data-sp-edit]').forEach(x=>x.addEventListener('click',()=>editCampaign(campaigns.find(c=>c.id===x.dataset.spEdit))));
     el.querySelectorAll('[data-sp-toggle]').forEach(x=>x.addEventListener('click',()=>toggleCampaign(x.dataset.spToggle)));
-    if(editId){const currentCampaign=campaigns.find(c=>c.id===editId);if(currentCampaign)drawEditor(currentCampaign);}
+    if(editing&&editId){const currentCampaign=campaigns.find(c=>c.id===editId);if(currentCampaign)drawEditor(currentCampaign);}
   }
   async function toggleCampaign(id){
     if(!authorized)return;
     const existing=campaigns.find(x=>x.id===id);if(!existing)return;
-    const result=await client.from(TABLE).update({is_enabled:!existing.is_enabled,updated_at:new Date().toISOString()}).eq('id',id).select('id');
-    if(result.error||!result.data?.length){notify('Could not update campaign: '+(result.error?.message||'Access denied'),'error');return;}
+    let result;
+    try{result=await client.from(TABLE).update({is_enabled:!existing.is_enabled,updated_at:new Date().toISOString()}).eq('id',id).eq('updated_at',existing.updated_at).select('id');}
+    catch(e){result={error:e};}
+    if(result.error||!result.data?.length){notify('Could not update campaign: '+(result.error?.message||'Campaign changed on another device. Reopen it before editing.'),'error');return;}
     notify('Campaign '+(!existing.is_enabled?'enabled':'disabled')+'.','success');
     await refresh();
   }
   function editCampaign(c){
-    editId=c?.id||null;chosen=new Map(campaignItems(c||{}).map(item=>[codeOf(item.code),{code:codeOf(item.code),promo_price:item.promo_price??null}]));
+    editing=true;editVersion=c?.updated_at||null;editId=c?.id||null;chosen=new Map(campaignItems(c||{}).map(item=>[codeOf(item.code),{code:codeOf(item.code),promo_price:item.promo_price??null}]));
+    if(!c&&typeof cart!=='undefined'){cart.filter(line=>line.type!=='set'&&line.item?.code).slice(0,300).forEach(line=>{const key=codeOf(line.item.code);chosen.set(key,{code:key,promo_price:null});});}
     searchQuery='';drawEditor(c||null);
   }
   function drawEditor(c){
@@ -237,6 +208,7 @@
       field('Start Date','sp-start',start,'date')+field('End Date','sp-end',end,'date')+
       field('Discount % (optional)','sp-percent',c?.discount_percent??'','number','e.g. 20')+
       '<label class="flex gap-2 items-center text-sm text-luxury-text"><input type="checkbox" id="sp-enabled" '+(c&&!c.is_enabled?'':'checked')+'> Enabled / Published</label></div>'+
+      '<p class="text-xs text-luxury-muted">Dates include the full day in Cambodia time. A blank discount and blank item prices only feature products. Item prices override the campaign discount; discounts do not stack. Existing quotes keep their selected prices. Selected Interest List products are included in new campaigns.</p>'+
       '<div class="rounded-xl border border-luxury-gold/15 p-3 space-y-3">'+
       '<div class="flex flex-wrap justify-between items-end gap-2"><label class="text-xs font-bold text-luxury-text">Select Products <span id="sp-count" class="text-luxury-gold"></span></label><span class="text-[10px] text-luxury-muted">Optional item-specific promotion prices</span></div>'+
       '<input id="sp-product-search" class="w-full border border-luxury-gold/20 bg-luxury-dark rounded-xl px-3 py-2.5 text-xs outline-none text-luxury-text" placeholder="Search by product code or name" value="'+escapeHtml(searchQuery)+'">'+
@@ -246,12 +218,12 @@
       '<button type="submit" id="sp-save" class="px-5 py-2.5 bg-luxury-gold text-slate-950 rounded-lg text-xs font-bold">Save Campaign</button></div>'+
       '</form></div>';
     ui('sp-product-search')?.addEventListener('input',e=>{searchQuery=e.target.value;renderPicker();});
-    ui('sp-cancel-edit')?.addEventListener('click',()=>{editId=null;chosen.clear();renderManager();});
+    ui('sp-cancel-edit')?.addEventListener('click',()=>{editId=null;editing=false;chosen.clear();renderManager();});
     ui('sp-editor-form')?.addEventListener('submit',saveCampaign);
     renderPicker();
   }
   function field(label,id,value,type,placeholder){
-    return '<label class="text-[11px] font-bold text-luxury-muted block">'+escapeHtml(label)+'<input '+(id==='sp-percent'?'':'required ')+'id="'+id+'" type="'+type+'" '+(type==='number'?'min="0" max="100" step="0.01"':'')+
+    return '<label class="text-[11px] font-bold text-luxury-muted block">'+escapeHtml(label)+'<input '+(id==='sp-percent'||id==='sp-badge'?'':'required ')+'id="'+id+'" type="'+type+'" '+(type==='number'?'min="0" max="100" step="0.01"':'')+
       ' value="'+escapeHtml(value)+'" placeholder="'+escapeHtml(placeholder||'')+'" class="w-full mt-1 border border-luxury-gold/20 bg-luxury-dark rounded-lg px-3 py-2.5 text-xs text-luxury-text outline-none"></label>';
   }
   function renderPicker(){
@@ -303,11 +275,13 @@
       notify('Promotional prices cannot be negative.','error');return;
     }
     const payload={name,badge,start_date:start,end_date:end,is_enabled:!!ui('sp-enabled')?.checked,discount_percent:pct,items,updated_at:new Date().toISOString()};
+    const validation=rules.validate(payload,rawProducts());if(validation){notify(validation,'error');return;}
     const btn=ui('sp-save');if(btn){btn.disabled=true;btn.textContent='Saving…';}
-    const req=editId?client.from(TABLE).update(payload).eq('id',editId).select('id'):client.from(TABLE).insert(payload).select('id');
-    const {data,error}=await req;
-    if(error||!data?.length){notify('Campaign was not saved: '+(error?.message||'No permission'),'error');if(btn){btn.disabled=false;btn.textContent='Save Campaign';}return;}
-    editId=null;chosen.clear();notify('Campaign saved and shared.','success');await refresh();
+    const req=editId?client.from(TABLE).update(payload).eq('id',editId).eq('updated_at',editVersion).select('id'):client.from(TABLE).insert(payload).select('id');
+    let data,error;
+    try{({data,error}=await req);}catch(e){error=e;}
+    if(error||!data?.length){notify('Campaign was not saved: '+(error?.message||'Campaign changed on another device or access was denied. Cancel and reopen it to load the latest version.'),'error');if(btn){btn.disabled=false;btn.textContent='Save Campaign';}return;}
+    editId=null;editing=false;chosen.clear();notify('Campaign saved and shared.','success');await refresh();
   }
   function bind(){
     const btn=ui('seasonal-promotions-manage-button');if(btn)btn.addEventListener('click',openManager);
@@ -317,9 +291,21 @@
     if(!client){console.warn('[Seasonal promotions] Shared client unavailable');return;}
     refresh();
     // Refresh at least every five minutes; date changes are checked in Cambodia time.
-    ticker=setInterval(()=>{if(Date.now()-lastRefresh>270000)refresh();},300000);
+    ticker=setInterval(()=>{if(liveDay!==today())redraw();if(Date.now()-lastRefresh>270000)refresh();},60000);
+    window.addEventListener('online',refresh);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){redraw();refresh();}});
+    document.addEventListener('keydown',e=>{
+      const modal=ui('seasonal-promo-modal');if(!modal||modal.classList.contains('hidden'))return;
+      if(e.key==='Escape')closeManager();
+      if(e.key==='Tab'){
+        const controls=[...modal.querySelectorAll('button:not(:disabled),input:not(:disabled)')].filter(el=>el.getClientRects().length);
+        const first=controls[0],last=controls[controls.length-1];
+        if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+        else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+      }
+    });
   }
-  window.SeasonalPromos={refresh,catalogUpdated:()=>{applyProductPromos();renderBanner();},setManagerMode,
+  window.SeasonalPromos={refresh,catalogUpdated:renderBanner,view,reset:()=>{showingAll=false;renderBanner();},setManagerMode,
     afterAddToCart,isFeatured, get showingAll(){return showingAll;},openManager};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
   else bind();
