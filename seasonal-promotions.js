@@ -1,11 +1,11 @@
 // Shared seasonal campaigns for the public Limperial Showroom.
-// Campaigns live in Supabase; only authenticated Sales Tracking managers can edit.
+// Campaigns live in Supabase; only authenticated Sales Tracking administrators can edit.
 // Public visitors can only read currently active campaigns through database RLS.
 (function(){
   'use strict';
   const TABLE='showroom_promotion_campaigns';
   const BUCKET='showroom-seasonal-backgrounds';
-  const ROLES=['super_admin','admin','manager'];
+  const ROLES=['super_admin','admin'];
   const MAX_BACKGROUND_BYTES=8*1024*1024;
   const MIN_BACKGROUND_WIDTH=1920;
   const MIN_BACKGROUND_HEIGHT=1080;
@@ -230,7 +230,7 @@
     try{
     const {error}=await client.auth.signInWithPassword({email:ui('sp-email')?.value||'',password:ui('sp-password')?.value||''});
     if(error){renderLogin(error.message);return;}
-    if(!(await checkRole())){await client.auth.signOut();renderLogin('This account does not have Super Admin, Admin, or Manager access.');return;}
+    if(!(await checkRole())){await client.auth.signOut();renderLogin('This account does not have Super Admin or Admin access.');return;}
     authorized=true;await refresh();renderManager();
     }catch(e){renderLogin('Sign-in could not complete. Please try again.');}
   }
