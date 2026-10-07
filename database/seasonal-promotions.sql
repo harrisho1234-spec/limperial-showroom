@@ -96,6 +96,16 @@ create policy showroom_campaign_manager_insert on public.showroom_promotion_camp
 for insert to authenticated with check (
   (select public.current_app_role()) in ('super_admin','admin','manager')
 );
+-- Preserve the deployed Sales Tracking table's existing author check when present.
+do $$ begin
+  if exists (select 1 from information_schema.columns where table_schema='public'
+    and table_name='showroom_promotion_campaigns' and column_name='created_by') then
+    execute $policy$alter policy showroom_campaign_manager_insert
+      on public.showroom_promotion_campaigns with check (
+        (select public.current_app_role()) in ('super_admin','admin','manager')
+        and created_by = (select auth.uid()))$policy$;
+  end if;
+end $$;
 create policy showroom_campaign_manager_update on public.showroom_promotion_campaigns
 for update to authenticated using (
   (select public.current_app_role()) in ('super_admin','admin','manager')
@@ -103,3 +113,4 @@ for update to authenticated using (
   (select public.current_app_role()) in ('super_admin','admin','manager')
 );
 commit;
+
