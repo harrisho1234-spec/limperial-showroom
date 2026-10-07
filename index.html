@@ -3872,13 +3872,19 @@
 
             isSavingInterestList = true;
             setSavedListSavingState('saving', 'Saving your Customer Interest List…');
+            let record = null;
+            let reservedNewQuotation = false;
 
             try {
-                const record = buildSavedInterestListRecord(name);
+                record = buildSavedInterestListRecord(name);
 
                 if (documentType === 'quotation') {
                     const quoteInput = document.getElementById('quote-no-input');
                     let quoteNo = String(quoteInput?.value || '').trim();
+
+                    if (quoteNo && savedInterestLists.some(item => savedQuotationNumber(item) === quoteNo)) {
+                        throw new Error('Quotation ' + quoteNo + ' is already permanently saved. Start a new quotation instead of saving a duplicate number.');
+                    }
 
                     if (!quoteNo) {
                         if (!window.QuotationRegistry?.register) {
@@ -3897,6 +3903,7 @@
                             amount: currentQuotationAmountValue()
                         });
                         quoteNo = registration.quoteNo;
+                        reservedNewQuotation = true;
                         if (quoteInput) quoteInput.value = quoteNo;
                         captureDocumentFormState('quotation');
                         record.state.documentFormStates = cloneForStorage(documentFormStates);
@@ -3974,6 +3981,14 @@
                 closeSavedListsModal();
             } catch (e) {
                 console.error('Saved Interest List cloud save failed:', e);
+                if (reservedNewQuotation && record) {
+                    savedInterestLists = savedInterestLists.filter(item => String(item.id) !== String(record.id));
+                    setLocalSavedInterestLists(savedInterestLists);
+                    const quoteInput = document.getElementById('quote-no-input');
+                    if (quoteInput && String(quoteInput.value || '').trim() === String(record.quoteNo || '').trim()) quoteInput.value = '';
+                    captureDocumentFormState('quotation');
+                    updateQuotationPreview();
+                }
                 setSavedListSavingState('error', e?.message || 'The list could not be saved.');
                 showNotification(e?.message || "Save failed. The quotation was not confirmed.", "error");
                 await new Promise(resolve => setTimeout(resolve, 1400));
