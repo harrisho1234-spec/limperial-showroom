@@ -130,9 +130,20 @@
             pointer-events: none;
         }
 
+        /* Filter buttons keep one clear line even when JS changes active states. */
+        #promo-toggle-btn, #new-arrival-toggle-btn, #set-only-toggle-btn {
+            white-space: nowrap;
+            font-size: 11px !important;
+            padding-left: 0.35rem !important;
+            padding-right: 0.35rem !important;
+            gap: 0.35rem !important;
+        }
+
         @media (max-width: 1023px) {
             .mobile-search-filter-reveal {
                 position: fixed !important;
+                max-height: calc(100dvh - 1rem);
+                overflow-y: auto;
                 top: 0.5rem !important;
                 left: 0.75rem !important;
                 right: 0.75rem !important;
