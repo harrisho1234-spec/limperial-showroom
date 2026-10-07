@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1440" viewBox="0 0 2560 1440" role="img" aria-label="Luxury Pchum Ben seasonal background">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4ead8"/>
+      <stop offset="0.48" stop-color="#d8c29a"/>
+      <stop offset="1" stop-color="#8b6847"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="72%" cy="30%" r="36%">
+      <stop offset="0" stop-color="#fff4c7" stop-opacity=".95"/>
+      <stop offset=".35" stop-color="#f1c36a" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#f1c36a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5d4636"/>
+      <stop offset="1" stop-color="#251c18"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0c675"/>
+      <stop offset=".55" stop-color="#c9943e"/>
+      <stop offset="1" stop-color="#8a5d24"/>
+    </linearGradient>
+    <filter id="blur18"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="blur40"><feGaussianBlur stdDeviation="40"/></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="9"/></filter>
+    <pattern id="khmer" width="120" height="120" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <path d="M60 10 L105 60 L60 110 L15 60 Z" fill="none" stroke="#f0c675" stroke-opacity=".07" stroke-width="2"/>
+      <circle cx="60" cy="60" r="12" fill="none" stroke="#f0c675" stroke-opacity=".06" stroke-width="2"/>
+    </pattern>
+  </defs>
+
+  <rect width="2560" height="1440" fill="url(#sky)"/>
+  <rect width="2560" height="1440" fill="url(#sun)"/>
+  <rect width="2560" height="1440" fill="url(#khmer)"/>
+
+  <!-- soft depth -->
+  <ellipse cx="1970" cy="470" rx="540" ry="320" fill="#fff1c8" opacity=".16" filter="url(#blur40)"/>
+  <ellipse cx="420" cy="1070" rx="520" ry="230" fill="#f0c675" opacity=".12" filter="url(#blur40)"/>
+
+  <!-- distant pagoda silhouettes on right edge -->
+  <g opacity=".72" fill="#3f3026">
+    <path d="M2010 1030 h470 v210 h-470z"/>
+    <path d="M2070 1030 l175-118 175 118z"/>
+    <path d="M2170 912 l75-105 75 105z"/>
+    <path d="M2229 807 h32 v-125 h-32z"/>
+    <path d="M2245 642 l-28 54 h56z"/>
+    <path d="M1880 1120 h200 v120 h-200z"/>
+    <path d="M1900 1120 l80-65 80 65z"/>
+    <path d="M1980 1055 v-75"/>
+    <path d="M1980 956 l-20 34 h40z"/>
+  </g>
+
+  <!-- ornate gold roof accents -->
+  <g fill="none" stroke="url(#gold)" stroke-width="10" opacity=".68" stroke-linecap="round">
+    <path d="M2040 1023 Q2245 870 2450 1023"/>
+    <path d="M1900 1113 Q1980 1035 2060 1113"/>
+    <path d="M2245 892 L2245 820"/>
+  </g>
+
+  <!-- candles and lotus on lower-left, keeping center clear -->
+  <g transform="translate(120 980)">
+    <g opacity=".9">
+      <rect x="20" y="155" width="20" height="145" rx="8" fill="#efe1bd"/>
+      <rect x="70" y="115" width="22" height="185" rx="8" fill="#f4e9c9"/>
+      <rect x="124" y="170" width="18" height="130" rx="8" fill="#e7d2a5"/>
+      <g fill="#f5b84d">
+        <path d="M30 147 C10 124 32 96 32 96 C32 96 55 126 30 147z"/>
+        <path d="M81 107 C59 81 82 52 82 52 C82 52 108 84 81 107z"/>
+        <path d="M133 162 C113 138 134 111 134 111 C134 111 157 140 133 162z"/>
+      </g>
+      <g fill="#f0c675" opacity=".35" filter="url(#glow)">
+        <circle cx="31" cy="120" r="42"/>
+        <circle cx="82" cy="80" r="46"/>
+        <circle cx="134" cy="135" r="38"/>
+      </g>
+    </g>
+    <g transform="translate(190 195)">
+      <path d="M0 75 C40 15 92 8 132 75 C92 96 40 96 0 75z" fill="#b98955"/>
+      <path d="M24 67 C42 19 67 9 82 63 C62 73 44 75 24 67z" fill="#e8c886"/>
+      <path d="M62 69 C75 14 105 12 116 69 C98 79 80 79 62 69z" fill="#d9ad63"/>
+      <path d="M88 74 C112 28 140 32 149 78 C128 86 108 84 88 74z" fill="#c99552"/>
+    </g>
+  </g>
+
+  <!-- foreground floor / vignette -->
+  <path d="M0 1180 C520 1110 875 1205 1320 1170 C1760 1135 2150 1080 2560 1160 L2560 1440 L0 1440 Z" fill="url(#ground)" opacity=".72"/>
+  <path d="M0 1270 C620 1215 1000 1280 1480 1240 C1900 1205 2220 1185 2560 1240" fill="none" stroke="#e0b56b" stroke-opacity=".16" stroke-width="2"/>
+
+  <!-- subtle edge vignette -->
+  <rect width="2560" height="1440" fill="none" stroke="#3a281f" stroke-opacity=".28" stroke-width="80"/>
+  <rect width="2560" height="1440" fill="none" stroke="#f0c675" stroke-opacity=".08" stroke-width="6"/>
+</svg>
