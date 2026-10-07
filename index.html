@@ -4978,7 +4978,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261007-upload2', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261007-upload3', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
@@ -5024,6 +5024,6 @@
     <script src="assets/seasonal/pchum-ben-data/11.js?v=20261007-pchumdata1"></script>
     <script src="promotion-config.js?v=20261007-theme6"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
-    <script src="seasonal-promotions.js?v=20261007-upload2"></script>
+    <script src="seasonal-promotions.js?v=20261007-upload3"></script>
 </body>
 </html>
