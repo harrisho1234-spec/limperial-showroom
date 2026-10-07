@@ -184,6 +184,7 @@
     if(btn)btn.classList.toggle('hidden',!managerVisible);
     if(!managerVisible){
       closeManager();
+      resetBackgroundEditor(null);
       authorized=false;editId=null;editing=false;chosen.clear();
       client?.auth.signOut().catch(()=>{});
     }
@@ -253,7 +254,7 @@
       '<div id="sp-editor"></div>';
     ui('sp-create')?.addEventListener('click',()=>editCampaign(null));
     ui('sp-retry')?.addEventListener('click',refresh);
-    ui('sp-logout')?.addEventListener('click',async()=>{authorized=false;editing=false;editId=null;chosen.clear();await client.auth.signOut();campaigns=campaigns.filter(c=>campaignState(c)==='Active');liveDay='';renderLogin();refresh();});
+    ui('sp-logout')?.addEventListener('click',async()=>{resetBackgroundEditor(null);authorized=false;editing=false;editId=null;chosen.clear();await client.auth.signOut();campaigns=campaigns.filter(c=>campaignState(c)==='Active');liveDay='';renderLogin();refresh();});
     el.querySelectorAll('[data-sp-edit]').forEach(x=>x.addEventListener('click',()=>editCampaign(campaigns.find(c=>c.id===x.dataset.spEdit))));
     el.querySelectorAll('[data-sp-toggle]').forEach(x=>x.addEventListener('click',()=>toggleCampaign(x.dataset.spToggle)));
     if(editing&&editId){const currentCampaign=campaigns.find(c=>c.id===editId);if(currentCampaign)drawEditor(currentCampaign);}
@@ -444,6 +445,29 @@
       const k=codeOf(el.dataset.spAdd);chosen.set(k,{code:k,promo_price:null});renderPicker();
     }));
   }
+  function backgroundExtension(file){
+    if(file?.type==='image/png')return 'png';
+    if(file?.type==='image/webp')return 'webp';
+    return 'jpg';
+  }
+  function safePathPart(value){
+    return String(value||'campaign').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,48)||'campaign';
+  }
+  async function uploadBackgroundFile(file,campaignName){
+    const {data:userData,error:userError}=await client.auth.getUser();
+    const user=userData?.user;
+    if(userError||!user)throw new Error(userError?.message||'Please sign in again before uploading.');
+    const token=globalThis.crypto?.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36);
+    const path='campaigns/'+user.id+'/'+Date.now()+'-'+safePathPart(campaignName)+'-'+token+'.'+backgroundExtension(file);
+    const {error}=await client.storage.from(BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+    if(error)throw error;
+    return path;
+  }
+  async function deleteBackgroundFile(path){
+    if(!path)return;
+    const {error}=await client.storage.from(BUCKET).remove([path]);
+    if(error)console.warn('[Seasonal promotions] Old background cleanup failed',error);
+  }
   async function saveCampaign(e){
     e.preventDefault();if(!authorized)return;
     const name=ui('sp-title')?.value.trim()||'';
@@ -460,14 +484,48 @@
     if(items.some(i=>i.promo_price!=null&&(!Number.isFinite(i.promo_price)||i.promo_price<0))){
       notify('Promotional prices cannot be negative.','error');return;
     }
-    const payload={name,badge,start_date:start,end_date:end,is_enabled:!!ui('sp-enabled')?.checked,discount_percent:pct,theme_preset:theme,items,updated_at:new Date().toISOString()};
-    const validation=rules.validate(payload,rawProducts());if(validation){notify(validation,'error');return;}
-    const btn=ui('sp-save');if(btn){btn.disabled=true;btn.textContent='Saving…';}
-    const req=editId?client.from(TABLE).update(payload).eq('id',editId).eq('updated_at',editVersion).select('id'):client.from(TABLE).insert(payload).select('id');
-    let data,error;
-    try{({data,error}=await req);}catch(e){error=e;}
-    if(error||!data?.length){notify('Campaign was not saved: '+(error?.message||'Campaign changed on another device or access was denied. Cancel and reopen it to load the latest version.'),'error');if(btn){btn.disabled=false;btn.textContent='Save Campaign';}return;}
-    editId=null;editing=false;chosen.clear();notify('Campaign saved and shared.','success');await refresh();
+    const basePayload={name,badge,start_date:start,end_date:end,is_enabled:!!ui('sp-enabled')?.checked,discount_percent:pct,theme_preset:theme,items,updated_at:new Date().toISOString()};
+    const validation=rules.validate(basePayload,rawProducts());if(validation){notify(validation,'error');return;}
+
+    const btn=ui('sp-save');if(btn){btn.disabled=true;btn.textContent=pendingBackgroundFile?'Uploading background…':'Saving…';}
+    const oldPath=editorBackgroundPath||'';
+    let uploadedPath='',nextPath=removeBackground?null:(editorBackgroundPath||null);
+    let nextName=removeBackground?null:(editorBackgroundName||null);
+    let nextUpdated=removeBackground?null:editorBackgroundUpdatedAt;
+
+    try{
+      if(pendingBackgroundFile){
+        uploadedPath=await uploadBackgroundFile(pendingBackgroundFile,name);
+        nextPath=uploadedPath;
+        nextName=pendingBackgroundFile.name.slice(0,255);
+        nextUpdated=new Date().toISOString();
+        if(btn)btn.textContent='Saving campaign…';
+      }
+
+      const payload={
+        ...basePayload,
+        custom_background_path:nextPath,
+        custom_background_name:nextName,
+        custom_background_updated_at:nextUpdated
+      };
+      const req=editId
+        ?client.from(TABLE).update(payload).eq('id',editId).eq('updated_at',editVersion).select('id')
+        :client.from(TABLE).insert(payload).select('id');
+      const {data,error}=await req;
+      if(error||!data?.length)throw error||new Error('Campaign changed on another device or access was denied. Cancel and reopen it to load the latest version.');
+
+      if(oldPath&&oldPath!==nextPath)await deleteBackgroundFile(oldPath);
+      revokeBackgroundPreview();
+      pendingBackgroundFile=null;pendingBackgroundMeta='';removeBackground=false;
+      editorBackgroundPath='';editorBackgroundName='';editorBackgroundUpdatedAt=null;
+      editId=null;editing=false;chosen.clear();
+      notify(nextPath?'Campaign saved with custom background.':'Campaign saved and shared.','success');
+      await refresh();
+    }catch(error){
+      if(uploadedPath)await deleteBackgroundFile(uploadedPath);
+      notify('Campaign was not saved: '+(error?.message||'Unknown error.'),'error');
+      if(btn){btn.disabled=false;btn.textContent='Save Campaign';}
+    }
   }
   function bind(){
     const btn=ui('seasonal-promotions-manage-button');if(btn)btn.addEventListener('click',openManager);
