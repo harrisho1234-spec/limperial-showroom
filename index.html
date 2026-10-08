@@ -606,23 +606,6 @@
         </div>
     </div>
 
-    <div id="passcode-modal" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="passcode-modal-container">
-            <div class="p-4 bg-luxury-accent/50 border-b border-luxury-gold/15 flex items-center justify-between">
-                <div class="flex items-center space-x-2"><i class="fa-solid fa-shield-halved text-luxury-gold"></i><h3 class="font-serif text-base text-luxury-gold font-semibold">Security Verification</h3></div>
-                <button onclick="closePasscodeModal()" class="p-1 text-luxury-muted hover:text-luxury-text transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="p-6 space-y-4 text-center">
-                <p class="text-xs text-luxury-soft">Enter your 6-digit passcode to unlock Management Mode.</p>
-                <input type="password" id="passcode-input" maxlength="6" placeholder="••••••" class="w-44 mx-auto bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded-xl px-4 py-3 text-center tracking-[0.5em] text-xl font-bold text-luxury-gold outline-none transition-colors duration-200" onkeydown="if(event.key === 'Enter') verifyPasscode()">
-                <div class="grid grid-cols-2 gap-2 pt-2">
-                    <button onclick="closePasscodeModal()" class="py-2.5 bg-luxury-lightBg hover:bg-luxury-accent text-luxury-soft hover:text-luxury-text border border-luxury-gold/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Cancel</button>
-                    <button onclick="verifyPasscode()" class="py-2.5 bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover hover:to-[#0a0f19] text-[#0a0f19] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Verify</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div id="confirm-modal" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="confirm-modal-container">
             <div class="p-4 bg-luxury-accent/50 border-b border-luxury-gold/15 flex items-center justify-between">
@@ -2200,37 +2183,13 @@
         }
 
         function handleManagerToggleClick(event) {
+            if (window.SeasonalPromos?.handleManagementToggle) {
+                window.SeasonalPromos.handleManagementToggle(event);
+                return;
+            }
             const checkbox = document.getElementById('manager-toggle');
-            if (checkbox.checked) openPasscodeModal();
-            else {
-                showCostMode = false; window.SeasonalPromos?.setManagerMode(false); currentBrandFilter = ''; showNotification("Management Mode locked.", "success"); handlePartnerToggle(false);
-                renderBrandFilters(); renderLocationFilters(); executeSearchFilter(); updateCartVisuals(); renderProductGrid(); updateQuotationPreview();
-            }
-        }
-
-        function openPasscodeModal() {
-            const modal = document.getElementById('passcode-modal'); const container = document.getElementById('passcode-modal-container'); const input = document.getElementById('passcode-input');
-            if (!modal || !container || !input) return;
-            input.value = ''; modal.classList.remove('pointer-events-none', 'opacity-0'); modal.classList.add('opacity-100'); container.classList.remove('scale-95'); container.classList.add('scale-100');
-            setTimeout(() => input.focus(), 150);
-        }
-
-        function closePasscodeModal() {
-            const modal = document.getElementById('passcode-modal'); const container = document.getElementById('passcode-modal-container');
-            if (!modal || !container) return;
-            modal.classList.add('pointer-events-none', 'opacity-0'); modal.classList.remove('opacity-100'); container.classList.add('scale-95'); container.classList.remove('scale-100');
-            const toggle = document.getElementById('manager-toggle'); if (toggle) toggle.checked = showCostMode;
-        }
-
-        function verifyPasscode() {
-            const input = document.getElementById('passcode-input'); if (!input) return;
-            if (input.value === '300920') {
-                showCostMode = true; window.SeasonalPromos?.setManagerMode(true); currentBrandFilter = ''; const checkbox = document.getElementById('manager-toggle'); if (checkbox) checkbox.checked = true;
-                closePasscodeModal(); showNotification("Management Mode unlocked.", "info");
-                renderLocationFilters(); renderBrandFilters(); executeSearchFilter(); updateCartVisuals(); renderProductGrid(); updateQuotationPreview();
-            } else {
-                showNotification("Access Denied: Invalid Passcode.", "error"); input.value = ''; input.focus();
-            }
+            if (checkbox) checkbox.checked = false;
+            showNotification("Management access is still loading. Please try again.", "info");
         }
 
         function renderClassFilters() {
@@ -5494,6 +5453,6 @@
     <script src="promotion-config.js?v=20261007-theme6"></script>
     <script src="quotation-registry.js?v=20261007-revisionhistory1"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
-    <script src="seasonal-promotions.js?v=20261008-splitmanagers1"></script>
+    <script src="seasonal-promotions.js?v=20261008-accountpermissions1"></script>
 </body>
 </html>
