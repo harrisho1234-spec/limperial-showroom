@@ -665,7 +665,7 @@
   function campaignRow(c){
     const status=campaignState(c);
     const theme=themePresets()[c.theme_preset];
-    const backgroundLabel=c.custom_background_path?' · Custom background':(theme?' · Theme: '+escapeHtml(theme.label):'');
+    const backgroundLabel=(c.custom_background_path||c.custom_background_dark_path)?' · Custom light/dark artwork':(theme?' · Theme: '+escapeHtml(theme.label):'');
     return '<div class="flex flex-wrap justify-between items-center gap-3 rounded-xl border border-luxury-gold/20 bg-luxury-dark/50 px-3 py-3">'+
       '<div><div class="text-sm font-semibold text-luxury-text">'+escapeHtml(c.name)+' <span class="ml-1 text-[10px] px-2 py-1 bg-luxury-accent rounded text-luxury-muted">'+escapeHtml(status)+'</span></div>'+
       '<div class="mt-1 text-[10px] text-luxury-muted">'+escapeHtml(c.start_date)+' to '+escapeHtml(c.end_date)+' · '+campaignItems(c).length+' items'+(c.discount_percent?' · '+Number(c.discount_percent)+'% off':'')+backgroundLabel+'</div></div>'+
@@ -957,26 +957,37 @@
     const basePayload={name,badge,start_date:start,end_date:end,is_enabled:!!ui('sp-enabled')?.checked,discount_percent:pct,theme_preset:theme,items,updated_at:new Date().toISOString()};
     const validation=rules.validate(basePayload,rawProducts());if(validation){notify(validation,'error');return;}
 
-    const btn=ui('sp-save');if(btn){btn.disabled=true;btn.textContent=pendingBackgroundFile?'Uploading background…':'Saving…';}
-    const oldPath=editorBackgroundPath||'';
-    let uploadedPath='',nextPath=removeBackground?null:(editorBackgroundPath||null);
+    const btn=ui('sp-save');if(btn){btn.disabled=true;btn.textContent=pendingBackgroundFile||pendingBackgroundDarkFile?'Uploading backgrounds…':'Saving…';}
+    const oldPath=editorBackgroundPath||'',oldDarkPath=editorBackgroundDarkPath||'';
+    const uploaded=[];
+    let nextPath=removeBackground?null:(editorBackgroundPath||null);
     let nextName=removeBackground?null:(editorBackgroundName||null);
     let nextUpdated=removeBackground?null:editorBackgroundUpdatedAt;
+    let nextDarkPath=removeBackgroundDark?null:(editorBackgroundDarkPath||null);
+    let nextDarkName=removeBackgroundDark?null:(editorBackgroundDarkName||null);
+    let nextDarkUpdated=removeBackgroundDark?null:editorBackgroundDarkUpdatedAt;
 
     try{
       if(pendingBackgroundFile){
-        uploadedPath=await uploadBackgroundFile(pendingBackgroundFile,name);
-        nextPath=uploadedPath;
+        nextPath=await uploadBackgroundFile(pendingBackgroundFile,name);uploaded.push(nextPath);
         nextName=pendingBackgroundFile.name.slice(0,255);
         nextUpdated=new Date().toISOString();
-        if(btn)btn.textContent='Saving campaign…';
       }
+      if(pendingBackgroundDarkFile){
+        nextDarkPath=await uploadBackgroundFile(pendingBackgroundDarkFile,name+'-dark');uploaded.push(nextDarkPath);
+        nextDarkName=pendingBackgroundDarkFile.name.slice(0,255);
+        nextDarkUpdated=new Date().toISOString();
+      }
+      if(btn)btn.textContent='Saving campaign…';
 
       const payload={
         ...basePayload,
         custom_background_path:nextPath,
         custom_background_name:nextName,
-        custom_background_updated_at:nextUpdated
+        custom_background_updated_at:nextUpdated,
+        custom_background_dark_path:nextDarkPath,
+        custom_background_dark_name:nextDarkName,
+        custom_background_dark_updated_at:nextDarkUpdated
       };
       const req=editId
         ?client.from(TABLE).update(payload).eq('id',editId).eq('updated_at',editVersion).select('id')
@@ -984,15 +995,19 @@
       const {data,error}=await req;
       if(error||!data?.length)throw error||new Error('Campaign changed on another device or access was denied. Cancel and reopen it to load the latest version.');
 
-      if(oldPath&&oldPath!==nextPath)await deleteBackgroundFile(oldPath);
-      revokeBackgroundPreview();
+      revokeBackgroundPreview();revokeBackgroundPreview('dark');
       pendingBackgroundFile=null;pendingBackgroundMeta='';removeBackground=false;
+      pendingBackgroundDarkFile=null;pendingBackgroundDarkMeta='';removeBackgroundDark=false;
       editorBackgroundPath='';editorBackgroundName='';editorBackgroundUpdatedAt=null;
+      editorBackgroundDarkPath='';editorBackgroundDarkName='';editorBackgroundDarkUpdatedAt=null;
       editId=null;editing=false;chosen.clear();
-      notify(nextPath?'Campaign saved with custom background.':'Campaign saved and shared.','success');
+      notify('Campaign and light/dark backgrounds saved.','success');
       await refresh();
+      for(const path of [oldPath,oldDarkPath]){
+        if(path&&path!==nextPath&&path!==nextDarkPath)await deleteBackgroundFile(path);
+      }
     }catch(error){
-      if(uploadedPath)await deleteBackgroundFile(uploadedPath);
+      for(const path of uploaded)await deleteBackgroundFile(path);
       notify('Campaign was not saved: '+(error?.message||'Unknown error.'),'error');
       if(btn){btn.disabled=false;btn.textContent='Save Campaign';}
     }
