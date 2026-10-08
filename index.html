@@ -92,11 +92,22 @@
             opacity: 1;
         }
         #seasonal-theme-background img {
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
             object-position: center center;
             display: block;
+            opacity: 0;
+            transition: opacity .75s ease-in-out;
+            will-change: opacity;
+        }
+        #seasonal-theme-background img.is-current {
+            opacity: 1;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #seasonal-theme-background img { transition: none; }
         }
         #seasonal-theme-background .seasonal-theme-overlay {
             position: absolute;
@@ -208,7 +219,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
-    <link rel="stylesheet" href="showroom-readability.css?v=20261008-blackglass1">
+    <link rel="stylesheet" href="showroom-readability.css?v=20261008-backgroundmorph1">
     <link rel="stylesheet" href="showroom-phase1.css?v=20261008-originaltheme1">
 </head>
 <body class="bg-luxury-dark text-luxury-text font-sans min-h-screen lg:h-screen flex flex-col antialiased lg:overflow-hidden transition-colors duration-300">
@@ -2042,6 +2053,7 @@
             const icon = document.getElementById('theme-icon');
             if (isDark) { if(icon) icon.className = "fa-solid fa-sun text-sm"; localStorage.setItem('limperial_theme', 'dark'); } 
             else { if(icon) icon.className = "fa-solid fa-moon text-sm"; localStorage.setItem('limperial_theme', 'light'); }
+            window.SeasonalPromos?.themeChanged?.();
             renderProductGrid(); calculateAndDrawTotals();
         }
 
@@ -5625,7 +5637,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261008-blackglass1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261008-backgroundmorph1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
@@ -5672,7 +5684,7 @@
     <script src="promotion-config.js?v=20261007-theme6"></script>
     <script src="quotation-registry.js?v=20261008-history-read1"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
-    <script src="seasonal-promotions.js?v=20261008-adaptiveglass1"></script>
+    <script src="seasonal-promotions.js?v=20261008-backgroundmorph1"></script>
     <script src="showroom-phase1-core.js?v=20261008-setphotos1"></script>
     <script src="showroom-phase1.js?v=20261008-setphotos1"></script>
 </body>
