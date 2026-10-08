@@ -1,12 +1,12 @@
 // Shared seasonal campaigns for the public Limperial Showroom.
-// Campaigns live in Supabase; only authenticated Sales Tracking administrators can edit.
+// Campaigns live in Supabase; authenticated Sales & Order Management users can edit only when their Users & Access permission allows Showroom Management Mode.
 // Public visitors can only read currently active campaigns through database RLS.
 (function(){
   'use strict';
   const TABLE='showroom_promotion_campaigns';
   const DEFAULT_BG_TABLE='showroom_background_settings';
   const BUCKET='showroom-seasonal-backgrounds';
-  const ROLES=['super_admin','admin'];
+  const MANAGEMENT_PERMISSION='showroom.management_mode';
   const MAX_BACKGROUND_BYTES=8*1024*1024;
   const MIN_BACKGROUND_WIDTH=1920;
   const MIN_BACKGROUND_HEIGHT=1080;
@@ -14,11 +14,12 @@
   const api=window.APP_CONFIG||{};
   const client=window.supabase?.createClient && api.SUPABASE_URL && api.SUPABASE_PUBLISHABLE_KEY
     ? window.supabase.createClient(api.SUPABASE_URL,api.SUPABASE_PUBLISHABLE_KEY,{
-        auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false,storageKey:'limperial-showroom-seasonal'}
+        // Use the default Supabase auth storage so a Sales & Order Management login on the same GitHub Pages origin is reused here.
+        auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}
       })
     : null;
   let campaigns=[],authorized=false,editId=null,chosen=new Map(),searchQuery='',showingAll=false;
-  let loading=false, managerVisible=false, managerSection='campaigns', lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='';
+  let loading=false, managerVisible=false, managerSection='campaigns', lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='', pendingManagerEnable=false;
   let pendingBackgroundFile=null, pendingBackgroundPreviewUrl='', pendingBackgroundMeta='', removeBackground=false;
   let editorBackgroundPath='', editorBackgroundName='', editorBackgroundUpdatedAt=null;
   let defaultBackground=null;
@@ -218,8 +219,67 @@
       closeManager();
       resetBackgroundEditor(null);
       resetDefaultBackgroundDraft();
-      authorized=false;editId=null;editing=false;chosen.clear();
-      client?.auth.signOut().catch(()=>{});
+      editId=null;editing=false;chosen.clear();
+    }
+  }
+  async function checkManagementPermission(){
+    if(!client)return false;
+    const {data,error}=await client.rpc('current_user_has_permission',{p_permission:MANAGEMENT_PERMISSION});
+    return !error&&data===true;
+  }
+  function refreshManagementVisuals(){
+    currentBrandFilter='';
+    if(typeof handlePartnerToggle==='function'&&!showCostMode)handlePartnerToggle(false);
+    if(typeof renderBrandFilters==='function')renderBrandFilters();
+    if(typeof renderLocationFilters==='function')renderLocationFilters();
+    if(typeof executeSearchFilter==='function')executeSearchFilter();
+    if(typeof updateCartVisuals==='function')updateCartVisuals();
+    if(typeof renderProductGrid==='function')renderProductGrid();
+    if(typeof updateQuotationPreview==='function')updateQuotationPreview();
+  }
+  function enableManagementMode(){
+    showCostMode=true;
+    setManagerMode(true);
+    const checkbox=ui('manager-toggle');if(checkbox)checkbox.checked=true;
+    refreshManagementVisuals();
+    notify('Management Mode unlocked for your Sales & Order Management account.','info');
+  }
+  function disableManagementMode(){
+    showCostMode=false;
+    setManagerMode(false);
+    const checkbox=ui('manager-toggle');if(checkbox)checkbox.checked=false;
+    refreshManagementVisuals();
+    notify('Management Mode locked.','success');
+  }
+  async function requestManagementAccess(){
+    const checkbox=ui('manager-toggle');if(checkbox)checkbox.checked=false;
+    if(!client){notify('Showroom management service is not available.','error');return false;}
+    try{
+      const existing=await client.auth.getUser();
+      if(existing.data?.user&&await checkManagementPermission()){
+        authorized=true;
+        enableManagementMode();
+        return true;
+      }
+      pendingManagerEnable=true;
+      managerSection='access';
+      editing=false;editId=null;chosen.clear();
+      ui('seasonal-promo-modal')?.classList.remove('hidden');
+      updateManagerHeading();
+      renderLogin(existing.data?.user?'This signed-in account does not have Showroom Management Mode permission. Sign in with an allowed Sales & Order Management account.':'');
+      return false;
+    }catch(e){
+      notify('Could not verify your Sales & Order Management access.','error');
+      return false;
+    }
+  }
+  async function handleManagementToggle(){
+    const checkbox=ui('manager-toggle');if(!checkbox)return;
+    if(checkbox.checked){
+      checkbox.checked=false;
+      await requestManagementAccess();
+    }else{
+      disableManagementMode();
     }
   }
   function modalHtml(){
@@ -234,6 +294,9 @@
     if(managerSection==='background'){
       if(title)title.textContent='Showroom Background';
       if(subtitle)subtitle.textContent='Manage the normal background used outside seasonal promotions';
+    }else if(managerSection==='access'){
+      if(title)title.textContent='Management Mode Access';
+      if(subtitle)subtitle.textContent='Authorized through Sales & Order Management Users & Access';
     }else{
       if(title)title.textContent='Seasonal Promotions';
       if(subtitle)subtitle.textContent='Manage promotional campaigns, seasonal themes and campaign backgrounds';
@@ -241,7 +304,13 @@
   }
   function closeManager(){
     ui('seasonal-promo-modal')?.classList.add('hidden');
-    ui(managerSection==='background'?'showroom-background-manage-button':'seasonal-promotions-manage-button')?.focus();
+    if(managerSection==='access'){
+      pendingManagerEnable=false;
+      const toggle=ui('manager-toggle');if(toggle)toggle.checked=showCostMode;
+      toggle?.focus();
+    }else{
+      ui(managerSection==='background'?'showroom-background-manage-button':'seasonal-promotions-manage-button')?.focus();
+    }
   }
   async function openManager(section='campaigns'){
     managerSection=section==='background'?'background':'campaigns';
@@ -254,35 +323,49 @@
     renderLogin();
     const existing=await client.auth.getUser();
     if(existing.data?.user) {
-      const permitted=await checkRole();
-      if(permitted){authorized=true;await refresh();renderManager();return;}
+      const permitted=await checkManagementPermission();
+      if(permitted){authorized=false;await refresh();authorized=true;renderManager();return;}
     }
     renderLogin();
   }
   function renderLogin(error=''){
     const el=ui('seasonal-promo-modal-content');if(!el)return;
     updateManagerHeading();
-    const purpose=managerSection==='background'?'showroom background settings':'shared campaign changes';
-    el.innerHTML='<div class="max-w-md mx-auto py-4 space-y-3"><h4 class="font-semibold text-luxury-text text-sm">Sign in with your Sales Tracking account</h4>'+
-      '<p class="text-xs text-luxury-muted">A showroom Management Mode passcode alone cannot authorize '+purpose+'.</p>'+
+    const purpose=managerSection==='access'?'Management Mode':(managerSection==='background'?'showroom background settings':'shared campaign changes');
+    el.innerHTML='<div class="max-w-md mx-auto py-4 space-y-3"><h4 class="font-semibold text-luxury-text text-sm">Sign in with your L\'Imperial Sales & Order Management account</h4>'+
+      '<p class="text-xs text-luxury-muted">Access to '+purpose+' is controlled by the <b>Showroom → Use Management Mode</b> permission in Users & Access. There is no separate showroom passcode.</p>'+
       (error?'<div class="p-3 rounded-lg bg-red-500/10 text-red-600 text-xs">'+escapeHtml(error)+'</div>':'')+
       '<form id="sp-login" class="space-y-3"><label class="block text-xs text-luxury-muted">Email<input id="sp-email" type="email" autocomplete="username" required class="block mt-1 w-full border border-luxury-gold/20 bg-luxury-dark text-luxury-text rounded-lg p-3"></label>'+
       '<label class="block text-xs text-luxury-muted">Password<input id="sp-password" type="password" autocomplete="current-password" required class="block mt-1 w-full border border-luxury-gold/20 bg-luxury-dark text-luxury-text rounded-lg p-3"></label>'+
-      '<button id="sp-sign-in" type="submit" class="w-full bg-luxury-gold text-slate-950 rounded-lg py-3 text-xs font-bold uppercase">Sign In & Manage</button></form></div>';
+      '<button id="sp-sign-in" type="submit" class="w-full bg-luxury-gold text-slate-950 rounded-lg py-3 text-xs font-bold uppercase">Sign In & Continue</button></form></div>';
     ui('sp-login')?.addEventListener('submit',login);
-  }
-  async function checkRole(){
-    const {data,error}=await client.rpc('current_app_role');
-    return !error&&ROLES.includes(String(data||''));
   }
   async function login(event){
     event.preventDefault();
     const btn=ui('sp-sign-in');if(btn)btn.disabled=true;
     try{
-    const {error}=await client.auth.signInWithPassword({email:ui('sp-email')?.value||'',password:ui('sp-password')?.value||''});
-    if(error){renderLogin(error.message);return;}
-    if(!(await checkRole())){await client.auth.signOut();renderLogin('This account does not have Super Admin or Admin access.');return;}
-    authorized=true;await refresh();renderManager();
+      const email=(ui('sp-email')?.value||'').trim();
+      const password=ui('sp-password')?.value||'';
+      const {error}=await client.auth.signInWithPassword({email,password});
+      if(error){
+        renderLogin(error.code==='invalid_credentials'?'Incorrect Sales & Order Management email or password.':error.message);
+        return;
+      }
+      if(!(await checkManagementPermission())){
+        renderLogin('This account does not have Showroom Management Mode permission. Ask a Super Admin to enable Showroom → Use Management Mode in Users & Access.');
+        return;
+      }
+      const shouldEnable=pendingManagerEnable;
+      authorized=false;
+      await refresh();
+      authorized=true;
+      if(shouldEnable){
+        pendingManagerEnable=false;
+        enableManagementMode();
+        closeManager();
+        return;
+      }
+      renderManager();
     }catch(e){renderLogin('Sign-in could not complete. Please try again.');}
   }
   function revokeDefaultBackgroundPreview(){
@@ -749,7 +832,7 @@
   }
   window.SeasonalPromos={refresh,catalogUpdated:renderBanner,view,reset:()=>{showingAll=false;renderBanner();},setManagerMode,
     afterAddToCart,isFeatured, get showingAll(){return showingAll;},openManager,
-    openBackgroundManager:()=>openManager('background')};
+    openBackgroundManager:()=>openManager('background'),handleManagementToggle,requestManagementAccess,checkManagementPermission};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
   else bind();
 })();
