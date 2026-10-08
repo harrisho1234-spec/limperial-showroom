@@ -158,12 +158,14 @@
     body.classList.add('seasonal-theme-active');
     const probeKey=resolved+'|'+(mobile?'mobile':'desktop');
     if(backdropProbeKey!==probeKey){backdropProbeKey=probeKey;sampleBackdropTone(resolved,mobile);}
+    // Cancel any in-flight image request even when the user toggles back
+    // to the currently visible image before the previous request loads.
+    const requestId=++backgroundSwitchToken;
     const showing=images.find(img=>img.classList.contains('is-current'));
     if(showing?.src===resolved){
       if(showing.complete&&showing.naturalWidth)layer.classList.add('is-active');
     }else{
       const next=images.find(img=>img!==showing)||images[0];
-      const requestId=++backgroundSwitchToken;
       const commit=()=>{
         if(requestId!==backgroundSwitchToken)return;
         next.classList.add('is-current');
