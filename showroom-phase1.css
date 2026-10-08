@@ -434,3 +434,70 @@ body.theme-dark #catalog-controls-panel button.sp1-tool-feature:hover {
 @media(max-width:767px) {
   .sp1-presentation .sp1-panel { border-color: var(--sp1-border); }
 }
+
+
+/* LIGHT-MODE FAVORITE AND COMPARE SELECTION
+   Selected = a distinct solid gold control, dark icon, clear outline and
+   checkmark. Unselected = near-white with brown outline. Dark-mode rules
+   remain in showroom-dark-polish.css and are unchanged. */
+body:not(.theme-dark) #product-grid button.sp1-card-button {
+  position: relative;
+  background: #fffdfa !important;
+  color: #805828 !important;
+  border: 1px solid #cfb48b !important;
+  box-shadow: 0 1px 3px rgba(70,44,14,.08);
+}
+body:not(.theme-dark) #product-grid button.sp1-card-button:not(.is-active):hover {
+  background: #f5ead8 !important;
+  color: #5e3d18 !important;
+  border-color: #a67840 !important;
+}
+body:not(.theme-dark) #product-grid button.sp1-card-button.is-active,
+body:not(.theme-dark) #product-grid button.sp1-card-button.is-active:hover,
+body:not(.theme-dark) #product-grid button.sp1-card-button.is-active:focus-visible {
+  background: #dfa74e !important;
+  color: #241707 !important;
+  border: 2px solid #825015 !important;
+  box-shadow: 0 0 0 2px rgba(145,85,20,.23), 0 3px 9px rgba(100,63,20,.19) !important;
+}
+body:not(.theme-dark) #product-grid button.sp1-card-button.is-active i {
+  color: #241707 !important;
+}
+body:not(.theme-dark) #product-grid button.sp1-card-button.is-active::after {
+  content: "✓";
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #3a260f;
+  color: #ffe0ab;
+  border: 1px solid #dfa74e;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 10px;
+  text-align: center;
+  pointer-events: none;
+}
+/* Make counts visible even when Compare is waiting for a second selection. */
+body:not(.theme-dark) #catalog-controls-panel button#showroom-favorites-btn[data-has-selection="true"],
+body:not(.theme-dark) #catalog-controls-panel button#showroom-compare-btn[data-has-selection="true"] {
+  background: #f8e3bd !important;
+  color: #68400f !important;
+  border-color: #bd8438 !important;
+  opacity: 1 !important;
+}
+body:not(.theme-dark) #catalog-controls-panel button#showroom-compare-btn:disabled {
+  opacity: .78 !important;
+  color: #86633a !important;
+}
+body:not(.theme-dark) #catalog-controls-panel button#showroom-compare-btn[data-has-selection="true"]:disabled {
+  opacity: 1 !important;
+}
+@media (max-width: 650px) {
+  body:not(.theme-dark) #product-grid button.sp1-card-button.is-active::after {
+    top: -4px;
+    right: -4px;
+  }
+}
