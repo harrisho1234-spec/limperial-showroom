@@ -1,0 +1,194 @@
+/* L'Imperial Showroom V4 — premium dark mode refinements.
+ * Presentation-only. No change to theme switching, cart, quotation, inventory,
+ * promotion calculations, management permissions, printable quotation paper,
+ * or product image pixels. Light mode remains unchanged. */
+
+/* Harmonious warm midnight navy, soft ivory text and restrained gold. */
+body.theme-dark {
+  --luxury-bg: #0b1220;
+  --luxury-card: #111c2e;
+  --luxury-accent: #17253a;
+  --luxury-lightbg: #1b2d44;
+  --luxury-text: #f3ede2;
+  --luxury-text-muted: #b3a58f;
+  --luxury-text-soft: #c9b89b;
+  --luxury-text-darker: #fff8ec;
+  --sr-control: #16263c;
+  --sr-control-ink: #e0c391;
+  --sr-control-hover: #223650;
+  --sr-control-border: rgba(223,178,108,.20);
+  --sr-surface: rgba(11,18,32,.92);
+  --sr-surface-ink: #f3ede2;
+  --sr-surface-muted: #c9b89b;
+}
+
+/* Large content surfaces retain a little background atmosphere, rather than
+ * using multiple conflicting solid navy/black tones. */
+body.theme-dark #catalog-controls-panel,
+body.theme-dark #main-app > main > aside,
+body.theme-dark #seasonal-promotions-section,
+body.theme-dark #empty-state {
+  background: rgba(11,18,32,.93) !important;
+  color: var(--luxury-text);
+  border-color: rgba(223,178,108,.18) !important;
+  box-shadow: 0 14px 34px rgba(0,0,0,.24);
+  -webkit-backdrop-filter: blur(11px) saturate(110%);
+  backdrop-filter: blur(11px) saturate(110%);
+}
+body.theme-dark #main-app > main > aside > div:last-child {
+  background: rgba(17,28,46,.93) !important;
+  border-color: rgba(223,178,108,.16) !important;
+}
+body.theme-dark #catalog-controls-panel .text-luxury-muted,
+body.theme-dark #catalog-controls-panel label {
+  color: var(--luxury-text-muted) !important;
+}
+
+/* Search, filters, and quotation cart inputs use the same navy surfaces.
+ * Focus rings and all event handlers stay exactly as before. */
+body.theme-dark #catalog-controls-panel :is(input,select),
+body.theme-dark #main-app > main > aside :is(input,select,textarea) {
+  background: #0d1728 !important;
+  color: #f3ede2 !important;
+  border-color: rgba(223,178,108,.20) !important;
+}
+body.theme-dark #catalog-controls-panel input::placeholder,
+body.theme-dark #main-app > main > aside input::placeholder {
+  color: #a99c87 !important;
+}
+body.theme-dark #catalog-controls-panel :is(input,select):focus,
+body.theme-dark #main-app > main > aside :is(input,select,textarea):focus {
+  border-color: rgba(223,178,108,.62) !important;
+}
+
+/* Quiet secondary buttons; retain clear gold selected/primary states. */
+body.theme-dark #catalog-controls-panel button:not(.bg-luxury-gold):not(.sp1-tool-feature),
+body.theme-dark #main-app > main > aside button[onclick^="openSavedListsModal"],
+body.theme-dark #main-app > main > aside button[onclick="addServiceFee()"] {
+  background: #16263c !important;
+  color: #dcc49a !important;
+  border-color: rgba(223,178,108,.20) !important;
+}
+body.theme-dark #catalog-controls-panel button:not(.bg-luxury-gold):not(.sp1-tool-feature):not(:disabled):hover,
+body.theme-dark #main-app > main > aside button[onclick^="openSavedListsModal"]:hover,
+body.theme-dark #main-app > main > aside button[onclick="addServiceFee()"]:hover {
+  background: #223650 !important;
+  color: #f3ede2 !important;
+  border-color: rgba(223,178,108,.37) !important;
+}
+body.theme-dark #catalog-controls-panel button.bg-luxury-gold,
+body.theme-dark #catalog-controls-panel button.sp1-tool-feature {
+  background: #dfb26c !important;
+  color: #101722 !important;
+  border-color: #dfb26c !important;
+}
+
+/* Product cards: a consistently warmer navy, soft edges and subtle elevation.
+ * Keep original card selection, click behavior, and quantity-status colors. */
+body.theme-dark #product-grid > div.group {
+  background: rgba(17,28,46,.96) !important;
+  border-color: rgba(223,178,108,.18) !important;
+  box-shadow: 0 7px 20px rgba(0,0,0,.18);
+}
+body.theme-dark #product-grid > div.group:hover {
+  background: rgba(19,34,56,.98) !important;
+  border-color: rgba(223,178,108,.37) !important;
+  box-shadow: 0 15px 28px rgba(0,0,0,.27);
+}
+body.theme-dark #product-grid > div.group:has(.select-btn.bg-luxury-gold) {
+  border-color: rgba(223,178,108,.72) !important;
+  box-shadow: 0 0 0 1px rgba(223,178,108,.14), 0 12px 28px rgba(0,0,0,.23);
+}
+body.theme-dark #product-grid > div.group :is(h4,.text-luxury-text) {
+  color: var(--luxury-text);
+}
+body.theme-dark #product-grid > div.group .text-luxury-muted {
+  color: var(--luxury-text-muted);
+}
+body.theme-dark #product-grid > div.group .text-luxury-gold {
+  color: #dfb26c;
+}
+
+/* Grid-image containers and the *actual* bg-white list photo wrapper.
+ * Do not filter, recolor, or remove pixels from customer/product photography. */
+body.theme-dark #product-grid > div.group > div > div.h-64,
+body.theme-dark #product-grid > div.group > .flex > div.bg-white {
+  background: #101b2b !important;
+  border-color: rgba(223,178,108,.12) !important;
+  box-shadow: none !important;
+}
+body.theme-dark #product-grid > div.group > .flex > div.bg-white {
+  border-right: 1px solid rgba(223,178,108,.12) !important;
+}
+body.theme-dark #product-grid > div.group > div > div.h-64 > img,
+body.theme-dark #product-grid > div.group > .flex > div.bg-white > img {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Seasonal product strips use a navy photo tray instead of a stark white band.
+ * Badge colors and original thumbnail imagery are preserved. */
+body.theme-dark #seasonal-promotions-section [data-promo-open] > div.bg-white {
+  background: #101b2b !important;
+}
+body.theme-dark #seasonal-promotions-section [data-promo-open] > div.bg-white > img {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body.theme-dark #seasonal-promotions-section [data-promo-open] {
+  color: #f3ede2;
+}
+body.theme-dark #seasonal-promotions-section div:has(> button[data-promo-open]) {
+  border-color: rgba(223,178,108,.20) !important;
+  background: rgba(17,28,46,.97) !important;
+}
+body.theme-dark #seasonal-promotions-section div:has(> button[data-promo-open]):hover {
+  border-color: rgba(223,178,108,.43) !important;
+}
+
+/* Cart thumbnails currently carry Tailwind's bg-white explicitly.
+ * Restyle the backing only; leave source URLs and images intact. */
+body.theme-dark #desktop-cart-items img.bg-white,
+body.theme-dark #mobile-cart-items img.bg-white,
+body.theme-dark #desktop-cart-items img.border-luxury-gold\/15,
+body.theme-dark #mobile-cart-items img.border-luxury-gold\/15 {
+  background: #101b2b !important;
+  border-color: rgba(223,178,108,.14) !important;
+  box-shadow: none !important;
+}
+body.theme-dark #desktop-cart-items > div,
+body.theme-dark #mobile-cart-items > div {
+  border-color: rgba(223,178,108,.17) !important;
+}
+body.theme-dark #desktop-cart-items > div:hover,
+body.theme-dark #mobile-cart-items > div:hover {
+  border-color: rgba(223,178,108,.31) !important;
+}
+
+/* Preserve the Phase 1 customer presentation and its original layout, but
+ * align its modal surface / thumbnails with the same palette. */
+body.theme-dark .sp1-backdrop {
+  --sp1-bg: #111c2e;
+  --sp1-paper: #0b1220;
+  --sp1-card: #132238;
+  --sp1-ink: #f3ede2;
+  --sp1-muted: #c9b89b;
+  --sp1-border: rgba(223,178,108,.18);
+  --sp1-hover: #223650;
+}
+body.theme-dark .sp1-product-image {
+  background: #101b2b !important;
+}
+body.theme-dark .sp1-product-image img {
+  background: transparent !important;
+}
+
+/* Preserve intentionally white quotation output paper and true status chips. */
+body.theme-dark #quotation-live-paper {
+  background: #fff !important;
+  color: #1e293b !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.theme-dark #product-grid > div.group { transition: none !important; }
+}
