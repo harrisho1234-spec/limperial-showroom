@@ -96,5 +96,24 @@
       return Number.isFinite(lastEdit)&&now-lastEdit<DRAFT_RETENTION_MS;
     });
   }
-  root.ShowroomPhase1Core=Object.freeze({line,lines,compare,presentationLine,money,round,freshDrafts,DRAFT_RETENTION_MS});
+  const RECENT_RETENTION_MS=3*24*60*60*1000;
+  function freshRecentViews(records,now=Date.now()){
+    if(!Array.isArray(records))return [];
+    const normalized=records.filter(row=>{
+      if(!row||typeof row!=='object'||!String(row.id??'').trim())return false;
+      const viewedAt=Date.parse(row.viewedAt);
+      return Number.isFinite(viewedAt)&&viewedAt<=now&&now-viewedAt<RECENT_RETENTION_MS;
+    }).sort((a,b)=>Date.parse(b.viewedAt)-Date.parse(a.viewedAt));
+    const seen=new Set();
+    return normalized.filter(row=>{
+      const id=String(row.id).trim();
+      if(seen.has(id))return false;
+      seen.add(id);
+      return true;
+    }).slice(0,24).map(row=>({id:String(row.id).trim(),viewedAt:row.viewedAt}));
+  }
+  root.ShowroomPhase1Core=Object.freeze({
+    line,lines,compare,presentationLine,money,round,freshDrafts,DRAFT_RETENTION_MS,
+    freshRecentViews,RECENT_RETENTION_MS
+  });
 })(window);
