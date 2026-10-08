@@ -50,8 +50,21 @@
   #ss-qty-number {min-width:20px;text-align:center;font-size:12px;font-weight:800}
   .ss-bar-cart {height:38px;border-radius:10px;background:#dfb26c;color:#111827;font-size:12px;font-weight:800;padding:0 15px;white-space:nowrap}
   .ss-bar-cart i {margin-right:4px}
-  body.ss-has-mobile-cart #mobile-cart-floating {display:none!important}
+  /* Retire the old red-badged floating bubble, even when an older page
+     shell is briefly served from a device's cache. */
+  #mobile-cart-floating {display:none!important}
   body.ss-has-mobile-cart #main-app {padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+  /* The bottom cart is the only mobile entry point, in either theme. */
+  body:not(.theme-dark) #ss-mobile-bar:not([hidden]) {
+    background:rgba(255,250,242,.97);
+    color:#573817;
+    border-top-color:rgba(169,111,39,.42);
+    box-shadow:0 -8px 26px rgba(89,57,24,.14);
+  }
+  body:not(.theme-dark) #ss-mobile-bar .ss-cart-count {color:#86633e}
+  body:not(.theme-dark) #ss-mobile-bar #ss-cart-total {color:#805018}
+  body:not(.theme-dark) #ss-mobile-bar .ss-quick-qty {background:#f4e9d7;border-color:#b99664}
+  body:not(.theme-dark) #ss-mobile-bar .ss-quick-qty button {color:#704617}
 }
 @media(min-width:1024px){#ss-mobile-bar{display:none!important}}
 @media(max-width:380px){
