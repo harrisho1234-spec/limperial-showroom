@@ -319,14 +319,38 @@
     if(!client){notify('Showroom management service is not available.','error');return;}
     ui('seasonal-promo-modal')?.classList.remove('hidden');
     updateManagerHeading();
-    ui('sp-close')?.focus();
-    renderLogin();
-    const existing=await client.auth.getUser();
-    if(existing.data?.user) {
-      const permitted=await checkManagementPermission();
-      if(permitted){authorized=false;await refresh();authorized=true;renderManager();return;}
+
+    const content=ui('seasonal-promo-modal-content');
+    if(content){
+      content.innerHTML='<div class="py-12 text-center text-luxury-muted"><i class="fa-solid fa-circle-notch fa-spin text-luxury-gold text-xl"></i><div class="mt-3 text-xs">Checking your Management Mode access…</div></div>';
     }
-    renderLogin();
+
+    try{
+      const existing=await client.auth.getUser();
+      if(existing.error||!existing.data?.user){
+        authorized=false;
+        renderLogin();
+        return;
+      }
+
+      const permitted=await checkManagementPermission();
+      if(!permitted){
+        authorized=false;
+        renderLogin('This account does not have Showroom Management Mode permission. Ask a Super Admin to enable Showroom → Use Management Mode in Users & Access.');
+        return;
+      }
+
+      // The Management Mode toggle already established the user's access.
+      // Re-check silently for security, then open the requested manager directly.
+      authorized=false;
+      await refresh();
+      authorized=true;
+      renderManager();
+      ui('sp-close')?.focus();
+    }catch(e){
+      authorized=false;
+      renderLogin('Your Sales & Order Management session could not be verified. Please sign in again.');
+    }
   }
   function renderLogin(error=''){
     const el=ui('seasonal-promo-modal-content');if(!el)return;
