@@ -153,3 +153,18 @@ body.theme-dark #catalog-controls-panel button.sp1-tool-feature {
   #product-grid .sp1-card-button {width:27px;height:27px;min-width:27px;font-size:10px}
   #product-grid .select-btn {padding-inline:8px !important}
 }
+
+/* Draft Management destructive actions appear only after confirmation. */
+.sp1-panel .sp1-danger {
+  background:#9f3332;
+  border-color:#9f3332;
+  color:#fff !important;
+}
+.sp1-panel .sp1-danger:hover { background:#812827;border-color:#812827; }
+.sp1-panel .sp1-danger-outline {
+  border-color:rgba(151,53,48,.45);
+  color:#972f2b;
+  background:transparent;
+}
+.sp1-panel .sp1-danger-outline:hover { background:#faeded;border-color:#972f2b; }
+.sp1-panel .sp1-danger-outline:disabled { opacity:.40;cursor:not-allowed; }
