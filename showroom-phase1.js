@@ -282,16 +282,27 @@
   }
   function favorite(id){
     const k=String(id);
-    if(favorites.has(k))favorites.delete(k);else favorites.add(k);
+    const wasFavorite=favorites.has(k);
+    if(wasFavorite)favorites.delete(k);else favorites.add(k);
     safeWrite(FAVORITES_KEY,[...favorites]);
+    // Only a positive favorite is a new interest event, not unfavoriting.
+    if(!wasFavorite){
+      const product=ownProduct(k);
+      if(product)window.ShowroomAnalytics?.record(product,'favorite');
+    }
     updateToolbar();
     try{renderProductGrid()}catch(_){}
   }
   function compareToggle(id){
     const k=String(id);
-    if(comparison.includes(k))comparison=comparison.filter(x=>x!==k);
+    const wasCompared=comparison.includes(k);
+    if(wasCompared)comparison=comparison.filter(x=>x!==k);
     else if(comparison.length<3)comparison.push(k);
     else{showNotification('You can compare up to 3 products at once.', 'info');return;}
+    if(!wasCompared){
+      const product=ownProduct(k);
+      if(product)window.ShowroomAnalytics?.record(product,'compare');
+    }
     updateToolbar();
     try{renderProductGrid()}catch(_){}
   }
