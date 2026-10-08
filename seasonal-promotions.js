@@ -227,6 +227,34 @@
     const {data,error}=await client.rpc('current_user_has_permission',{p_permission:MANAGEMENT_PERMISSION});
     return !error&&data===true;
   }
+  async function syncManagementControlVisibility(){
+    const control=ui('management-mode-control');
+    const toggle=ui('manager-toggle');
+    if(!control)return false;
+
+    let allowed=false;
+    if(client){
+      try{
+        const {data,error}=await client.auth.getUser();
+        if(!error&&data?.user)allowed=await checkManagementPermission();
+      }catch(e){
+        allowed=false;
+      }
+    }
+
+    control.classList.toggle('hidden',!allowed);
+    control.classList.toggle('flex',allowed);
+
+    if(!allowed){
+      const wasActive=!!showCostMode||!!managerVisible;
+      showCostMode=false;
+      setManagerMode(false);
+      authorized=false;
+      if(toggle)toggle.checked=false;
+      if(wasActive)refreshManagementVisuals();
+    }
+    return allowed;
+  }
   function refreshManagementVisuals(){
     currentBrandFilter='';
     if(typeof handlePartnerToggle==='function'&&!showCostMode)handlePartnerToggle(false);
@@ -838,11 +866,13 @@
     ui('seasonal-promo-modal')?.addEventListener('click',e=>{if(e.target.id==='seasonal-promo-modal')closeManager();});
     if(!client){console.warn('[Seasonal promotions] Shared client unavailable');return;}
     refresh();
+    syncManagementControlVisibility();
+    client.auth.onAuthStateChange(()=>{setTimeout(syncManagementControlVisibility,0);});
     // Refresh at least every five minutes; date changes are checked in Cambodia time.
     ticker=setInterval(()=>{if(liveDay!==today())redraw();if(Date.now()-lastRefresh>270000)refresh();},60000);
-    window.addEventListener('online',refresh);
+    window.addEventListener('online',()=>{refresh();syncManagementControlVisibility();});
     window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(applyTheme,120);});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden){redraw();refresh();}});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){redraw();refresh();syncManagementControlVisibility();}});
     document.addEventListener('keydown',e=>{
       const modal=ui('seasonal-promo-modal');if(!modal||modal.classList.contains('hidden'))return;
       if(e.key==='Escape')closeManager();
@@ -856,7 +886,7 @@
   }
   window.SeasonalPromos={refresh,catalogUpdated:renderBanner,view,reset:()=>{showingAll=false;renderBanner();},setManagerMode,
     afterAddToCart,isFeatured, get showingAll(){return showingAll;},openManager,
-    openBackgroundManager:()=>openManager('background'),handleManagementToggle,requestManagementAccess,checkManagementPermission};
+    openBackgroundManager:()=>openManager('background'),handleManagementToggle,requestManagementAccess,checkManagementPermission,syncManagementControlVisibility};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
   else bind();
 })();
