@@ -183,9 +183,15 @@
     if(!client||loading)return;
     loading=true;
     try{
-      const {data,error}=await client.from(TABLE).select('id,name,badge,start_date,end_date,is_enabled,discount_percent,theme_preset,custom_background_path,custom_background_name,custom_background_updated_at,items,created_at,updated_at').order('start_date',{ascending:false});
-      if(error)throw error;
-      campaigns=data||[];liveDay='';loadError='';
+      const [campaignResult,defaultResult]=await Promise.all([
+        client.from(TABLE).select('id,name,badge,start_date,end_date,is_enabled,discount_percent,theme_preset,custom_background_path,custom_background_name,custom_background_updated_at,items,created_at,updated_at').order('start_date',{ascending:false}),
+        client.from(DEFAULT_BG_TABLE).select('id,custom_background_path,custom_background_name,custom_background_updated_at,updated_at').eq('id','default').maybeSingle()
+      ]);
+      if(campaignResult.error)throw campaignResult.error;
+      if(defaultResult.error)throw defaultResult.error;
+      campaigns=campaignResult.data||[];
+      defaultBackground=defaultResult.data||null;
+      liveDay='';loadError='';
       lastRefresh=Date.now();
       redraw();
       if(authorized&&!editing)renderManager();
