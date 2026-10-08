@@ -103,3 +103,14 @@
 .sa-empty,.sa-note{font-size:12px;line-height:1.7;color:var(--luxury-text-muted);padding:12px}
 .sa-note{margin-top:10px}
 @media(max-width:550px){.sa-top{padding:13px}.sa-content{padding:11px}.sa-heading{font-size:18px}}
+
+/* One-tap return from mobile selected items to products. */
+.ss-continue-shopping {
+  display:none;width:100%;padding:9px 16px;text-align:left;
+  background:var(--luxury-accent);color:var(--luxury-text-soft);
+  border-bottom:1px solid rgba(223,178,108,.18);
+  font-size:12px;font-weight:700;
+}
+.ss-continue-shopping i {color:#dfb26c;margin-right:8px}
+@media(max-width:1023px){.ss-continue-shopping{display:block}}
+.ss-continue-shopping:hover{color:var(--luxury-text);background:var(--luxury-lightbg)}
