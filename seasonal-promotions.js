@@ -214,6 +214,7 @@
     if(!managerVisible){
       closeManager();
       resetBackgroundEditor(null);
+      resetDefaultBackgroundDraft();
       authorized=false;editId=null;editing=false;chosen.clear();
       client?.auth.signOut().catch(()=>{});
     }
@@ -406,11 +407,16 @@
     el.innerHTML=(loadError?'<div role="alert" class="p-3 text-sm text-red-600">'+escapeHtml(loadError)+' <button type="button" id="sp-retry" class="underline">Retry</button></div>':'')+'<div class="flex justify-between items-center"><span class="text-xs text-luxury-muted">'+campaigns.length+' campaigns (including history)</span>'+
       '<div class="flex gap-2"><button id="sp-create" class="px-3 py-2 bg-luxury-gold text-slate-950 rounded-lg text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>New Campaign</button>'+
       '<button id="sp-logout" class="px-3 py-2 border border-luxury-gold/20 rounded-lg text-xs text-luxury-muted">Sign Out</button></div></div>'+
+      defaultBackgroundCard()+
       '<div class="space-y-2 max-h-64 overflow-y-auto">'+(campaigns.length?campaigns.map(campaignRow).join(''):'<p class="text-xs text-luxury-muted text-center p-8">No seasonal promotions yet. Create the first campaign.</p>')+'</div>'+
       '<div id="sp-editor"></div>';
     ui('sp-create')?.addEventListener('click',()=>editCampaign(null));
     ui('sp-retry')?.addEventListener('click',refresh);
-    ui('sp-logout')?.addEventListener('click',async()=>{resetBackgroundEditor(null);authorized=false;editing=false;editId=null;chosen.clear();await client.auth.signOut();campaigns=campaigns.filter(c=>campaignState(c)==='Active');liveDay='';renderLogin();refresh();});
+    ui('sp-default-background-file')?.addEventListener('change',handleDefaultBackgroundFile);
+    ui('sp-default-background-remove')?.addEventListener('click',removeDefaultBackgroundImage);
+    ui('sp-default-background-save')?.addEventListener('click',saveDefaultBackground);
+    updateDefaultBackgroundUI();
+    ui('sp-logout')?.addEventListener('click',async()=>{resetBackgroundEditor(null);resetDefaultBackgroundDraft();authorized=false;editing=false;editId=null;chosen.clear();await client.auth.signOut();campaigns=campaigns.filter(c=>campaignState(c)==='Active');liveDay='';renderLogin();refresh();});
     el.querySelectorAll('[data-sp-edit]').forEach(x=>x.addEventListener('click',()=>editCampaign(campaigns.find(c=>c.id===x.dataset.spEdit))));
     el.querySelectorAll('[data-sp-toggle]').forEach(x=>x.addEventListener('click',()=>toggleCampaign(x.dataset.spToggle)));
     if(editing&&editId){const currentCampaign=campaigns.find(c=>c.id===editId);if(currentCampaign)drawEditor(currentCampaign);}
