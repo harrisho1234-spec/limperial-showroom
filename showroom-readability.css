@@ -1,100 +1,75 @@
-/* Limperial Showroom — adaptive luxury chrome.
-   The artwork is never recolored. Only the exposed header and pagination chrome
-   respond to the actual background brightness; content panels stay readable. */
+/* L'Imperial V4 — original luxury color identity.
+   Original palette: navy #090c12, warm gold #dfb26c, white/ivory surfaces,
+   Playfair headings. This file changes presentation only, never behavior.
+   All seasonal artwork and installed light/dark preferences remain intact. */
 :root {
-  --sr-ink: #292725;
-  --sr-muted: #605d58;
-  --sr-accent-ink: #895b28;
-  --sr-control: #fcfbf8;
-  --sr-control-ink: #34312c;
-  --sr-control-border: rgba(64, 55, 43, .19);
-  --sr-control-hover: #f1eee8;
-  --sr-selected: #dfb879;
-  --sr-chrome: rgba(250, 249, 247, .93);
-  --sr-chrome-ink: #292724;
-  --sr-chrome-muted: #625b52;
-  --sr-chrome-accent: #895b28;
-  --sr-chrome-control: rgba(255, 255, 255, .75);
-  --sr-chrome-hover: rgba(232, 222, 204, .75);
-  --sr-chrome-line: rgba(75, 62, 44, .16);
-  --sr-shadow: 0 12px 35px rgba(28, 25, 22, .13);
+  --sr-gold: #dfb26c;
+  --sr-gold-hover: #cda05b;
+  --sr-gold-ink: #926025; /* accessible dark-gold typography on ivory */
+  --sr-control: var(--luxury-accent);
+  --sr-control-ink: var(--sr-gold-ink);
+  --sr-control-hover: var(--luxury-lightbg);
+  --sr-control-border: rgba(169, 117, 48, .28);
+  --sr-chrome: rgba(9, 12, 18, .95);
+  --sr-chrome-ink: #f8fafc;
+  --sr-chrome-muted: #d2d6dd;
+  --sr-chrome-accent: #dfb26c;
+  --sr-chrome-control: rgba(30, 41, 59, .88);
+  --sr-chrome-hover: rgba(55, 65, 81, .98);
+  --sr-chrome-line: rgba(223, 178, 108, .27);
+  --sr-surface: rgba(255, 255, 255, .96);
+  --sr-surface-ink: #1c1a17;
+  --sr-surface-muted: #5c5345;
+  --sr-shadow: 0 10px 30px rgba(24, 17, 8, .16);
 }
 body.theme-dark {
-  --sr-ink: #f5f1eb;
-  --sr-muted: #c7c0b5;
-  --sr-accent-ink: #e6bd7c;
-  --sr-control: #22262b;
-  --sr-control-ink: #f5f1eb;
-  --sr-control-border: rgba(230, 221, 202, .23);
-  --sr-control-hover: #30353c;
-  --sr-chrome: rgba(21, 24, 28, .95);
-  --sr-chrome-ink: #f6f3ee;
-  --sr-chrome-muted: #ddd4c8;
-  --sr-chrome-accent: #e9bf7c;
-  --sr-chrome-control: rgba(255, 255, 255, .08);
-  --sr-chrome-hover: rgba(255, 255, 255, .17);
-  --sr-chrome-line: rgba(255, 255, 255, .18);
-  --sr-shadow: 0 14px 36px rgba(0, 0, 0, .3);
-}
-/* A bright seasonal/default image gets restrained smoked glass instead of
-   competing beige/gold. A dark image gets softly lit ivory glass. */
-body.seasonal-theme-active[data-showroom-backdrop-tone="light"] {
-  --sr-chrome: rgba(26, 28, 31, .87);
-  --sr-chrome-ink: #f8f5ee;
-  --sr-chrome-muted: #e3ddd4;
-  --sr-chrome-accent: #edc98c;
-  --sr-chrome-control: rgba(255, 255, 255, .09);
-  --sr-chrome-hover: rgba(255, 255, 255, .19);
-  --sr-chrome-line: rgba(255, 255, 255, .23);
-  --sr-shadow: 0 14px 38px rgba(24, 23, 22, .24);
-}
-body.seasonal-theme-active[data-showroom-backdrop-tone="dark"] {
-  --sr-chrome: rgba(250, 249, 246, .91);
-  --sr-chrome-ink: #262726;
-  --sr-chrome-muted: #5d5a55;
-  --sr-chrome-accent: #825624;
-  --sr-chrome-control: rgba(255, 255, 255, .78);
-  --sr-chrome-hover: rgba(235, 229, 217, .94);
-  --sr-chrome-line: rgba(51, 47, 41, .19);
-  --sr-shadow: 0 13px 36px rgba(0, 0, 0, .24);
+  --sr-gold-ink: #dfb26c;
+  --sr-control: var(--luxury-accent);
+  --sr-control-ink: #dfb26c;
+  --sr-control-hover: #29374b;
+  --sr-control-border: rgba(223, 178, 108, .32);
+  --sr-surface: rgba(17, 24, 39, .96);
+  --sr-surface-ink: #f8fafc;
+  --sr-surface-muted: #cbd5e1;
+  --sr-shadow: 0 12px 36px rgba(0, 0, 0, .38);
 }
 
-/* Exposed chrome: legible and quiet, never gold text on beige artwork. */
+/* Return the top bar to the original deep navy/gold identity. Keeping the
+   color steady across backgrounds prevents seasonal artwork from rebranding UI. */
 #main-app > header {
   background: var(--sr-chrome) !important;
-  border-bottom: 1px solid var(--sr-chrome-line) !important;
   color: var(--sr-chrome-ink) !important;
-  box-shadow: 0 5px 22px rgba(18, 19, 19, .13);
-  -webkit-backdrop-filter: blur(18px) saturate(110%);
-  backdrop-filter: blur(18px) saturate(110%);
+  border-bottom: 1px solid var(--sr-chrome-line) !important;
+  box-shadow: 0 3px 18px rgba(0,0,0,.23);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 #main-app > header #management-mode-control,
 #main-app > header #sync-status {
   background: var(--sr-chrome-control) !important;
   border: 1px solid var(--sr-chrome-line) !important;
   color: var(--sr-chrome-ink) !important;
-  box-shadow: none;
 }
 #main-app > header #management-mode-control span,
 #main-app > header #status-text {
   color: var(--sr-chrome-ink) !important;
   font-weight: 700;
 }
-#main-app > header #management-mode-control i { color: var(--sr-chrome-accent) !important; }
+#main-app > header #management-mode-control i,
+#main-app > header #theme-toggle-btn i,
+#main-app > header #pwa-install-btn i,
+#main-app > header #showroom-management-actions button i {
+  color: var(--sr-chrome-accent) !important;
+}
 #main-app > header #showroom-management-actions button,
 #main-app > header #theme-toggle-btn,
 #main-app > header #pwa-install-btn,
 #main-app > header button[onclick="fetchSheetData()"] {
   background: var(--sr-chrome-control) !important;
-  color: var(--sr-chrome-ink) !important;
+  color: var(--sr-chrome-accent) !important;
   border: 1px solid var(--sr-chrome-line) !important;
   box-shadow: none;
   font-weight: 700;
-}
-#main-app > header #showroom-management-actions button i,
-#main-app > header #theme-toggle-btn i,
-#main-app > header #pwa-install-btn i {
-  color: var(--sr-chrome-accent) !important;
 }
 #main-app > header #showroom-management-actions button:hover,
 #main-app > header #theme-toggle-btn:hover,
@@ -104,108 +79,107 @@ body.seasonal-theme-active[data-showroom-backdrop-tone="dark"] {
   border-color: var(--sr-chrome-accent) !important;
 }
 #main-app > header button[onclick="fetchSheetData()"] {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  width: 30px;height:30px;border-radius:10px;
+  display:inline-flex;align-items:center;justify-content:center;
 }
 #main-app > header img[alt="Limperial Luxury"] {
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .15));
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
 }
 
-/* Inside opaque product/filter surfaces, use neutral ink and discreet borders. */
+/* Original ivory/card palette in light mode and navy in dark mode, with
+   more legible gold accents on pale controls. */
 #catalog-controls-panel label,
-#catalog-controls-panel .text-luxury-muted { color: var(--sr-muted) !important; }
-#catalog-controls-panel button:not(.bg-luxury-gold) {
-  color: var(--sr-control-ink) !important;
-  border-color: var(--sr-control-border) !important;
-}
-#catalog-controls-panel button:not(.bg-luxury-gold):hover {
-  background: var(--sr-control-hover) !important;
-}
-#catalog-controls-panel button.bg-luxury-gold {
-  background: var(--sr-selected) !important;
-  color: #302315 !important;
-  border-color: rgba(117, 75, 28, .28) !important;
-}
-#catalog-controls-panel button i { color: inherit !important; }
+#catalog-controls-panel .text-luxury-muted {color:var(--luxury-text-soft) !important;}
 #catalog-controls-panel input,
 #catalog-controls-panel select {
-  border-color: var(--sr-control-border) !important;
-  color: var(--sr-control-ink) !important;
+  color:var(--luxury-text) !important;
+  border-color:var(--sr-control-border) !important;
 }
 #catalog-controls-panel #search-input::placeholder {
-  color: var(--sr-muted);
-  opacity: .9;
+  color:var(--luxury-text-muted);
+  opacity:.92;
 }
+#catalog-controls-panel button:not(.bg-luxury-gold) {
+  color:var(--sr-control-ink) !important;
+  border-color:var(--sr-control-border) !important;
+}
+#catalog-controls-panel button:not(.bg-luxury-gold):hover {
+  background:var(--sr-control-hover) !important;
+}
+#catalog-controls-panel button.bg-luxury-gold {
+  background:var(--sr-gold) !important;
+  border-color:var(--sr-gold-hover) !important;
+  color:#17130c !important;
+}
+#catalog-controls-panel button i {color:inherit !important;}
 
-/* Floating pagination lives directly on the background artwork. */
+/* Pagination is supported by a light/dark card, not floating over artwork. */
 #pagination-container:not(.hidden) {
-  background: var(--sr-chrome) !important;
-  border: 1px solid var(--sr-chrome-line) !important;
-  border-radius: 16px;
-  padding: 12px 16px !important;
-  margin-top: 18px !important;
-  box-shadow: var(--sr-shadow);
-  -webkit-backdrop-filter: blur(18px) saturate(110%);
-  backdrop-filter: blur(18px) saturate(110%);
-  color: var(--sr-chrome-ink) !important;
+  background:var(--sr-surface) !important;
+  color:var(--sr-surface-ink) !important;
+  border:1px solid var(--sr-control-border) !important;
+  border-radius:16px;
+  padding:12px 16px !important;
+  margin-top:18px !important;
+  box-shadow:var(--sr-shadow);
+  -webkit-backdrop-filter:blur(15px);
+  backdrop-filter:blur(15px);
 }
-#pagination-container > div { color: var(--sr-chrome-ink) !important; }
-#pagination-container > div:last-child { flex-wrap: wrap; justify-content: center; }
-#pagination-container .text-luxury-muted { color: var(--sr-chrome-muted) !important; }
-#pagination-container span.text-luxury-gold { color: var(--sr-chrome-accent) !important; }
+#pagination-container > div {color:var(--sr-surface-ink) !important;}
+#pagination-container > div:last-child {flex-wrap:wrap;justify-content:center;}
+#pagination-container .text-luxury-muted {color:var(--sr-surface-muted) !important;}
+#pagination-container span.text-luxury-gold {color:var(--sr-gold-ink) !important;}
 #pagination-container select,
 #pagination-container button {
-  background: var(--sr-chrome-control) !important;
-  color: var(--sr-chrome-ink) !important;
-  border: 1px solid var(--sr-chrome-line) !important;
-  font-weight: 650;
+  background:var(--sr-control) !important;
+  border:1px solid var(--sr-control-border) !important;
+  color:var(--sr-surface-ink) !important;
+  font-weight:700;
 }
 #pagination-container button:not(.bg-luxury-gold):not(:disabled):hover {
-  background: var(--sr-chrome-hover) !important;
-  border-color: var(--sr-chrome-accent) !important;
+  background:var(--sr-control-hover) !important;
+  border-color:var(--sr-gold) !important;
 }
 #pagination-container button.bg-luxury-gold {
-  background: var(--sr-selected) !important;
-  color: #302315 !important;
-  border: 1px solid rgba(117, 75, 28, .4) !important;
-  font-weight: 750;
+  background:var(--sr-gold) !important;
+  color:#17130c !important;
+  border-color:var(--sr-gold-hover) !important;
 }
-#pagination-container button.cursor-not-allowed { opacity: .4; cursor: not-allowed; }
+#pagination-container button.cursor-not-allowed {opacity:.45;cursor:not-allowed;}
 
-/* Gold is an accent for prices and primary selections—not every outline. */
+/* Bring product and cart action text back to the familiar gold highlight. */
 #product-grid .select-btn:not(.bg-luxury-gold),
 #product-grid button[title^="Share"],
 #main-app aside button[onclick^="openSavedListsModal"],
 #main-app aside button[onclick="addServiceFee()"] {
-  background: var(--sr-control) !important;
-  color: var(--sr-control-ink) !important;
-  border: 1px solid var(--sr-control-border) !important;
+  background:var(--sr-control) !important;
+  color:var(--sr-control-ink) !important;
+  border:1px solid var(--sr-control-border) !important;
 }
 #product-grid .select-btn:not(.bg-luxury-gold):hover,
 #product-grid button[title^="Share"]:hover,
 #main-app aside button[onclick^="openSavedListsModal"]:hover,
 #main-app aside button[onclick="addServiceFee()"]:hover {
-  background: var(--sr-control-hover) !important;
+  background:var(--sr-control-hover) !important;
+  border-color:var(--sr-gold) !important;
 }
 #product-grid .select-btn.bg-luxury-gold {
-  background: var(--sr-selected) !important;
-  color: #302315 !important;
+  background:var(--sr-gold) !important;
+  color:#17130c !important;
 }
 #product-grid .font-serif.text-luxury-gold,
 #main-app aside h2.text-luxury-gold,
-#main-app aside #ledger-net { color: var(--sr-accent-ink) !important; }
-#main-app :is(button, select, input):focus-visible {
-  outline: 2px solid var(--sr-accent-ink);
-  outline-offset: 2px;
+#main-app aside #ledger-net {
+  color:var(--sr-gold-ink) !important;
 }
-@media (max-width: 640px) {
-  #pagination-container:not(.hidden) { padding: 12px !important; }
-  #main-app > header #showroom-management-actions button { padding: 6px 8px !important; }
+#main-app :is(button,select,input):focus-visible {
+  outline:2px solid var(--sr-gold);
+  outline-offset:2px;
+}
+@media (max-width:640px) {
+  #pagination-container:not(.hidden) {padding:12px !important;}
+  #main-app > header #showroom-management-actions button {padding:6px 8px !important;}
 }
 @media print {
-  #pagination-container, #main-app > header { box-shadow: none !important; }
+  #pagination-container,#main-app > header {box-shadow:none !important;}
 }
