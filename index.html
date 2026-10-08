@@ -209,6 +209,7 @@
         }
     </style>
     <link rel="stylesheet" href="showroom-readability.css?v=20261008-adaptiveglass1">
+    <link rel="stylesheet" href="showroom-phase1.css?v=20261008-phase1a">
 </head>
 <body class="bg-luxury-dark text-luxury-text font-sans min-h-screen lg:h-screen flex flex-col antialiased lg:overflow-hidden transition-colors duration-300">
 
@@ -2628,6 +2629,7 @@
                         </div>`;
                 }
                 grid.appendChild(card);
+                window.ShowroomPhase1?.decorateProductCard(card, item);
             });
             renderPaginationControls();
         }
@@ -2704,6 +2706,7 @@
 
         function openProductDetailModal(productId) {
             const sourceItem = products.find(p => p.id === productId); if (!sourceItem) return;
+            window.ShowroomPhase1?.recordViewed(productId);
             const item = window.SeasonalPromos?.view(sourceItem) || sourceItem;
             const modal = document.getElementById('product-detail-modal'); const container = document.getElementById('product-detail-modal-container'); if (!modal || !container) return;
             const directImg = resolveGoogleDriveImg(item.imgLink); const modalImg = document.getElementById('detail-modal-image');
@@ -3085,6 +3088,7 @@
             const mb = document.getElementById('mobile-cart-badge'); if (mb) mb.textContent = totalCount;
             renderDesktopCartItems(); renderMobileCartItems(); calculateAndDrawTotals();
             updateRecommendedSets();
+            window.ShowroomPhase1?.scheduleDraft();
         }
 
         function renderDesktopCartItems() {
@@ -4055,6 +4059,15 @@
                     open.textContent = 'Open';
                     open.onclick = () => openSavedQuotationRevision(revision);
                     row.append(info, open);
+                    if (revision < currentRev) {
+                        const compareBtn = document.createElement('button');
+                        compareBtn.type = 'button';
+                        compareBtn.className = 'sp1-version-compare';
+                        compareBtn.textContent = 'Compare';
+                        compareBtn.title = 'Compare this revision with the latest quotation';
+                        compareBtn.onclick = () => window.ShowroomPhase1?.compareRevisions(revision);
+                        row.append(compareBtn);
+                    }
                     listEl.append(row);
                 }
                 if (countEl) countEl.textContent = revisions.length + ' version' + (revisions.length === 1 ? '' : 's');
@@ -4449,6 +4462,7 @@
                     ? savedQuoteDisplay + ' saved.'
                     : '"' + record.name + '" saved successfully.';
                 setSavedListSavingState('done', savedQuoteDisplay ? 'Saved as ' + savedQuoteDisplay + '.' : 'Saved successfully.');
+                window.ShowroomPhase1?.savedSuccessfully();
                 showNotification(successMessage, "success");
                 await new Promise(resolve => setTimeout(resolve, 900));
                 closeSavedListsModal();
@@ -4557,6 +4571,7 @@
             const baseRecord = savedInterestLists.find(list => String(list.id) === String(listId));
             const selected = historicalRecord || baseRecord;
             if (!selected || !baseRecord) { showNotification("Saved list could not be found.", "error"); return; }
+            window.ShowroomPhase1?.willLoadSaved();
             const state = selected.state || {};
             cart = rehydrateCartForCurrentInventory(state.cart);
             discountPctValue = Number(state.discountPctValue) || 0;
@@ -4602,6 +4617,7 @@
             if (documentType === 'quotation') syncQuotationTypeFromNumber();
             updateQuotationNumberHelp();
             updateQuotationPreview(); closeSavedListsModal();
+            window.ShowroomPhase1?.loadedSaved();
             showNotification(activeViewedQuotationRevision !== null
                 ? 'Historical quotation opened. Saving changes will create Rev ' + (activeSavedQuotationRevision + 1) + '.'
                 : `"${selected.name || 'Saved List'}" retrieved.`, "success");
@@ -5657,5 +5673,7 @@
     <script src="quotation-registry.js?v=20261008-history-read1"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
     <script src="seasonal-promotions.js?v=20261008-adaptiveglass1"></script>
+    <script src="showroom-phase1-core.js?v=20261008-phase1a"></script>
+    <script src="showroom-phase1.js?v=20261008-phase1a"></script>
 </body>
 </html>
