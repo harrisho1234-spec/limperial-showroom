@@ -10,7 +10,7 @@
   row-gap: 9px;
 }
 .sp1-toolbar-group {display:flex;flex-wrap:wrap;align-items:center;gap:7px}
-#catalog-controls-panel .sp1-tool-btn {
+#catalog-controls-panel button.sp1-tool-btn {
   border: 1px solid rgba(111,99,80,.22) !important;
   border-radius: 10px;
   padding: 8px 10px;
@@ -23,15 +23,15 @@
   white-space:nowrap;
   transition:background .18s,transform .18s;
 }
-#catalog-controls-panel .sp1-tool-btn:hover {background:var(--luxury-accent) !important;transform:translateY(-1px)}
-#catalog-controls-panel .sp1-tool-btn:disabled {opacity:.45;cursor:not-allowed;transform:none}
-#catalog-controls-panel .sp1-tool-feature {
+#catalog-controls-panel button.sp1-tool-btn:hover {background:var(--luxury-accent) !important;transform:translateY(-1px)}
+#catalog-controls-panel button.sp1-tool-btn:disabled {opacity:.45;cursor:not-allowed;transform:none}
+#catalog-controls-panel button.sp1-tool-feature {
   background:#292724 !important;
   color:#fff8eb !important;
   border-color:#292724 !important;
 }
-#catalog-controls-panel .sp1-tool-feature:hover {background:#443d36 !important;color:#fff8eb !important}
-body.theme-dark #catalog-controls-panel .sp1-tool-feature {
+#catalog-controls-panel button.sp1-tool-feature:hover {background:#443d36 !important;color:#fff8eb !important}
+body.theme-dark #catalog-controls-panel button.sp1-tool-feature {
   background:#e5c28a !important;color:#22201d !important;border-color:#e5c28a !important;
 }
 .sp1-draft-status {font-size:10px;color:var(--luxury-text-muted);font-weight:650;padding-left:3px}
@@ -148,3 +148,8 @@ body.theme-dark #catalog-controls-panel .sp1-tool-feature {
   .sp1-presentation-card .sp1-product-image{height:170px}
 }
 @media print{#showroom-phase1-tools,.sp1-backdrop{display:none!important}}
+
+@media (max-width: 650px) {
+  #product-grid .sp1-card-button {width:27px;height:27px;min-width:27px;font-size:10px}
+  #product-grid .select-btn {padding-inline:8px !important}
+}
