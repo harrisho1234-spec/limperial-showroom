@@ -192,3 +192,61 @@ body.theme-dark #quotation-live-paper {
 @media (prefers-reduced-motion: reduce) {
   body.theme-dark #product-grid > div.group { transition: none !important; }
 }
+
+/* HIGH-CONTRAST FAVORITES + COMPARE (dark mode).
+ * The buttons already receive is-active from the real selection state.
+ * Previous styling kept active and inactive controls almost the same navy.
+ * Only presentation changes; click and selection logic stay untouched. */
+body.theme-dark #product-grid button.sp1-card-button {
+  position: relative;
+  background: #1b2a40 !important;
+  color: #d4bd96 !important;
+  border: 1px solid rgba(223,178,108,.30) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+body.theme-dark #product-grid button.sp1-card-button:not(.is-active):hover {
+  background: #293d58 !important;
+  color: #ffdb9b !important;
+  border-color: rgba(223,178,108,.65) !important;
+}
+body.theme-dark #product-grid button.sp1-card-button.is-active,
+body.theme-dark #product-grid button.sp1-card-button.is-active:hover,
+body.theme-dark #product-grid button.sp1-card-button.is-active:focus-visible {
+  background: #dfb26c !important;
+  color: #091322 !important;
+  border: 2px solid #ffdc9f !important;
+  box-shadow: 0 0 0 2px rgba(223,178,108,.30), 0 0 15px rgba(223,178,108,.19) !important;
+}
+body.theme-dark #product-grid button.sp1-card-button.is-active i {
+  color: #091322 !important;
+}
+body.theme-dark #product-grid button.sp1-card-button.is-active::after {
+  content: "✓";
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0b1220;
+  color: #ffda99;
+  border: 1px solid #dfb26c;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 10px;
+  text-align: center;
+  pointer-events: none;
+}
+/* The Compare action intentionally stays disabled until 2 products are
+ * selected; make its label readable, not faded into the background. */
+body.theme-dark #catalog-controls-panel button#showroom-compare-btn:disabled {
+  opacity: .78 !important;
+  color: #cbb389 !important;
+  border-color: rgba(223,178,108,.24) !important;
+}
+@media (max-width: 650px) {
+  body.theme-dark #product-grid button.sp1-card-button.is-active::after {
+    top: -4px;
+    right: -4px;
+  }
+}
