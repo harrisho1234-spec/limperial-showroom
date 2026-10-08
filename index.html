@@ -5559,7 +5559,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261008-selectioncontrast1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261008-recent3days1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
@@ -5607,7 +5607,7 @@
     <script src="quotation-registry.js?v=20261008-history-read1"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
     <script src="seasonal-promotions.js?v=20261008-backgroundmorph2"></script>
-    <script src="showroom-phase1-core.js?v=20261008-setphotos1"></script>
-    <script src="showroom-phase1.js?v=20261008-setphotos1"></script>
+    <script src="showroom-phase1-core.js?v=20261008-recent3days1"></script>
+    <script src="showroom-phase1.js?v=20261008-recent3days1"></script>
 </body>
 </html>
