@@ -25,11 +25,15 @@
   const decorateProduct=source=>window.SeasonalPromos?.view(source)||source;
   const displayProduct=id=>{const x=ownProduct(id);return x?decorateProduct(x):null};
   const getSelected=()=>Array.isArray(cart)?cart:[];
+  // Prune expired snapshots whenever drafts are read, written or restored.
+  // "savedAt" is refreshed by autosave, so retention follows last activity.
   const draftList=()=>{
     const raw=safeRead(DRAFT_KEY,[]);
-    return Array.isArray(raw)?raw.filter(x=>x?.version===1 && x?.id && x?.data && x?.savedAt):[];
+    const fresh=core.freshDrafts(raw).slice(0,MAX_DRAFTS);
+    if(!Array.isArray(raw)||raw.length!==fresh.length)safeWrite(DRAFT_KEY,fresh);
+    return fresh;
   };
-  const putDrafts=items=>safeWrite(DRAFT_KEY,items.slice(0,MAX_DRAFTS));
+  const putDrafts=items=>safeWrite(DRAFT_KEY,core.freshDrafts(items).slice(0,MAX_DRAFTS));
   const stamp=()=>new Date().toISOString();
   const labelTime=time=>{const d=new Date(time);return Number.isNaN(d.getTime())?'Unknown time':d.toLocaleString([], {dateStyle:'medium',timeStyle:'short'});};
   const describeDraft=d=>{
@@ -58,7 +62,7 @@
     const all=draftList();
     if(dirty){pill.textContent='Unsaved edits · autosaving';pill.dataset.status='unsaved';}
     else if(all.length){pill.textContent=all.length+' recoverable draft'+(all.length===1?'':'s');pill.dataset.status='available';}
-    else{pill.textContent='Draft protection on';pill.dataset.status='idle';}
+    else{pill.textContent='Draft protection · 7 days';pill.dataset.status='idle';}
   }
   function persistDraft(){
     if(!ready||suppress||!dirty)return;
@@ -133,15 +137,63 @@
     if(alt){const secondary=document.createElement('button');secondary.type='button';secondary.className='sp1-secondary';secondary.textContent=alt;secondary.onclick=dismissModal;row.append(secondary)}
     return row;
   }
-  function offerRecovery(){
-    if(restoreShown||!ready)return;
+  function manageDrafts(){
+    // Always capture pending edits before opening the draft manager.
+    flushDraft();
+    restoreShown=false;
+    offerRecovery(true);
+  }
+  function confirmDraftRemoval(id=null){
     const drafts=draftList();
-    if(!drafts.length)return;
+    if(!drafts.length){offerRecoveryAgain();return;}
+    const targetDraft=id===null?null:drafts.find(d=>d.id===id);
+    if(id!==null&&!targetDraft){offerRecoveryAgain();return;}
+    const all=id===null;
+    const target=panel(all?'Clear all drafts?':'Discard this draft?',
+      'This deletes only unsaved recovery drafts stored on this device.');
+    const message=document.createElement('p');
+    message.className='sp1-hint';
+    message.textContent=all
+      ? 'Permanently remove all '+drafts.length+' recoverable drafts from this device? This cannot be undone. Your current open work remains visible, but any deleted backup will no longer be recoverable.'
+      : 'Permanently discard "'+describeDraft(targetDraft)+'"? This cannot be undone.';
+    target.append(message);
+    const actions=confirmation(all?'Yes, Clear All Drafts':'Yes, Discard Draft',()=>{
+      const current=draftList();
+      const keep=all?[]:current.filter(d=>d.id!==id);
+      if(!putDrafts(keep)){
+        showNotification('Draft removal failed. Please check browser storage and try again.','error');
+        return;
+      }
+      if(all||id===liveDraftId){
+        if(saveTimer)clearTimeout(saveTimer);
+        saveTimer=null;liveDraftId='';dirty=false;
+      }
+      updateDraftBadge();
+      showNotification(all?'All unsaved drafts cleared from this device.':'Unsaved draft discarded.','success');
+      offerRecoveryAgain();
+    },'Cancel');
+    actions.querySelector('.sp1-primary')?.classList.add('sp1-danger');
+    const cancel=actions.querySelector('.sp1-secondary');
+    if(cancel)cancel.onclick=offerRecoveryAgain;
+    target.append(actions);
+  }
+  function offerRecovery(force=false){
+    if((restoreShown&&!force)||!ready)return;
+    const drafts=draftList();
+    if(!drafts.length&&!force)return;
     restoreShown=true;
-    const target=panel('Recover unsaved work','A local draft was found from an earlier session. Nothing has been overwritten.');
-    const intro=document.createElement('p');intro.className='sp1-hint';
-    intro.textContent='Drafts are kept on this device only. Choose one to restore, or keep them for later.';
+    const target=panel('Draft Management',drafts.length
+      ? 'Restore an unsaved draft or permanently discard it.'
+      : 'There are currently no recoverable drafts on this device.');
+    const intro=document.createElement('p');
+    intro.className='sp1-hint';
+    intro.textContent='Unsaved drafts are stored only on this device and automatically expire after 7 days without edits. Officially saved quotations and all revision history are not affected.';
     target.append(intro);
+    if(!drafts.length){
+      const empty=document.createElement('p');empty.className='sp1-hint';
+      empty.textContent='No unsaved drafts available.';
+      target.append(empty);
+    }
     drafts.forEach(d=>{
       const row=document.createElement('div');row.className='sp1-row';
       const meta=document.createElement('div');meta.className='sp1-row-main';
@@ -151,12 +203,21 @@
       const restore=document.createElement('button');restore.type='button';restore.className='sp1-primary';restore.textContent='Restore';
       restore.onclick=()=>restoreDraft(d.id);
       const discard=document.createElement('button');discard.type='button';discard.className='sp1-secondary';discard.textContent='Discard';
-      discard.onclick=()=>{putDrafts(draftList().filter(x=>x.id!==d.id));updateDraftBadge();dismissModal();if(draftList().length)offerRecoveryAgain();};
+      discard.onclick=()=>confirmDraftRemoval(d.id);
       row.append(meta,restore,discard);target.append(row);
     });
-    target.append(confirmation('Not now',dismissModal));
+    const controls=document.createElement('div');
+    controls.className='sp1-actions';
+    const clear=document.createElement('button');clear.type='button';
+    clear.className='sp1-secondary sp1-danger-outline';clear.textContent='Clear All Drafts';
+    clear.disabled=!drafts.length;
+    clear.onclick=()=>confirmDraftRemoval(null);
+    const close=document.createElement('button');close.type='button';
+    close.className='sp1-primary';close.textContent='Close';
+    close.onclick=dismissModal;
+    controls.append(clear,close);target.append(controls);
   }
-  function offerRecoveryAgain(){restoreShown=false;offerRecovery();}
+  function offerRecoveryAgain(){restoreShown=false;offerRecovery(true);}
   function restoreDraft(id){
     const d=draftList().find(d=>d.id===id);
     if(!d)return showNotification('This draft is no longer available.', 'error');
@@ -368,7 +429,7 @@
     $('showroom-recent-btn').onclick=()=>openCollection('recent');
     $('showroom-compare-btn').onclick=openCompare;
     $('showroom-present-btn').onclick=presentation;
-    $('showroom-recovery-btn').onclick=()=>{restoreShown=false;offerRecovery();if(!draftList().length)showNotification('No unsaved drafts on this device.','info');};
+    $('showroom-recovery-btn').onclick=manageDrafts;
     updateToolbar();
   }
   function changedByInput(e){
@@ -391,7 +452,7 @@
   window.ShowroomPhase1=Object.freeze({
     init,scheduleDraft,savedSuccessfully,willLoadSaved,loadedSaved,
     decorateProductCard,recordViewed,compareRevisions,
-    showPresentation:presentation,showDraftRecovery:()=>{restoreShown=false;offerRecovery();}
+    showPresentation:presentation,showDraftRecovery:manageDrafts
   });
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
