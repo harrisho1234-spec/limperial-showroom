@@ -16,7 +16,20 @@
   const safeWrite=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){console.warn('[Showroom] Local draft storage unavailable:',e);return false}};
   const clone=value=>JSON.parse(JSON.stringify(value));
   let favorites=new Set((Array.isArray(safeRead(FAVORITES_KEY,[]))?safeRead(FAVORITES_KEY,[]):[]).map(String));
-  let recent=(Array.isArray(safeRead(RECENT_KEY,[]))?safeRead(RECENT_KEY,[]):[]).map(String);
+  // Older installs stored IDs only, without timestamps. Give those existing
+  // entries one 3-day transition period instead of silently deleting them.
+  function loadRecent(){
+    const raw=safeRead(RECENT_KEY,[]);
+    const now=new Date().toISOString();
+    const migrated=Array.isArray(raw)?raw.map(row=>{
+      if(typeof row==='string'||typeof row==='number')return {id:String(row),viewedAt:now};
+      return row;
+    }):[];
+    const fresh=core.freshRecentViews(migrated);
+    if(JSON.stringify(raw)!==JSON.stringify(fresh))safeWrite(RECENT_KEY,fresh);
+    return fresh;
+  }
+  let recent=loadRecent();
   let comparison=[];
   let ready=false,dirty=false,suppress=false,saveTimer=null,liveDraftId='',backupWarningShown=false,modal=null,restoreShown=false;
   const quoteField=key=>String($(key)?.value||'').trim();
@@ -262,8 +275,8 @@
     finally{suppress=false;}
   }
   function recordViewed(id){
-    const k=String(id||'');if(!k)return;
-    recent=[k,...recent.filter(x=>x!==k)].slice(0,24);
+    const k=String(id??'').trim();if(!k)return;
+    recent=core.freshRecentViews([{id:k,viewedAt:new Date().toISOString()},...loadRecent()]);
     safeWrite(RECENT_KEY,recent);
     updateToolbar();
   }
@@ -325,7 +338,8 @@
     return wrap;
   }
   function openCollection(which){
-    const ids=(which==='favorites'?[...favorites]:recent).filter(id=>!!displayProduct(id));
+    recent=loadRecent(); // Prune expired views whenever Recent is opened.
+    const ids=(which==='favorites'?[...favorites]:recent.map(entry=>entry.id)).filter(id=>!!displayProduct(id));
     const target=panel(which==='favorites'?'Favorite products':'Recently viewed','Open a product or add it to the interest list.');
     if(!ids.length){target.innerHTML='<p class="sp1-hint">Nothing saved here yet. Open a product or tap its heart to get started.</p>';return;}
     ids.forEach(id=>{
@@ -423,9 +437,13 @@
     body.append(disclaimer);
   }
   function updateToolbar(){
+    recent=loadRecent(); // The counter reflects only the last 72 hours.
     const fav=$('showroom-favorites-btn'),rec=$('showroom-recent-btn'),cmp=$('showroom-compare-btn');
     if(fav)fav.textContent='♡ Favorites ('+favorites.size+')';
-    if(rec)rec.textContent='↺ Recent ('+recent.length+')';
+    if(rec){
+      rec.textContent='↺ Recent ('+recent.length+')';
+      rec.title='Products viewed in the last 3 days';
+    }
     if(cmp){cmp.textContent='⇄ Compare ('+comparison.length+'/3)';cmp.disabled=comparison.length<2}
     updateDraftBadge();
   }
