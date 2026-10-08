@@ -1,10 +1,11 @@
 // Limperial Luxury Showroom Service Worker - V25 Clean Slate
-const CACHE_NAME = 'limperial-v4-theme-morph-2';
+const CACHE_NAME = 'limperial-v4-dark-polish-1';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
   './showroom-phase1.css?v=20261008-originaltheme1',
+  './showroom-dark-polish.css?v=20261008-darkpolish1',
   './showroom-phase1-core.js?v=20261008-setphotos1',
   './showroom-phase1.js?v=20261008-setphotos1',
   './showroom-readability.css?v=20261008-backgroundmorph1',
