@@ -27,6 +27,33 @@ test('customer presentation excludes costing and margin',()=>{
   assert.equal('margin' in item,false);
   assert.equal(item.stock,4);
 });
+test('saved furniture set presentation uses the same photo as the Showroom cart',()=>{
+  const core=loadCore();
+  const set={
+    id:'set-princess',type:'set',setName:'Princess Sofa Set',
+    setPrice:38900,setPhoto:'https://example.com/princess-sofa-set.jpg',
+    quantity:1,discount:0,customPrice:null,
+    items:[
+      {item:{code:'FUR-1',itemName:'Princess Sofa',imgLink:'https://example.com/sofa.jpg',costing:100},quantity:1},
+      {item:{code:'FUR-2',itemName:'Princess Chair',imgLink:'https://example.com/chair.jpg',margin:100},quantity:2}
+    ]
+  };
+  const presentation=core.presentationLine(set);
+  assert.equal(presentation.photo,set.setPhoto);
+  assert.equal(presentation.fallbackPhoto,'https://example.com/sofa.jpg');
+  assert.match(presentation.description,/Princess Sofa/);
+  assert.equal(presentation.net,38900);
+  assert.equal('costing' in presentation,false);
+  assert.equal('margin' in presentation,false);
+});
+test('bundled sets without dedicated photo use first component image',()=>{
+  const core=loadCore();
+  const bundle={id:'set-legacy',type:'set',setName:'Living Room Set',quantity:1,
+    items:[{item:{itemName:'Chair',imgLink:'https://example.com/chair.jpg'},quantity:1}]
+  };
+  assert.equal(core.presentationLine(bundle).photo,'https://example.com/chair.jpg');
+  assert.equal(core.presentationLine({...bundle,setPhoto:''}).photo,'https://example.com/chair.jpg');
+});
 test('autosave persists a draft and only confirmed save clears it',()=>{
   const browser={};
   vm.runInNewContext(source('showroom-phase1-core.js'),{window:browser});
