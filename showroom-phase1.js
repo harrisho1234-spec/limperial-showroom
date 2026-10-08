@@ -204,6 +204,7 @@
     const k=String(id||'');if(!k)return;
     recent=[k,...recent.filter(x=>x!==k)].slice(0,24);
     safeWrite(RECENT_KEY,recent);
+    updateToolbar();
   }
   function favorite(id){
     const k=String(id);
