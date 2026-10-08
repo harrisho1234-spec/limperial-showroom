@@ -208,7 +208,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
-    <link rel="stylesheet" href="showroom-readability.css?v=20261008-originaltheme1">
+    <link rel="stylesheet" href="showroom-readability.css?v=20261008-blackglass1">
     <link rel="stylesheet" href="showroom-phase1.css?v=20261008-originaltheme1">
 </head>
 <body class="bg-luxury-dark text-luxury-text font-sans min-h-screen lg:h-screen flex flex-col antialiased lg:overflow-hidden transition-colors duration-300">
@@ -5625,7 +5625,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261008-originaltheme1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261008-blackglass1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
