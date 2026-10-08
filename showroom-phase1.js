@@ -304,8 +304,12 @@
     const build=(label,icon,handler,active)=>{
       const b=document.createElement('button');b.type='button';
       b.className='sp1-card-button'+(active?' is-active':'');
-      b.title=label;b.setAttribute('aria-label',label);
-      b.innerHTML='<i class="fa-solid '+icon+'"></i>';
+      b.title=label;
+      b.setAttribute('aria-label',label);
+      b.setAttribute('aria-pressed',active?'true':'false');
+      // An outlined heart means not saved; filled heart + check means saved.
+      const iconStyle=icon==='fa-heart'&&!active?'fa-regular':'fa-solid';
+      b.innerHTML='<i class="'+iconStyle+' '+icon+'"></i>';
       b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();handler(id);});
       group.prepend(b);
     };
