@@ -306,11 +306,22 @@
     if(/^https:\/\//i.test(value)||/^data:image\/(png|jpeg|webp|gif);base64,/i.test(value)||/^blob:/i.test(value))return value;
     return '';
   }
-  function imageNode(src,alt){
+  function imageNode(src,alt,fallback=''){
     const wrap=document.createElement('div');wrap.className='sp1-product-image';
     const url=imgSrc(src);
-    if(url){const img=document.createElement('img');img.src=url;img.alt=alt||'';img.loading='lazy';img.onerror=()=>{img.remove();wrap.textContent='No photo'};wrap.append(img);}
-    else wrap.textContent='No photo';
+    const alternate=imgSrc(fallback);
+    const first=url||alternate;
+    if(first){
+      const img=document.createElement('img');
+      img.alt=alt||'';
+      img.loading='lazy';
+      img.onerror=()=>{
+        if(alternate&&img.src!==alternate){img.src=alternate;return;}
+        img.remove();wrap.textContent='No photo';
+      };
+      img.src=first;
+      wrap.append(img);
+    }else wrap.textContent='No photo';
     return wrap;
   }
   function openCollection(which){
@@ -360,7 +371,7 @@
     const gallery=document.createElement('div');gallery.className='sp1-presentation-grid';
     items.forEach(item=>{
       const card=document.createElement('article');card.className='sp1-presentation-card';
-      card.append(imageNode(item.photo,item.title));
+      card.append(imageNode(item.photo,item.title,item.fallbackPhoto));
       const info=document.createElement('div');info.className='sp1-presentation-info';
       const name=document.createElement('h3');name.textContent=item.title;
       const description=document.createElement('p');description.textContent=item.description||item.code;
