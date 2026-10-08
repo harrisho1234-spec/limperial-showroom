@@ -1,0 +1,105 @@
+/* Smarter ranked search, mobile selling bar, and management interest analytics.
+   Matches original luxury gold/navy/ivory styles and preserves existing controls. */
+.ss-suggestions {
+  position:absolute;z-index:77;top:calc(100% + 6px);left:0;right:0;
+  max-height:min(55vh,420px);overflow-y:auto;
+  border:1px solid rgba(223,178,108,.38);border-radius:14px;
+  background:var(--luxury-card);color:var(--luxury-text);
+  box-shadow:0 17px 45px rgba(0,0,0,.28);padding:4px;
+  scrollbar-width:thin;
+}
+.ss-suggestions[hidden] {display:none!important}
+.ss-suggestion {
+  display:flex;align-items:center;gap:10px;min-width:0;padding:9px;
+  border-radius:10px;cursor:pointer;border:1px solid transparent;
+}
+.ss-suggestion:hover,.ss-suggestion.is-highlighted,.ss-suggestion[aria-selected="true"] {
+  background:var(--luxury-accent);border-color:rgba(223,178,108,.30);
+}
+.ss-suggestion-photo {
+  flex:0 0 47px;width:47px;height:47px;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;border-radius:8px;background:var(--luxury-bg);color:var(--luxury-gold);
+}
+.ss-suggestion-photo img {width:100%;height:100%;object-fit:contain}
+.ss-suggestion-info {flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ss-suggestion-info strong {font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-suggestion-info small {font-size:10px;color:var(--luxury-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-suggestion-add {
+  flex-shrink:0;padding:8px 10px;border-radius:8px;border:1px solid rgba(223,178,108,.43);
+  background:var(--luxury-accent);color:var(--luxury-text);font-size:11px;font-weight:800;
+}
+.ss-suggestion-add:hover {background:#dfb26c;color:#111827}
+.ss-mobile-bar {display:none}
+@media(max-width:1023px) {
+  #ss-mobile-bar:not([hidden]) {
+    display:flex;align-items:center;gap:9px;
+    position:fixed;z-index:40;bottom:0;left:0;right:0;
+    background:rgba(11,18,32,.97);color:#f3ede2;
+    padding:8px max(10px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+    border-top:1px solid rgba(223,178,108,.42);
+    box-shadow:0 -10px 30px rgba(0,0,0,.22);
+    -webkit-backdrop-filter:blur(13px);backdrop-filter:blur(13px);
+  }
+  #ss-mobile-bar .ss-cart-main {flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .ss-cart-count {font-size:10px;color:#c9b89b}
+  #ss-cart-total {font-size:16px;font-weight:800;color:#dfb26c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ss-quick-qty {display:flex;align-items:center;gap:1px;background:#1b2a40;border:1px solid rgba(223,178,108,.25);border-radius:9px}
+  .ss-quick-qty[hidden]{display:none!important}
+  .ss-quick-qty button {width:31px;height:34px;color:#dfb26c;font-size:18px;font-weight:800}
+  .ss-quick-qty button:disabled{opacity:.32}
+  #ss-qty-number {min-width:20px;text-align:center;font-size:12px;font-weight:800}
+  .ss-bar-cart {height:38px;border-radius:10px;background:#dfb26c;color:#111827;font-size:12px;font-weight:800;padding:0 15px;white-space:nowrap}
+  .ss-bar-cart i {margin-right:4px}
+  body.ss-has-mobile-cart #mobile-cart-floating {display:none!important}
+  body.ss-has-mobile-cart #main-app {padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+}
+@media(min-width:1024px){#ss-mobile-bar{display:none!important}}
+@media(max-width:380px){
+  #ss-cart-total{font-size:14px}
+  .ss-quick-qty button{width:27px}
+  .ss-bar-cart{padding:0 10px}
+}
+
+/* Management-only dashboard shown above Showroom, never injected in quotes. */
+.sa-backdrop {
+  position:fixed;inset:0;z-index:110;background:rgba(7,10,17,.78);
+  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  display:flex;align-items:center;justify-content:center;padding:12px;
+}
+.sa-panel {
+  background:var(--luxury-card);border:1px solid rgba(223,178,108,.30);
+  color:var(--luxury-text);border-radius:18px;width:min(840px,100%);
+  max-height:90dvh;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 24px 65px rgba(0,0,0,.34);
+}
+.sa-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 19px;border-bottom:1px solid rgba(223,178,108,.2)}
+.sa-heading{font-family:"Playfair Display",serif;font-size:21px;color:var(--luxury-gold,#dfb26c);font-weight:700}
+.sa-caption{font-size:11px;color:var(--luxury-text-muted);margin:6px 0;line-height:1.6}
+.sa-close{font-size:20px;color:var(--luxury-text-soft);padding:5px 9px}
+.sa-content{padding:16px 19px;overflow-y:auto}
+.sa-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:13px}
+.sa-select,.sa-reload {
+  background:var(--luxury-bg);color:var(--luxury-text);border:1px solid rgba(223,178,108,.27);
+  border-radius:9px;padding:9px 10px;font-size:12px;
+}
+.sa-reload{color:var(--luxury-gold,#dfb26c);font-weight:800}
+.sa-list{display:flex;flex-direction:column;gap:8px}
+.sa-entry {
+  display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;
+  padding:11px 12px;border:1px solid rgba(223,178,108,.19);border-radius:12px;
+  background:var(--luxury-accent);
+}
+.sa-rank{font-family:"Playfair Display",serif;font-weight:800;color:var(--luxury-gold,#dfb26c);font-size:18px}
+.sa-product{min-width:0;display:flex;flex-direction:column;gap:3px}
+.sa-product strong{font-size:13px;overflow-wrap:anywhere}
+.sa-product small{font-size:11px;color:var(--luxury-text-muted)}
+.sa-numbers{display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap}
+.sa-numbers strong{font-size:18px;color:var(--luxury-gold,#dfb26c)}
+.sa-numbers small{font-size:10px;color:var(--luxury-text-muted)}
+.sa-entry-details{grid-column:2/4}
+.sa-meter{height:5px;background:rgba(223,178,108,.13);border-radius:99px;overflow:hidden}
+.sa-meter-fill{height:100%;background:#dfb26c;border-radius:99px}
+.sa-metrics{font-size:10px;color:var(--luxury-text-muted);margin-top:5px;line-height:1.5}
+.sa-empty,.sa-note{font-size:12px;line-height:1.7;color:var(--luxury-text-muted);padding:12px}
+.sa-note{margin-top:10px}
+@media(max-width:550px){.sa-top{padding:13px}.sa-content{padding:11px}.sa-heading{font-size:18px}}
