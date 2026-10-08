@@ -73,5 +73,17 @@
       quantity:raw.quantity,unitPrice:raw.unitPrice,discount:raw.discount,net:raw.net,
       description,photo,stock:isSet?null:(Number.isFinite(Number(item.qty))?Number(item.qty):null)};
   }
-  root.ShowroomPhase1Core=Object.freeze({line,lines,compare,presentationLine,money,round});
+  const DRAFT_RETENTION_MS=7*24*60*60*1000;
+  // An autosave updates savedAt; expired means no edits for seven full days.
+  // This operates only on unsaved local snapshots, never official quotations.
+  function freshDrafts(rows,now=Date.now()){
+    if(!Array.isArray(rows))return [];
+    return rows.filter(x=>{
+      if(!x||x.version!==1||typeof x.id!=='string'||!x.id.trim()||!x.data||
+         typeof x.data!=='object'||typeof x.savedAt!=='string')return false;
+      const lastEdit=Date.parse(x.savedAt);
+      return Number.isFinite(lastEdit)&&now-lastEdit<DRAFT_RETENTION_MS;
+    });
+  }
+  root.ShowroomPhase1Core=Object.freeze({line,lines,compare,presentationLine,money,round,freshDrafts,DRAFT_RETENTION_MS});
 })(window);
