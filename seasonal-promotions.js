@@ -21,13 +21,16 @@
   let campaigns=[],authorized=false,editId=null,chosen=new Map(),searchQuery='',showingAll=false;
   let loading=false, managerVisible=false, managerSection='campaigns', lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='', pendingManagerEnable=false;
   let pendingBackgroundFile=null, pendingBackgroundPreviewUrl='', pendingBackgroundMeta='', removeBackground=false;
+  let pendingBackgroundDarkFile=null, pendingBackgroundDarkPreviewUrl='', pendingBackgroundDarkMeta='', removeBackgroundDark=false;
   let editorBackgroundPath='', editorBackgroundName='', editorBackgroundUpdatedAt=null;
+  let editorBackgroundDarkPath='', editorBackgroundDarkName='', editorBackgroundDarkUpdatedAt=null;
   let defaultBackground=null;
   let defaultBackgroundFile=null, defaultBackgroundPreviewUrl='', defaultBackgroundMeta='', removeDefaultBackground=false;
+  let defaultBackgroundDarkFile=null, defaultBackgroundDarkPreviewUrl='', defaultBackgroundDarkMeta='', removeDefaultBackgroundDark=false;
   const rules=window.SeasonalCore;
   const themePresets=()=>window.SEASONAL_THEME_PRESETS||{};
   let live=new Map(), liveDay='', activeThemeKey='', resizeTimer=null;
-  let backdropProbeKey='', backdropProbeSerial=0;
+  let backdropProbeKey='', backdropProbeSerial=0, backgroundSwitchToken=0;
   function featuredMap(){
     if(liveDay!==today()){liveDay=today();live=rules.index(campaigns,liveDay);}
     return live;
@@ -40,34 +43,31 @@
   }
   function backgroundForCampaign(c){
     if(!c)return null;
-    if(c.custom_background_path){
-      const url=storagePublicUrl(c.custom_background_path);
-      if(url)return {
-        label:c.custom_background_name||'Custom Background',
-        backgroundDesktop:url,
-        backgroundMobile:url,
-        overlay:'rgba(28,20,12,0.08)',
-        custom:true
-      };
-    }
+    const light=c.custom_background_path?storagePublicUrl(c.custom_background_path):'';
+    const dark=c.custom_background_dark_path?storagePublicUrl(c.custom_background_dark_path):'';
+    if(light||dark)return {
+      label:c.custom_background_name||c.custom_background_dark_name||'Custom Background',
+      backgroundDesktop:light||dark,backgroundMobile:light||dark,
+      backgroundDesktopDark:dark||light,backgroundMobileDark:dark||light,
+      overlay:'rgba(28,20,12,0.08)',custom:true
+    };
     const preset=themePresets()[c.theme_preset];
     return preset?{...preset,custom:false}:null;
   }
   function backgroundForDefault(){
-    if(!defaultBackground?.custom_background_path)return null;
-    const url=storagePublicUrl(defaultBackground.custom_background_path);
-    if(!url)return null;
+    if(!defaultBackground)return null;
+    const light=defaultBackground.custom_background_path?storagePublicUrl(defaultBackground.custom_background_path):'';
+    const dark=defaultBackground.custom_background_dark_path?storagePublicUrl(defaultBackground.custom_background_dark_path):'';
+    if(!light&&!dark)return null;
     return {
-      label:defaultBackground.custom_background_name||'Default Showroom Background',
-      backgroundDesktop:url,
-      backgroundMobile:url,
-      overlay:'rgba(28,20,12,0.08)',
-      custom:true,
-      isDefault:true
+      label:defaultBackground.custom_background_name||defaultBackground.custom_background_dark_name||'Default Showroom Background',
+      backgroundDesktop:light||dark,backgroundMobile:light||dark,
+      backgroundDesktopDark:dark||light,backgroundMobileDark:dark||light,
+      overlay:'rgba(28,20,12,0.08)',custom:true,isDefault:true
     };
   }
   function themedCampaign(){
-    return current().find(c=>c.custom_background_path||(c.theme_preset&&themePresets()[c.theme_preset]))||null;
+    return current().find(c=>c.custom_background_path||c.custom_background_dark_path||(c.theme_preset&&themePresets()[c.theme_preset]))||null;
   }
   function ensureThemeLayer(){
     let layer=ui('seasonal-theme-background');
@@ -75,7 +75,8 @@
     layer=document.createElement('div');
     layer.id='seasonal-theme-background';
     layer.setAttribute('aria-hidden','true');
-    layer.innerHTML='<img id="seasonal-theme-background-image" alt="" decoding="async"><div class="seasonal-theme-overlay"></div>';
+    // Two image layers crossfade only after the replacement artwork has loaded.
+    layer.innerHTML='<img id="seasonal-theme-background-image" alt="" decoding="async"><img id="seasonal-theme-background-image-alt" alt="" decoding="async"><div class="seasonal-theme-overlay"></div>';
     document.body.prepend(layer);
     return layer;
   }
@@ -128,51 +129,64 @@
   }
   function applyTheme(){
     const campaign=themedCampaign();
-    const campaignPreset=backgroundForCampaign(campaign);
-    const preset=campaignPreset||backgroundForDefault();
+    const preset=backgroundForCampaign(campaign)||backgroundForDefault();
     const root=document.documentElement,body=document.body;
     if(!root||!body)return;
     const layer=ensureThemeLayer();
-    const image=ui('seasonal-theme-background-image');
+    const images=[ui('seasonal-theme-background-image'),ui('seasonal-theme-background-image-alt')].filter(Boolean);
     if(!preset){
+      ++backgroundSwitchToken;
       root.style.removeProperty('--seasonal-overlay');
       body.classList.remove('seasonal-theme-active');
       delete body.dataset.showroomBackdropTone;
-      backdropProbeSerial++;
-      backdropProbeKey='';
+      backdropProbeSerial++;backdropProbeKey='';
       layer.classList.remove('is-active');
-      if(image)image.removeAttribute('src');
+      images.forEach(img=>{img.classList.remove('is-current');img.onload=null;img.onerror=null;img.removeAttribute('src');});
       delete body.dataset.seasonalTheme;
       delete body.dataset.seasonalCampaign;
       activeThemeKey='';
       return;
     }
     const mobile=window.innerWidth<768;
-    const asset=(mobile&&preset.backgroundMobile)||preset.backgroundDesktop||preset.backgroundMobile;
-    if(!asset||!image)return;
+    const dark=body.classList.contains('theme-dark');
+    const asset=dark
+      ?((mobile&&preset.backgroundMobileDark)||preset.backgroundDesktopDark||(mobile&&preset.backgroundMobile)||preset.backgroundDesktop||preset.backgroundMobile)
+      :((mobile&&preset.backgroundMobile)||preset.backgroundDesktop||preset.backgroundMobile);
+    if(!asset||!images.length)return;
     const resolved=String(asset).startsWith('data:')?String(asset):new URL(asset,document.baseURI).href;
     root.style.setProperty('--seasonal-overlay',preset.overlay||'rgba(12,18,24,0.30)');
     body.classList.add('seasonal-theme-active');
     const probeKey=resolved+'|'+(mobile?'mobile':'desktop');
-    if(backdropProbeKey!==probeKey){
-      backdropProbeKey=probeKey;
-      sampleBackdropTone(resolved,mobile);
-    }
-    if(image.src!==resolved){
-      image.onload=()=>layer.classList.add('is-active');
-      image.onerror=()=>{layer.classList.remove('is-active');console.warn('[Seasonal promotions] Theme artwork failed to load:',resolved);};
-      image.src=resolved;
-    }else if(image.complete&&image.naturalWidth){
-      layer.classList.add('is-active');
+    if(backdropProbeKey!==probeKey){backdropProbeKey=probeKey;sampleBackdropTone(resolved,mobile);}
+    const showing=images.find(img=>img.classList.contains('is-current'));
+    if(showing?.src===resolved){
+      if(showing.complete&&showing.naturalWidth)layer.classList.add('is-active');
+    }else{
+      const next=images.find(img=>img!==showing)||images[0];
+      const requestId=++backgroundSwitchToken;
+      const commit=()=>{
+        if(requestId!==backgroundSwitchToken)return;
+        next.classList.add('is-current');
+        images.forEach(img=>{if(img!==next)img.classList.remove('is-current');});
+        layer.classList.add('is-active');
+      };
+      next.onload=commit;
+      next.onerror=()=>{
+        if(requestId!==backgroundSwitchToken)return;
+        if(!showing)layer.classList.remove('is-active');
+        console.warn('[Seasonal promotions] Theme artwork failed to load:',resolved);
+      };
+      if(next.src===resolved&&next.complete&&next.naturalWidth)commit();
+      else next.src=resolved;
     }
     if(campaign){
-      body.dataset.seasonalTheme=campaign.custom_background_path?'custom':(campaign.theme_preset||'');
+      body.dataset.seasonalTheme=campaign.custom_background_path||campaign.custom_background_dark_path?'custom':(campaign.theme_preset||'');
       body.dataset.seasonalCampaign=campaign.name||'';
-      activeThemeKey=campaign.custom_background_path||campaign.theme_preset||'';
+      activeThemeKey=campaign.custom_background_path||campaign.custom_background_dark_path||campaign.theme_preset||'';
     }else{
       body.dataset.seasonalTheme='default-custom';
       body.dataset.seasonalCampaign='';
-      activeThemeKey=defaultBackground?.custom_background_path||'';
+      activeThemeKey=defaultBackground?.custom_background_path||defaultBackground?.custom_background_dark_path||'';
     }
   }
   const redraw=()=>{applyTheme();renderBanner();if(typeof executeSearchFilter==='function')executeSearchFilter();};
@@ -241,8 +255,8 @@
     loading=true;
     try{
       const [campaignResult,defaultResult]=await Promise.all([
-        client.from(TABLE).select('id,name,badge,start_date,end_date,is_enabled,discount_percent,theme_preset,custom_background_path,custom_background_name,custom_background_updated_at,items,created_at,updated_at').order('start_date',{ascending:false}),
-        client.from(DEFAULT_BG_TABLE).select('id,custom_background_path,custom_background_name,custom_background_updated_at,updated_at').eq('id','default').maybeSingle()
+        client.from(TABLE).select('id,name,badge,start_date,end_date,is_enabled,discount_percent,theme_preset,custom_background_path,custom_background_name,custom_background_updated_at,custom_background_dark_path,custom_background_dark_name,custom_background_dark_updated_at,items,created_at,updated_at').order('start_date',{ascending:false}),
+        client.from(DEFAULT_BG_TABLE).select('id,custom_background_path,custom_background_name,custom_background_updated_at,custom_background_dark_path,custom_background_dark_name,custom_background_dark_updated_at,updated_at').eq('id','default').maybeSingle()
       ]);
       if(campaignResult.error)throw campaignResult.error;
       if(defaultResult.error)throw defaultResult.error;
@@ -942,6 +956,7 @@
   }
   window.SeasonalPromos={refresh,catalogUpdated:renderBanner,view,reset:()=>{showingAll=false;renderBanner();},setManagerMode,
     afterAddToCart,isFeatured, get showingAll(){return showingAll;},openManager,
+    themeChanged:applyTheme,
     openBackgroundManager:()=>openManager('background'),handleManagementToggle,requestManagementAccess,checkManagementPermission,syncManagementControlVisibility};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
   else bind();
