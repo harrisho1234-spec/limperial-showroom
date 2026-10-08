@@ -15,8 +15,8 @@
   const safeRead=(key,otherwise)=>{try{return safeJson(localStorage.getItem(key),otherwise)}catch(_){return otherwise}};
   const safeWrite=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){console.warn('[Showroom] Local draft storage unavailable:',e);return false}};
   const clone=value=>JSON.parse(JSON.stringify(value));
-  let favorites=new Set((safeRead(FAVORITES_KEY,[])||[]).map(String));
-  let recent=(safeRead(RECENT_KEY,[])||[]).map(String);
+  let favorites=new Set((Array.isArray(safeRead(FAVORITES_KEY,[]))?safeRead(FAVORITES_KEY,[]):[]).map(String));
+  let recent=(Array.isArray(safeRead(RECENT_KEY,[]))?safeRead(RECENT_KEY,[]):[]).map(String);
   let comparison=[];
   let ready=false,dirty=false,suppress=false,saveTimer=null,liveDraftId='',backupWarningShown=false,modal=null,restoreShown=false;
   const quoteField=key=>String($(key)?.value||'').trim();
