@@ -10,7 +10,7 @@
   --sr-control-ink: var(--sr-gold-ink);
   --sr-control-hover: var(--luxury-lightbg);
   --sr-control-border: rgba(169, 117, 48, .28);
-  --sr-chrome: rgba(9, 12, 18, .95);
+  --sr-chrome: rgba(0, 0, 0, .84); /* softly transparent black header */
   --sr-chrome-ink: #f8fafc;
   --sr-chrome-muted: #d2d6dd;
   --sr-chrome-accent: #dfb26c;
