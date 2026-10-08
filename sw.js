@@ -1,5 +1,5 @@
 // Limperial Luxury Showroom Service Worker - V25 Clean Slate
-const CACHE_NAME = 'limperial-v4-split-managers-1';
+const CACHE_NAME = 'limperial-v4-account-management-permission-1';
 
 const STATIC_ASSETS = [
   './',
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   './promotion-config.js?v=20261007-theme6',
   './quotation-registry.js?v=20261007-revisionhistory1',
   './seasonal-core.js?v=20261007-theme6',
-  './seasonal-promotions.js?v=20261008-splitmanagers1',
+  './seasonal-promotions.js?v=20261008-accountpermissions1',
   './assets/seasonal/international-new-year.webp',
   './assets/seasonal/chinese-new-year.webp',
   './assets/seasonal/khmer-new-year.webp',
