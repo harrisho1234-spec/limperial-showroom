@@ -263,6 +263,133 @@
     authorized=true;await refresh();renderManager();
     }catch(e){renderLogin('Sign-in could not complete. Please try again.');}
   }
+  function revokeDefaultBackgroundPreview(){
+    if(defaultBackgroundPreviewUrl){URL.revokeObjectURL(defaultBackgroundPreviewUrl);defaultBackgroundPreviewUrl='';}
+  }
+  function resetDefaultBackgroundDraft(){
+    revokeDefaultBackgroundPreview();
+    defaultBackgroundFile=null;
+    defaultBackgroundMeta='';
+    removeDefaultBackground=false;
+  }
+  function currentDefaultBackgroundPreview(){
+    if(defaultBackgroundPreviewUrl)return defaultBackgroundPreviewUrl;
+    if(!removeDefaultBackground&&defaultBackground?.custom_background_path)return storagePublicUrl(defaultBackground.custom_background_path);
+    return '';
+  }
+  function defaultBackgroundCard(){
+    return '<div class="rounded-xl border border-luxury-gold/25 bg-luxury-accent/20 p-4 space-y-3">'+
+      '<div class="flex flex-wrap items-start justify-between gap-3"><div><div class="font-serif text-luxury-gold font-bold text-base">Default Showroom Background</div>'+
+      '<div class="text-[10px] text-luxury-muted mt-1">Used whenever no active seasonal campaign has its own background. Seasonal campaign artwork temporarily overrides this image.</div></div>'+
+      '<button type="button" id="sp-default-background-remove" class="hidden px-3 py-2 rounded-lg border border-red-400/30 text-red-500 text-[10px] font-bold">Remove Background</button></div>'+
+      '<div id="sp-default-background-preview"></div>'+
+      '<div class="rounded-lg border border-luxury-gold/15 bg-luxury-card/60 p-3 space-y-2">'+
+      '<input id="sp-default-background-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="block w-full text-xs text-luxury-muted file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-950 cursor-pointer">'+
+      '<div class="text-[10px] text-luxury-muted">Recommended: 2560 × 1440 (16:9). Minimum: 1920 × 1080. JPG, PNG, WebP or animated GIF, maximum 8 MB.</div>'+
+      '<div id="sp-default-background-status" class="text-[10px] text-luxury-muted"></div>'+
+      '<div class="flex justify-end"><button type="button" id="sp-default-background-save" class="px-4 py-2.5 bg-luxury-gold text-slate-950 rounded-lg text-xs font-bold">Save Default Background</button></div></div></div>';
+  }
+  function updateDefaultBackgroundUI(){
+    const preview=ui('sp-default-background-preview');
+    const status=ui('sp-default-background-status');
+    const removeBtn=ui('sp-default-background-remove');
+    const saveBtn=ui('sp-default-background-save');
+    const image=currentDefaultBackgroundPreview();
+    if(preview){
+      preview.innerHTML=image
+        ? '<div class="relative h-32 sm:h-44 overflow-hidden rounded-xl border border-luxury-gold/25 bg-luxury-dark"><img src="'+escapeHtml(image)+'" alt="" class="absolute inset-0 w-full h-full object-cover object-center"><div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white"><div class="text-[10px] uppercase tracking-widest font-bold">Default Showroom Background</div><div class="text-[9px] opacity-85 mt-0.5">'+escapeHtml(defaultBackgroundFile?.name||defaultBackground?.custom_background_name||'Uploaded background')+'</div></div></div>'
+        : '<div class="rounded-xl border border-luxury-gold/10 bg-luxury-dark/30 px-4 py-6 text-center text-[10px] text-luxury-muted">No custom default background. The normal L\'Imperial showroom background will be used when there is no seasonal override.</div>';
+    }
+    if(status){
+      if(defaultBackgroundFile)status.innerHTML='<span class="text-luxury-gold font-semibold">Ready to upload:</span> '+escapeHtml(defaultBackgroundFile.name)+(defaultBackgroundMeta?' · '+escapeHtml(defaultBackgroundMeta):'');
+      else if(removeDefaultBackground)status.innerHTML='<span class="text-red-500 font-semibold">Background will be removed when you save.</span>';
+      else if(defaultBackground?.custom_background_path)status.innerHTML='<span class="text-luxury-gold font-semibold">Current default image:</span> '+escapeHtml(defaultBackground.custom_background_name||'Uploaded background');
+      else status.textContent='No custom default image saved yet.';
+    }
+    if(removeBtn)removeBtn.classList.toggle('hidden',!image&&!defaultBackground?.custom_background_path);
+    if(saveBtn)saveBtn.disabled=!defaultBackgroundFile&&!removeDefaultBackground;
+  }
+  async function handleDefaultBackgroundFile(event){
+    const input=event.currentTarget,file=input?.files?.[0];
+    if(!file)return;
+    if(!BACKGROUND_TYPES.has(file.type)){
+      notify('Use a JPG, PNG, WebP or GIF background image.','error');input.value='';return;
+    }
+    if(file.size>MAX_BACKGROUND_BYTES){
+      notify('Background image is larger than 8 MB. Please export a smaller file.','error');input.value='';return;
+    }
+    let dims;
+    try{dims=await imageDimensions(file);}catch(e){notify('The selected image could not be opened.','error');input.value='';return;}
+    if(dims.width<MIN_BACKGROUND_WIDTH||dims.height<MIN_BACKGROUND_HEIGHT){
+      notify('Background is '+dims.width+' × '+dims.height+'. Please use at least 1920 × 1080 to avoid pixelation.','error');input.value='';return;
+    }
+    revokeDefaultBackgroundPreview();
+    defaultBackgroundFile=file;
+    defaultBackgroundMeta=dims.width+' × '+dims.height+' · '+(file.size/1048576).toFixed(1)+' MB';
+    removeDefaultBackground=false;
+    defaultBackgroundPreviewUrl=URL.createObjectURL(file);
+    updateDefaultBackgroundUI();
+  }
+  function removeDefaultBackgroundImage(){
+    revokeDefaultBackgroundPreview();
+    defaultBackgroundFile=null;
+    defaultBackgroundMeta='';
+    removeDefaultBackground=true;
+    const input=ui('sp-default-background-file');if(input)input.value='';
+    updateDefaultBackgroundUI();
+  }
+  async function uploadDefaultBackgroundFile(file){
+    const {data:userData,error:userError}=await client.auth.getUser();
+    const user=userData?.user;
+    if(userError||!user)throw new Error(userError?.message||'Please sign in again before uploading.');
+    const token=globalThis.crypto?.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36);
+    const path='defaults/'+user.id+'/'+Date.now()+'-showroom-default-'+token+'.'+backgroundExtension(file);
+    const {error}=await client.storage.from(BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
+    if(error)throw error;
+    return path;
+  }
+  async function saveDefaultBackground(){
+    if(!authorized)return;
+    if(!defaultBackgroundFile&&!removeDefaultBackground)return;
+    const btn=ui('sp-default-background-save');
+    if(btn){btn.disabled=true;btn.textContent=defaultBackgroundFile?'Uploading…':'Saving…';}
+    const oldPath=defaultBackground?.custom_background_path||'';
+    let uploadedPath='';
+    try{
+      let nextPath=removeDefaultBackground?null:(defaultBackground?.custom_background_path||null);
+      let nextName=removeDefaultBackground?null:(defaultBackground?.custom_background_name||null);
+      let nextUpdated=removeDefaultBackground?null:(defaultBackground?.custom_background_updated_at||null);
+      if(defaultBackgroundFile){
+        uploadedPath=await uploadDefaultBackgroundFile(defaultBackgroundFile);
+        nextPath=uploadedPath;
+        nextName=defaultBackgroundFile.name.slice(0,255);
+        nextUpdated=new Date().toISOString();
+      }
+      const {data:userData}=await client.auth.getUser();
+      const payload={
+        custom_background_path:nextPath,
+        custom_background_name:nextName,
+        custom_background_updated_at:nextUpdated,
+        updated_at:new Date().toISOString(),
+        updated_by:userData?.user?.id||null
+      };
+      const {data,error}=await client.from(DEFAULT_BG_TABLE).update(payload).eq('id','default').select('id,custom_background_path,custom_background_name,custom_background_updated_at,updated_at').single();
+      if(error)throw error;
+      defaultBackground=data||{id:'default',...payload};
+      if(oldPath&&oldPath!==nextPath)await deleteBackgroundFile(oldPath);
+      resetDefaultBackgroundDraft();
+      applyTheme();
+      updateDefaultBackgroundUI();
+      notify(nextPath?'Default showroom background saved.':'Default showroom background removed.','success');
+    }catch(error){
+      if(uploadedPath)await deleteBackgroundFile(uploadedPath);
+      notify('Default background was not saved: '+(error?.message||'Unknown error.'),'error');
+      updateDefaultBackgroundUI();
+    }finally{
+      if(btn){btn.textContent='Save Default Background';btn.disabled=!defaultBackgroundFile&&!removeDefaultBackground;}
+    }
+  }
+
   function campaignRow(c){
     const status=campaignState(c);
     const theme=themePresets()[c.theme_preset];
