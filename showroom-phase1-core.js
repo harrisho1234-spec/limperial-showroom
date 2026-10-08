@@ -67,11 +67,22 @@
     const raw=line(cartItem,index);
     const c=cartItem||{}, item=c.item||{};
     const isSet=c.type==='set';
-    const photo=String(isSet?(c.photoUrl||c.setPhotoUrl||item.imgLink||''):(item.imgLink||item.imageUrl||'')).trim();
-    const description=String(isSet?(c.setDescription||''):(item.description||'')).trim();
+    // Created sets use setPhoto in the cart, not photoUrl/setPhotoUrl.
+    // Also support older sets and ad-hoc bundles that have component photos only.
+    const componentPhotos=(Array.isArray(c.items)?c.items:[])
+      .map(part=>String(part?.item?.imgLink||part?.item?.imageUrl||'').trim())
+      .filter(Boolean);
+    const photo=String(isSet
+      ? (c.setPhoto||c.photoUrl||c.setPhotoUrl||item.imgLink||c.imgLink||componentPhotos[0]||'')
+      : (item.imgLink||item.imageUrl||'')).trim();
+    const fallbackPhoto=isSet?(componentPhotos.find(url=>url!==photo)||''):'';
+    const components=isSet?(Array.isArray(c.items)?c.items:[])
+      .map(part=>part?.item?.itemName||part?.item?.name||'')
+      .filter(Boolean).join(' · '):'';
+    const description=String(isSet?(c.setDescription||components||''):(item.description||'')).trim();
     return {key:raw.key,title:raw.title,code:raw.code,
       quantity:raw.quantity,unitPrice:raw.unitPrice,discount:raw.discount,net:raw.net,
-      description,photo,stock:isSet?null:(Number.isFinite(Number(item.qty))?Number(item.qty):null)};
+      description,photo,fallbackPhoto,stock:isSet?null:(Number.isFinite(Number(item.qty))?Number(item.qty):null)};
   }
   const DRAFT_RETENTION_MS=7*24*60*60*1000;
   // An autosave updates savedAt; expired means no edits for seven full days.
