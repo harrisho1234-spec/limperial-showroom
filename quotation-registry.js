@@ -61,5 +61,26 @@
     return true;
   }
 
-  window.QuotationRegistry=Object.freeze({register,confirm,listSalespeople});
+  // Revisions are read with the Sales & Order Management user session (RLS);
+  // public quotation-numbering RPCs continue to use the existing anonymous client.
+  const historyClient=window.supabase?.createClient && api.SUPABASE_URL && api.SUPABASE_PUBLISHABLE_KEY
+    ? window.supabase.createClient(api.SUPABASE_URL,api.SUPABASE_PUBLISHABLE_KEY,{
+        auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}
+      })
+    : null;
+
+  async function listRevisions(recordId){
+    const sourceId=String(recordId||'').trim();
+    if(!sourceId||!historyClient)return [];
+    const {data:sessionData,error:sessionError}=await historyClient.auth.getUser();
+    if(sessionError||!sessionData?.user)return [];
+    const {data,error}=await historyClient.from('showroom_quotation_revisions')
+      .select('revision_no,source_name,saved_at,source_payload,quote_no')
+      .eq('source_record_id',sourceId)
+      .order('revision_no',{ascending:true});
+    if(error)throw error;
+    return Array.isArray(data)?data:[];
+  }
+
+  window.QuotationRegistry=Object.freeze({register,confirm,listSalespeople,listRevisions});
 })();
