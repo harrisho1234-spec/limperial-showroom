@@ -1,0 +1,186 @@
+/* Limperial Showroom V4 — compact mobile catalog controls.
+ * Only layout/presentation changes. The same filter IDs, event handlers,
+ * price calculations and saved quotation workflows are preserved. */
+
+/* Mobile/tablet: use the page as the *only* vertical scroll container.
+   The previous nested product scrollbar left the tall filter card in place,
+   and the swipe-up helper turned it into a fixed full-height overlay. */
+@media (max-width: 1023px) {
+  #main-app,
+  #main-app > main,
+  #main-app > main > section {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  #main-app > main > section {
+    flex: 1 1 auto !important;
+  }
+  #product-scroll-container {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overscroll-behavior: auto;
+  }
+  #catalog-controls-panel {
+    position: static !important;
+    inset: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    animation: none !important;
+    z-index: auto !important;
+  }
+  /* Header stays a *small* sticky header; no large floating filter box. */
+  #main-app > header {
+    position: sticky !important;
+    top: 0 !important;
+  }
+}
+
+/* Phones: search and shortcuts first, all full filters behind one button. */
+@media (max-width: 767px) {
+  #catalog-controls-panel {
+    padding: 12px !important;
+    margin-bottom: 12px !important;
+    border-radius: 15px !important;
+  }
+  #catalog-controls-panel #search-input {
+    height: 42px !important;
+    font-size: 13px !important;
+  }
+  #mobile-filter-trigger {
+    display: flex !important;
+    width: 100%;
+    min-height: 35px;
+    padding: 7px 11px;
+    margin-top: 8px !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(223,178,108,.25);
+    background: var(--luxury-accent);
+    color: var(--luxury-text);
+    font-size: 12px;
+    font-weight: 700;
+    transition: background .16s,border-color .16s;
+  }
+  #mobile-filter-trigger:hover {
+    background: var(--luxury-lightbg);
+    border-color: rgba(223,178,108,.46);
+  }
+  #mobile-filter-trigger[aria-expanded="true"] {
+    border-color: rgba(223,178,108,.52);
+  }
+  #mobile-filter-count {
+    display: none;
+    background: #dfb26c;
+    color: #111827;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 18px;
+    text-align: center;
+  }
+  #mobile-filter-count:not(:empty) {
+    display: inline-block;
+  }
+  #mobile-advanced-filters {
+    display: none !important;
+    margin-top: 10px !important;
+    padding-top: 11px;
+    border-top: 1px solid rgba(223,178,108,.19);
+  }
+  body.mobile-filters-open #mobile-advanced-filters {
+    display: block !important;
+  }
+  #mobile-advanced-filters > :first-child {
+    margin-top: 0;
+  }
+  #mobile-advanced-filters .grid.grid-cols-2 {
+    gap: 10px !important;
+  }
+  #mobile-advanced-filters .grid.grid-cols-2 > div {
+    min-width: 0;
+  }
+  #mobile-advanced-filters select {
+    height: 38px !important;
+  }
+  #mobile-advanced-filters .mobile-filter-done {
+    display: flex !important;
+    width: 100%;
+    margin-top: 12px;
+    min-height: 37px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 10px;
+    background: #dfb26c;
+    color: #151719;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  /* One horizontally scrollable row instead of the three stacked
+     shortcut rows visible in the screenshot. Every action stays available. */
+  #catalog-controls-panel #showroom-phase1-tools {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    margin-top: 9px !important;
+    padding-top: 9px !important;
+    padding-bottom: 3px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    align-items: center;
+    scroll-snap-type: x proximity;
+  }
+  #catalog-controls-panel #showroom-phase1-tools .sp1-toolbar-group {
+    display: flex !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+  }
+  #catalog-controls-panel #showroom-phase1-tools .sp1-tool-btn {
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+  #catalog-controls-panel #showroom-phase1-tools .sp1-draft-status {
+    display: none !important;
+  }
+  /* The existing mobile Grid/List and export controls move into the
+     expanded filter section without losing their event handlers. */
+  #mobile-advanced-filters > .sm\:hidden {
+    margin: 12px 0 0 !important;
+  }
+  #mobile-advanced-filters > .sm\:hidden > span {
+    font-size: 10px;
+  }
+}
+
+/* At tablet/desktop sizes keep filters always visible as before. */
+@media (min-width: 768px) {
+  #mobile-filter-trigger,
+  .mobile-filter-done {
+    display: none !important;
+  }
+  #mobile-advanced-filters {
+    display: block !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #mobile-filter-trigger { transition: none !important; }
+}
