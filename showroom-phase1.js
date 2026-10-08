@@ -443,12 +443,19 @@
   function updateToolbar(){
     recent=loadRecent(); // The counter reflects only the last 72 hours.
     const fav=$('showroom-favorites-btn'),rec=$('showroom-recent-btn'),cmp=$('showroom-compare-btn');
-    if(fav)fav.textContent='♡ Favorites ('+favorites.size+')';
+    if(fav){
+      fav.textContent='♡ Favorites ('+favorites.size+')';
+      fav.dataset.hasSelection=favorites.size>0?'true':'false';
+    }
     if(rec){
       rec.textContent='↺ Recent ('+recent.length+')';
       rec.title='Products viewed in the last 3 days';
     }
-    if(cmp){cmp.textContent='⇄ Compare ('+comparison.length+'/3)';cmp.disabled=comparison.length<2}
+    if(cmp){
+      cmp.textContent='⇄ Compare ('+comparison.length+'/3)';
+      cmp.disabled=comparison.length<2;
+      cmp.dataset.hasSelection=comparison.length>0?'true':'false';
+    }
     updateDraftBadge();
   }
   function buildToolbar(){
