@@ -1,0 +1,150 @@
+/* Phase 1 improvements — clean, understated L'Imperial showroom controls. */
+#showroom-phase1-tools {
+  border-top: 1px solid rgba(115,105,90,.16);
+  padding-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 9px;
+}
+.sp1-toolbar-group {display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+#catalog-controls-panel .sp1-tool-btn {
+  border: 1px solid rgba(111,99,80,.22) !important;
+  border-radius: 10px;
+  padding: 8px 10px;
+  min-height: 34px;
+  background:var(--luxury-card) !important;
+  color:var(--luxury-text) !important;
+  font-size:11px;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background .18s,transform .18s;
+}
+#catalog-controls-panel .sp1-tool-btn:hover {background:var(--luxury-accent) !important;transform:translateY(-1px)}
+#catalog-controls-panel .sp1-tool-btn:disabled {opacity:.45;cursor:not-allowed;transform:none}
+#catalog-controls-panel .sp1-tool-feature {
+  background:#292724 !important;
+  color:#fff8eb !important;
+  border-color:#292724 !important;
+}
+#catalog-controls-panel .sp1-tool-feature:hover {background:#443d36 !important;color:#fff8eb !important}
+body.theme-dark #catalog-controls-panel .sp1-tool-feature {
+  background:#e5c28a !important;color:#22201d !important;border-color:#e5c28a !important;
+}
+.sp1-draft-status {font-size:10px;color:var(--luxury-text-muted);font-weight:650;padding-left:3px}
+.sp1-draft-status[data-status="unsaved"] {color:#a26820}
+.sp1-draft-status[data-status="available"] {color:#82632d}
+#product-grid .sp1-card-button {
+  border:1px solid rgba(118,101,75,.27);
+  border-radius:9px;
+  width:34px;height:34px;
+  flex-shrink:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--luxury-text-soft);
+  background:var(--luxury-card);
+  transition: background .16s,color .16s;
+}
+#product-grid .sp1-card-button:hover,#product-grid .sp1-card-button.is-active{
+  color:#815320;background:var(--luxury-accent);border-color:rgba(166,111,42,.48);
+}
+.sp1-backdrop {
+  position:fixed;inset:0;z-index:120;display:flex;justify-content:center;align-items:center;
+  padding:15px;background:rgba(9,12,15,.75);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+}
+.sp1-panel {
+  width:min(900px,100%);max-height:min(90dvh,940px);overflow:hidden;
+  display:flex;flex-direction:column;border-radius:18px;
+  background:#fbfaf8;color:#282624;border:1px solid rgba(224,198,159,.45);
+  box-shadow:0 20px 64px rgba(0,0,0,.35);font-family:Inter,Battambang,Arial,sans-serif;
+}
+.sp1-panel-head{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+  padding:17px 20px;border-bottom:1px solid rgba(63,52,39,.12);
+}
+.sp1-panel-heading {min-width:0}
+.sp1-panel-heading strong{font-family:"Playfair Display",Battambang,serif;font-size:20px;font-weight:700;color:#342921}
+.sp1-panel-heading p {font-size:12px;color:#6f675e;margin-top:3px;line-height:1.6}
+.sp1-panel-body {overflow:auto;overscroll-behavior:contain;padding:19px 20px 23px;min-height:0}
+.sp1-icon-button,.sp1-secondary,.sp1-primary {
+  min-height:34px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
+  padding:8px 11px;border:1px solid rgba(91,77,59,.2);
+}
+.sp1-icon-button {min-width:34px;padding:5px;background:white;color:#51473b}
+.sp1-secondary {background:white;color:#453d35}
+.sp1-primary {background:#292724;color:#fff9ef;border-color:#292724}
+.sp1-icon-button:hover,.sp1-secondary:hover {background:#eee8dc}
+.sp1-primary:hover {background:#51483b}
+.sp1-actions {display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px}
+.sp1-hint {font-size:12px;line-height:1.6;color:#6c635a;margin-bottom:12px}
+.sp1-row {
+  display:flex;align-items:center;gap:10px;padding:12px 0;
+  border-bottom:1px solid rgba(78,65,49,.13);
+}
+.sp1-row-main {flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.sp1-row-main strong {font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.sp1-row-main small {font-size:11px;line-height:1.6;color:#6f665d;overflow-wrap:anywhere}
+.sp1-product-image {
+  width:80px;height:80px;border-radius:11px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:#f0eee9;border:1px solid rgba(99,83,61,.12);
+  color:#91877a;font-size:11px;
+}
+.sp1-product-image img{width:100%;height:100%;object-fit:contain;background:#fff}
+.sp1-product-comparison{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(185px,100%),1fr));gap:12px}
+.sp1-product-column {
+  padding:13px;border-radius:14px;background:white;border:1px solid rgba(79,70,57,.12);
+  display:flex;flex-direction:column;gap:10px;min-width:0
+}
+.sp1-product-column>.sp1-product-image{width:100%;height:160px}
+.sp1-product-column>strong{font-family:"Playfair Display",serif;font-size:16px;line-height:1.4;color:#302822}
+.sp1-product-column>p{font-size:11px;color:#675e53;line-height:1.6;flex-grow:1}
+.sp1-product-column dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;font-size:11px}
+.sp1-product-column dt{color:#746c60}
+.sp1-product-column dd{color:#272321;text-align:right;font-weight:700;overflow-wrap:anywhere}
+.sp1-presentation{background:rgba(7,10,14,.93);padding:2vw}
+.sp1-presentation .sp1-panel{width:min(1260px,100%);max-height:95dvh;background:#f9f8f5}
+.sp1-presentation .sp1-panel-body{padding:18px 24px 26px}
+.sp1-presentation-top {display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:8px 0 20px;border-bottom:1px solid #e7dfd2;margin-bottom:20px}
+.sp1-presentation-top>span{font-family:"Playfair Display",serif;color:#ad7737;font-size:22px;letter-spacing:.05em;font-weight:750}
+.sp1-presentation-top small{display:block;font-family:Inter,sans-serif;font-size:9px;letter-spacing:.28em;color:#918373}
+.sp1-presentation-top>strong{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#494037}
+.sp1-presentation-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));gap:18px}
+.sp1-presentation-card{border:1px solid #e5e0d8;border-radius:15px;background:white;overflow:hidden;min-width:0}
+.sp1-presentation-card .sp1-product-image{width:100%;height:220px;border:0;border-radius:0;background:#fff}
+.sp1-presentation-info{padding:14px}
+.sp1-presentation-info h3{font-family:"Playfair Display",serif;color:#282624;font-size:18px;line-height:1.5;font-weight:700}
+.sp1-presentation-info p{font-size:12px;color:#71685f;line-height:1.5;min-height:34px}
+.sp1-presentation-meta{font-size:10px;color:#726b63;padding:11px 0;border-top:1px solid #eee8df;margin-top:12px}
+.sp1-presentation-price{font-size:18px;color:#875922;font-weight:800}
+.sp1-diff-totals{display:flex;justify-content:center;align-items:center;gap:18px;padding:16px;border-radius:13px;background:#f2eee7;margin-bottom:16px}
+.sp1-diff-totals>div{display:flex;flex-direction:column;align-items:center;gap:5px}
+.sp1-diff-totals small{font-size:11px;color:#73695e}
+.sp1-diff-totals strong{font-size:20px;font-weight:800;color:#43372d}
+.sp1-diff-row{display:flex;align-items:flex-start;gap:12px;padding:13px 8px;border-bottom:1px solid #ece6dd}
+.sp1-diff-flag{font-size:9px;font-weight:800;padding:4px 7px;border-radius:7px;background:#f0e6d6;color:#624e32}
+.sp1-diff-added .sp1-diff-flag{background:#e6f1e9;color:#295e39}
+.sp1-diff-removed .sp1-diff-flag{background:#f7e7e7;color:#8b3d3d}
+#saved-lists-list button.sp1-version-compare {
+  background:var(--luxury-card);color:var(--luxury-text);
+  border:1px solid rgba(115,98,72,.28);border-radius:9px;padding:8px;font-size:11px;font-weight:700;
+}
+#saved-lists-list button.sp1-version-compare:hover{background:var(--luxury-accent)}
+@media(max-width:767px) {
+  #showroom-phase1-tools{gap:8px}
+  .sp1-toolbar-group{width:100%;flex-wrap:wrap}
+  .sp1-draft-status{width:100%;padding-top:2px}
+  .sp1-row{flex-wrap:wrap}
+  .sp1-panel-head{padding:14px}
+  .sp1-panel-body{padding:14px}
+  .sp1-row-main{min-width:120px}
+  .sp1-product-image{width:65px;height:65px}
+  .sp1-panel-heading strong{font-size:17px}
+  .sp1-presentation .sp1-panel-body{padding:12px}
+  .sp1-presentation-card .sp1-product-image{height:170px}
+}
+@media print{#showroom-phase1-tools,.sp1-backdrop{display:none!important}}
