@@ -27,6 +27,7 @@
   const rules=window.SeasonalCore;
   const themePresets=()=>window.SEASONAL_THEME_PRESETS||{};
   let live=new Map(), liveDay='', activeThemeKey='', resizeTimer=null;
+  let backdropProbeKey='', backdropProbeSerial=0;
   function featuredMap(){
     if(liveDay!==today()){liveDay=today();live=rules.index(campaigns,liveDay);}
     return live;
@@ -78,6 +79,53 @@
     document.body.prepend(layer);
     return layer;
   }
+  // Inspect a tiny in-memory sample of the current artwork to pick light or
+  // dark floating UI chrome. No pixels are stored or uploaded. For remote
+  // artwork without CORS support, keep the readable smoked-glass fallback.
+  function sampleBackdropTone(source, mobile){
+    const serial=++backdropProbeSerial;
+    const body=document.body;
+    if(!body)return;
+    body.dataset.showroomBackdropTone='light';
+    const probe=new Image();
+    probe.crossOrigin='anonymous';
+    probe.decoding='async';
+    probe.onload=()=>{
+      if(serial!==backdropProbeSerial||!body.classList.contains('seasonal-theme-active'))return;
+      try{
+        const w=probe.naturalWidth,h=probe.naturalHeight;
+        if(!w||!h)return;
+        const canvas=document.createElement('canvas');
+        canvas.width=48;canvas.height=32;
+        const ctx=canvas.getContext('2d',{willReadFrequently:true});
+        if(!ctx)return;
+        // Match object-fit:cover / object-position (top on mobile, center otherwise).
+        const ratio=Math.max(.2,window.innerWidth/Math.max(window.innerHeight,1));
+        let sx=0,sy=0,sw=w,sh=h;
+        if(w/h>ratio){sw=h*ratio;sx=(w-sw)/2;}
+        else {sh=w/ratio;sy=mobile?0:(h-sh)/2;}
+        ctx.drawImage(probe,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
+        const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+        let total=0,bright=0,count=0;
+        for(let i=0;i<pixels.length;i+=4){
+          if(pixels[i+3]<32)continue;
+          const luminance=(.2126*pixels[i]+.7152*pixels[i+1]+.0722*pixels[i+2])/255;
+          total+=luminance;
+          if(luminance>.62)bright++;
+          count++;
+        }
+        if(!count)return;
+        const mean=total/count;
+        const light=mean>.57||(mean>.47&&bright/count>.50);
+        if(serial===backdropProbeSerial)body.dataset.showroomBackdropTone=light?'light':'dark';
+      }catch(err){
+        // Cross-origin image pixels may be unreadable; the image still displays.
+        console.debug('[Seasonal promotions] Using safe background contrast fallback.');
+      }
+    };
+    probe.onerror=()=>{ /* Current image stays visible; safe default is retained. */ };
+    probe.src=source;
+  }
   function applyTheme(){
     const campaign=themedCampaign();
     const campaignPreset=backgroundForCampaign(campaign);
@@ -89,6 +137,9 @@
     if(!preset){
       root.style.removeProperty('--seasonal-overlay');
       body.classList.remove('seasonal-theme-active');
+      delete body.dataset.showroomBackdropTone;
+      backdropProbeSerial++;
+      backdropProbeKey='';
       layer.classList.remove('is-active');
       if(image)image.removeAttribute('src');
       delete body.dataset.seasonalTheme;
@@ -101,6 +152,12 @@
     if(!asset||!image)return;
     const resolved=String(asset).startsWith('data:')?String(asset):new URL(asset,document.baseURI).href;
     root.style.setProperty('--seasonal-overlay',preset.overlay||'rgba(12,18,24,0.30)');
+    body.classList.add('seasonal-theme-active');
+    const probeKey=resolved+'|'+(mobile?'mobile':'desktop');
+    if(backdropProbeKey!==probeKey){
+      backdropProbeKey=probeKey;
+      sampleBackdropTone(resolved,mobile);
+    }
     if(image.src!==resolved){
       image.onload=()=>layer.classList.add('is-active');
       image.onerror=()=>{layer.classList.remove('is-active');console.warn('[Seasonal promotions] Theme artwork failed to load:',resolved);};
@@ -108,7 +165,6 @@
     }else if(image.complete&&image.naturalWidth){
       layer.classList.add('is-active');
     }
-    body.classList.add('seasonal-theme-active');
     if(campaign){
       body.dataset.seasonalTheme=campaign.custom_background_path?'custom':(campaign.theme_preset||'');
       body.dataset.seasonalCampaign=campaign.name||'';
