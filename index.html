@@ -204,7 +204,7 @@
     <link rel="stylesheet" href="showroom-phase1.css?v=20261008-lightselect1">
     <link rel="stylesheet" href="showroom-dark-polish.css?v=20261008-selectioncontrast1">
     <link rel="stylesheet" href="showroom-mobile-compact.css?v=20261008-mobilecompact1">
-    <link rel="stylesheet" href="showroom-selling.css?v=20261008-sellanalytics1">
+    <link rel="stylesheet" href="showroom-selling.css?v=20261008-mobilebar2">
 </head>
 <body class="bg-luxury-dark text-luxury-text font-sans min-h-screen lg:h-screen flex flex-col antialiased lg:overflow-hidden transition-colors duration-300">
 
@@ -5569,7 +5569,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261008-sellanalytics1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261008-mobilebar2', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
@@ -5620,7 +5620,7 @@
     <script src="showroom-phase1-core.js?v=20261008-recent3days1"></script>
     <script src="showroom-phase1.js?v=20261008-lightselect1"></script>
     <script src="showroom-search-core.js?v=20261008-sellanalytics1"></script>
-    <script src="showroom-selling.js?v=20261008-sellanalytics1"></script>
+    <script src="showroom-selling.js?v=20261008-mobilebar2"></script>
     <script src="showroom-analytics.js?v=20261008-sellanalytics1"></script>
 </body>
 </html>
