@@ -90,7 +90,9 @@ function initSearch(){
 function ensureMobileBar(){
   if($('ss-mobile-bar'))return;
   const bar=document.createElement('div');
-  bar.id='ss-mobile-bar';bar.className='ss-mobile-bar';bar.hidden=true;
+  bar.id='ss-mobile-bar';bar.className='ss-mobile-bar';bar.hidden=false;
+  bar.setAttribute('role','region');
+  bar.setAttribute('aria-label','Customer Interest List quick access');
   const title=document.createElement('div');title.className='ss-cart-main';
   const qty=document.createElement('span');qty.id='ss-cart-count';qty.className='ss-cart-count';
   const total=document.createElement('strong');total.id='ss-cart-total';
@@ -100,7 +102,8 @@ function ensureMobileBar(){
   const number=document.createElement('span');number.id='ss-qty-number';number.textContent='1';
   const plus=document.createElement('button');plus.id='ss-qty-plus';plus.type='button';plus.textContent='+';plus.setAttribute('aria-label','Increase last item quantity');
   step.append(minus,number,plus);
-  const cartBtn=document.createElement('button');cartBtn.type='button';cartBtn.className='ss-bar-cart';cartBtn.innerHTML='<i class="fa-solid fa-receipt"></i> Cart';
+  const cartBtn=document.createElement('button');cartBtn.type='button';cartBtn.className='ss-bar-cart';cartBtn.innerHTML='<i class="fa-solid fa-receipt"></i> Open Cart';
+  cartBtn.setAttribute('aria-label','Open Customer Interest List and saved quotations');
   cartBtn.onclick=()=>toggleMobileCart(true);
   bar.append(title,step,cartBtn);
   document.body.append(bar);
@@ -120,11 +123,17 @@ function refreshCart(){
   const bar=$('ss-mobile-bar');if(!bar)return;
   let lines=[];try{lines=Array.isArray(cart)?cart:[]}catch(_){}
   const qty=lines.reduce((n,c)=>n+(Number(c.quantity)||0),0);
-  bar.hidden=qty<=0;
-  document.body.classList.toggle('ss-has-mobile-cart',qty>0);
-  if(!qty)return;
-  $('ss-cart-count').textContent=qty+' item'+(qty!==1?'s':'');
-  try{$('ss-cart-total').textContent=formatCurrency(getCartFinalTotal());}catch(_){$('ss-cart-total').textContent='View cart';}
+  // Keep a single entry point even for an empty list, so saved
+  // quotations remain accessible without an icon covering product buttons.
+  bar.hidden=false;
+  document.body.classList.add('ss-has-mobile-cart');
+  $('ss-cart-count').textContent=qty ? qty+' item'+(qty!==1?'s':'') : 'Customer Interest List · 0 items';
+  if(qty){
+    try{$('ss-cart-total').textContent=formatCurrency(getCartFinalTotal());}
+    catch(_){$('ss-cart-total').textContent='View selected products';}
+  }else{
+    $('ss-cart-total').textContent='Ready to select products';
+  }
   const last=lastLine(),step=$('ss-quick-qty');
   step.hidden=!last;
   if(last){
