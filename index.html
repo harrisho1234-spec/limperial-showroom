@@ -199,29 +199,11 @@
             gap: 0.35rem !important;
         }
 
-        @media (max-width: 1023px) {
-            .mobile-search-filter-reveal {
-                position: fixed !important;
-                max-height: calc(100dvh - 1rem);
-                overflow-y: auto;
-                top: 0.5rem !important;
-                left: 0.75rem !important;
-                right: 0.75rem !important;
-                z-index: 45 !important;
-                margin: 0 !important;
-                box-shadow: 0 20px 40px rgba(0,0,0,0.22);
-                transform: translateY(0);
-                animation: mobileSearchReveal 0.18s ease-out;
-            }
-        }
-        @keyframes mobileSearchReveal {
-            from { opacity: 0; transform: translateY(-12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
     </style>
     <link rel="stylesheet" href="showroom-readability.css?v=20261008-backgroundmorph1">
     <link rel="stylesheet" href="showroom-phase1.css?v=20261008-originaltheme1">
     <link rel="stylesheet" href="showroom-dark-polish.css?v=20261008-darkpolish1">
+    <link rel="stylesheet" href="showroom-mobile-compact.css?v=20261008-mobilecompact1">
 </head>
 <body class="bg-luxury-dark text-luxury-text font-sans min-h-screen lg:h-screen flex flex-col antialiased lg:overflow-hidden transition-colors duration-300">
 
@@ -310,6 +292,11 @@
                         <button id="clear-search-btn" type="button" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-luxury-muted hover:text-luxury-gold" title="Clear search" aria-label="Clear search"><i class="fa-solid fa-circle-xmark"></i></button>
                     </div>
 
+                    <button id="mobile-filter-trigger" type="button" class="hidden" aria-controls="mobile-advanced-filters" aria-expanded="false" onclick="toggleMobileFilters()">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-sliders text-luxury-gold"></i> Filters &amp; layout <span id="mobile-filter-count" aria-label="Active filters"></span></span>
+                        <i id="mobile-filter-chevron" class="fa-solid fa-chevron-down text-xs text-luxury-gold"></i>
+                    </button>
+                    <div id="mobile-advanced-filters" class="space-y-4">
                     <!-- Five dropdown filters only: use generous columns instead of eight cramped ones -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-x-3 gap-y-3 min-w-0">
                             <div class="min-w-0">
@@ -369,9 +356,7 @@
                             <button onclick="resetFilters()" class="shrink-0 bg-luxury-dark border border-luxury-gold/20 hover:border-luxury-gold hover:bg-luxury-gold/10 text-luxury-muted hover:text-luxury-gold rounded-xl h-10 w-10 flex items-center justify-center transition-all duration-300 shadow-sm" title="Clear all filters" aria-label="Clear all filters"><i class="fa-solid fa-filter-circle-xmark text-base"></i></button>
                         </div>
                     </div>
-                </div>
-
-                <div class="sm:hidden flex items-center justify-between shrink-0 mb-4 bg-luxury-card border border-luxury-gold/15 rounded-xl px-4 py-2.5">
+                    <div class="sm:hidden flex items-center justify-between shrink-0 mb-4 bg-luxury-card border border-luxury-gold/15 rounded-xl px-4 py-2.5">
                     <span class="text-xs uppercase tracking-wider text-luxury-muted font-bold flex items-center gap-2"><i class="fa-solid fa-cubes text-luxury-gold"></i> Layout</span>
                     <div class="flex items-center space-x-1.5">
                         <button onclick="setProductLayoutMode('grid')" id="layout-grid-btn-mobile" class="px-3 py-1.5 rounded-lg border text-xs font-bold uppercase transition-all duration-150 border-luxury-gold/10 text-luxury-muted hover:text-luxury-text"><i class="fa-solid fa-table-cells-large"></i></button>
@@ -379,6 +364,11 @@
                         <div class="w-px h-5 bg-luxury-gold/15 mx-0.5"></div>
                         <button onclick="exportAllCatalogImages(true)" class="px-3 py-1.5 rounded-lg border text-xs font-bold uppercase transition-all duration-150 border-luxury-gold/10 text-luxury-muted hover:text-luxury-gold" title="Export all shown items (with price)"><i class="fa-solid fa-tags"></i></button>
                         <button onclick="exportAllCatalogImages(false)" class="px-3 py-1.5 rounded-lg border text-xs font-bold uppercase transition-all duration-150 border-luxury-gold/10 text-luxury-muted hover:text-luxury-gold" title="Export all shown items (photos only)"><i class="fa-solid fa-image"></i></button>
+                    </div>
+                </div>
+                    <button type="button" class="mobile-filter-done hidden" onclick="toggleMobileFilters(false);document.getElementById('product-scroll-container')?.scrollIntoView({behavior:'smooth',block:'start'})">
+                        <i class="fa-solid fa-check"></i> Show Products
+                    </button>
                     </div>
                 </div>
 
@@ -1283,96 +1273,27 @@
             setTimeout(() => URL.revokeObjectURL(url), 60000);
         }
 
-        function initMobileProductScrollAssist() {
-            const topPanel = document.querySelector('main section > .bg-luxury-card');
-            const productScroll = document.getElementById('product-scroll-container');
-            if (!topPanel || !productScroll) return;
+        // All filters remain wired; the previous swipe-up overlay is removed.
+        function toggleMobileFilters(force) {
+            const button = document.getElementById('mobile-filter-trigger');
+            if (!button) return;
+            const open = typeof force === 'boolean'
+                ? force : !document.body.classList.contains('mobile-filters-open');
+            document.body.classList.toggle('mobile-filters-open', open);
+            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+            const chevron = document.getElementById('mobile-filter-chevron');
+            if (chevron) chevron.className = 'fa-solid fa-chevron-' + (open ? 'up' : 'down') + ' text-xs text-luxury-gold';
+        }
 
-            let lastScrollTop = 0;
-            let ticking = false;
-            let activeMode = null;
-
-            const isMobile = () => window.innerWidth < 1024;
-            const canUseProductScroller = () => productScroll.scrollHeight > productScroll.clientHeight + 20;
-
-            const showPanel = () => {
-                if (isMobile()) topPanel.classList.add('mobile-search-filter-reveal');
-            };
-
-            const hidePanel = () => {
-                topPanel.classList.remove('mobile-search-filter-reveal');
-            };
-
-            const updateFromPosition = (currentTop) => {
-                if (!isMobile()) {
-                    hidePanel();
-                    lastScrollTop = currentTop || 0;
-                    return;
-                }
-
-                const scrollingUp = currentTop < lastScrollTop - 4;
-                const scrollingDown = currentTop > lastScrollTop + 4;
-                const farFromTop = currentTop > 120;
-
-                if (scrollingUp && farFromTop) showPanel();
-                else if (!farFromTop || scrollingDown) hidePanel();
-
-                lastScrollTop = currentTop;
-            };
-
-            const onProductScroll = () => {
-                if (activeMode !== 'product') {
-                    activeMode = 'product';
-                    lastScrollTop = productScroll.scrollTop;
-                }
-                if (!ticking) {
-                    ticking = true;
-                    requestAnimationFrame(() => {
-                        updateFromPosition(productScroll.scrollTop);
-                        ticking = false;
-                    });
-                }
-            };
-
-            const onWindowScroll = () => {
-                if (activeMode !== 'window') {
-                    activeMode = 'window';
-                    lastScrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
-                }
-                if (!ticking) {
-                    ticking = true;
-                    requestAnimationFrame(() => {
-                        updateFromPosition(window.pageYOffset || document.documentElement.scrollTop || 0);
-                        ticking = false;
-                    });
-                }
-            };
-
-            const bindScrollMode = () => {
-                productScroll.removeEventListener('scroll', onProductScroll);
-                window.removeEventListener('scroll', onWindowScroll);
-
-                if (!isMobile()) {
-                    activeMode = null;
-                    hidePanel();
-                    return;
-                }
-
-                if (canUseProductScroller()) {
-                    activeMode = 'product';
-                    lastScrollTop = productScroll.scrollTop;
-                    productScroll.addEventListener('scroll', onProductScroll, { passive: true });
-                    updateFromPosition(productScroll.scrollTop);
-                } else {
-                    activeMode = 'window';
-                    lastScrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
-                    window.addEventListener('scroll', onWindowScroll, { passive: true });
-                    updateFromPosition(lastScrollTop);
-                }
-            };
-
-            window.addEventListener('resize', bindScrollMode);
-            bindScrollMode();
+        function updateMobileFilterBadge() {
+            const pill = document.getElementById('mobile-filter-count');
+            if (!pill) return;
+            const active = [
+                currentClassFilter, currentSubclassFilter, currentBrandFilter,
+                currentKeyMaterialFilter, currentLocFilter
+            ].filter(Boolean).length + (showPromoOnly ? 1 : 0) + (showSetsOnly ? 1 : 0);
+            pill.textContent = active ? String(active) : '';
+            pill.setAttribute('aria-label', active + ' active filters');
         }
 
         window.onload = function() { bootstrapDashboardEngine(); };
@@ -1487,7 +1408,7 @@
             const spinner = document.getElementById('loading-spinner');
             if (spinner) spinner.className = "hidden";
             fetchSheetData();
-            initMobileProductScrollAssist();
+            updateMobileFilterBadge();
             initSafeBackdropClose();
             loadQuotationSalespeople();
             loadSavedInterestLists();
@@ -2460,7 +2381,7 @@
 
             const emptyState = document.getElementById('empty-state');
             if (emptyState) { if (filteredProducts.length === 0) emptyState.classList.remove('hidden'); else emptyState.className = "hidden"; }
-            currentPage = 1; renderProductGrid();
+            currentPage = 1; renderProductGrid(); updateMobileFilterBadge();
         }
 
         function clearSearch() { const searchInput = document.getElementById('search-input'); if (searchInput) searchInput.value = ''; executeSearchFilter(); }
@@ -5638,7 +5559,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261008-darkpolish1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261008-mobilecompact1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
