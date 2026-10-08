@@ -4,6 +4,7 @@
 (function(){
   'use strict';
   const TABLE='showroom_promotion_campaigns';
+  const DEFAULT_BG_TABLE='showroom_background_settings';
   const BUCKET='showroom-seasonal-backgrounds';
   const ROLES=['super_admin','admin'];
   const MAX_BACKGROUND_BYTES=8*1024*1024;
@@ -20,6 +21,8 @@
   let loading=false, managerVisible=false, lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='';
   let pendingBackgroundFile=null, pendingBackgroundPreviewUrl='', pendingBackgroundMeta='', removeBackground=false;
   let editorBackgroundPath='', editorBackgroundName='', editorBackgroundUpdatedAt=null;
+  let defaultBackground=null;
+  let defaultBackgroundFile=null, defaultBackgroundPreviewUrl='', defaultBackgroundMeta='', removeDefaultBackground=false;
   const rules=window.SeasonalCore;
   const themePresets=()=>window.SEASONAL_THEME_PRESETS||{};
   let live=new Map(), liveDay='', activeThemeKey='', resizeTimer=null;
@@ -48,6 +51,19 @@
     const preset=themePresets()[c.theme_preset];
     return preset?{...preset,custom:false}:null;
   }
+  function backgroundForDefault(){
+    if(!defaultBackground?.custom_background_path)return null;
+    const url=storagePublicUrl(defaultBackground.custom_background_path);
+    if(!url)return null;
+    return {
+      label:defaultBackground.custom_background_name||'Default Showroom Background',
+      backgroundDesktop:url,
+      backgroundMobile:url,
+      overlay:'rgba(28,20,12,0.08)',
+      custom:true,
+      isDefault:true
+    };
+  }
   function themedCampaign(){
     return current().find(c=>c.custom_background_path||(c.theme_preset&&themePresets()[c.theme_preset]))||null;
   }
@@ -63,7 +79,8 @@
   }
   function applyTheme(){
     const campaign=themedCampaign();
-    const preset=backgroundForCampaign(campaign);
+    const campaignPreset=backgroundForCampaign(campaign);
+    const preset=campaignPreset||backgroundForDefault();
     const root=document.documentElement,body=document.body;
     if(!root||!body)return;
     const layer=ensureThemeLayer();
@@ -91,9 +108,15 @@
       layer.classList.add('is-active');
     }
     body.classList.add('seasonal-theme-active');
-    body.dataset.seasonalTheme=campaign.custom_background_path?'custom':(campaign.theme_preset||'');
-    body.dataset.seasonalCampaign=campaign.name||'';
-    activeThemeKey=campaign.custom_background_path||campaign.theme_preset||'';
+    if(campaign){
+      body.dataset.seasonalTheme=campaign.custom_background_path?'custom':(campaign.theme_preset||'');
+      body.dataset.seasonalCampaign=campaign.name||'';
+      activeThemeKey=campaign.custom_background_path||campaign.theme_preset||'';
+    }else{
+      body.dataset.seasonalTheme='default-custom';
+      body.dataset.seasonalCampaign='';
+      activeThemeKey=defaultBackground?.custom_background_path||'';
+    }
   }
   const redraw=()=>{applyTheme();renderBanner();if(typeof executeSearchFilter==='function')executeSearchFilter();};
   const ui=id=>document.getElementById(id);
