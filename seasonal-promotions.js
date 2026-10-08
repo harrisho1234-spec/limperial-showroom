@@ -18,7 +18,7 @@
       })
     : null;
   let campaigns=[],authorized=false,editId=null,chosen=new Map(),searchQuery='',showingAll=false;
-  let loading=false, managerVisible=false, lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='';
+  let loading=false, managerVisible=false, managerSection='campaigns', lastRefresh=0, ticker=null, editing=false, editVersion=null, loadError='';
   let pendingBackgroundFile=null, pendingBackgroundPreviewUrl='', pendingBackgroundMeta='', removeBackground=false;
   let editorBackgroundPath='', editorBackgroundName='', editorBackgroundUpdatedAt=null;
   let defaultBackground=null;
@@ -209,8 +209,11 @@
   }
   function setManagerMode(on){
     managerVisible=!!on;
-    const btn=ui('seasonal-promotions-manage-button');
-    if(btn)btn.classList.toggle('hidden',!managerVisible);
+    const actions=ui('showroom-management-actions');
+    if(actions){
+      actions.classList.toggle('hidden',!managerVisible);
+      actions.classList.toggle('flex',managerVisible);
+    }
     if(!managerVisible){
       closeManager();
       resetBackgroundEditor(null);
@@ -220,17 +223,33 @@
     }
   }
   function modalHtml(){
-    return '<div role="dialog" aria-modal="true" aria-label="Seasonal Promotion Manager" id="seasonal-promo-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[95] p-3 sm:p-6 overflow-y-auto">'+
+    return '<div role="dialog" aria-modal="true" aria-label="Showroom Management" id="seasonal-promo-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[95] p-3 sm:p-6 overflow-y-auto">'+
       '<div class="relative max-w-4xl rounded-2xl border border-luxury-gold/25 bg-luxury-card shadow-2xl mx-auto my-4">'+
-      '<div class="flex items-center justify-between border-b border-luxury-gold/15 p-4"><div><div class="font-serif text-luxury-gold font-bold text-lg">Seasonal Promotion Manager</div><div class="text-[10px] text-luxury-muted mt-1">Shared campaigns · Sales Tracking management accounts only</div></div>'+
-      '<button type="button" id="sp-close" aria-label="Close promotion manager" class="p-2 text-luxury-muted hover:text-luxury-gold"><i class="fa-solid fa-xmark"></i></button></div>'+
+      '<div class="flex items-center justify-between border-b border-luxury-gold/15 p-4"><div><div id="sp-modal-title" class="font-serif text-luxury-gold font-bold text-lg">Seasonal Promotions</div><div id="sp-modal-subtitle" class="text-[10px] text-luxury-muted mt-1">Manage seasonal promotion campaigns</div></div>'+
+      '<button type="button" id="sp-close" aria-label="Close showroom management" class="p-2 text-luxury-muted hover:text-luxury-gold"><i class="fa-solid fa-xmark"></i></button></div>'+
       '<div class="p-4 sm:p-5 space-y-4" id="seasonal-promo-modal-content"></div></div></div>';
   }
-  function closeManager(){ui('seasonal-promo-modal')?.classList.add('hidden');ui('seasonal-promotions-manage-button')?.focus();}
-  async function openManager(){
+  function updateManagerHeading(){
+    const title=ui('sp-modal-title'),subtitle=ui('sp-modal-subtitle');
+    if(managerSection==='background'){
+      if(title)title.textContent='Showroom Background';
+      if(subtitle)subtitle.textContent='Manage the normal background used outside seasonal promotions';
+    }else{
+      if(title)title.textContent='Seasonal Promotions';
+      if(subtitle)subtitle.textContent='Manage promotional campaigns, seasonal themes and campaign backgrounds';
+    }
+  }
+  function closeManager(){
+    ui('seasonal-promo-modal')?.classList.add('hidden');
+    ui(managerSection==='background'?'showroom-background-manage-button':'seasonal-promotions-manage-button')?.focus();
+  }
+  async function openManager(section='campaigns'){
+    managerSection=section==='background'?'background':'campaigns';
+    editing=false;editId=null;chosen.clear();resetBackgroundEditor(null);
     if(!managerVisible){notify('Unlock Management Mode first.','error');return;}
-    if(!client){notify('Promotion database service is not available.','error');return;}
+    if(!client){notify('Showroom management service is not available.','error');return;}
     ui('seasonal-promo-modal')?.classList.remove('hidden');
+    updateManagerHeading();
     ui('sp-close')?.focus();
     renderLogin();
     const existing=await client.auth.getUser();
@@ -242,8 +261,10 @@
   }
   function renderLogin(error=''){
     const el=ui('seasonal-promo-modal-content');if(!el)return;
+    updateManagerHeading();
+    const purpose=managerSection==='background'?'showroom background settings':'shared campaign changes';
     el.innerHTML='<div class="max-w-md mx-auto py-4 space-y-3"><h4 class="font-semibold text-luxury-text text-sm">Sign in with your Sales Tracking account</h4>'+
-      '<p class="text-xs text-luxury-muted">A showroom Management Mode passcode alone cannot authorize shared campaign changes.</p>'+
+      '<p class="text-xs text-luxury-muted">A showroom Management Mode passcode alone cannot authorize '+purpose+'.</p>'+
       (error?'<div class="p-3 rounded-lg bg-red-500/10 text-red-600 text-xs">'+escapeHtml(error)+'</div>':'')+
       '<form id="sp-login" class="space-y-3"><label class="block text-xs text-luxury-muted">Email<input id="sp-email" type="email" autocomplete="username" required class="block mt-1 w-full border border-luxury-gold/20 bg-luxury-dark text-luxury-text rounded-lg p-3"></label>'+
       '<label class="block text-xs text-luxury-muted">Password<input id="sp-password" type="password" autocomplete="current-password" required class="block mt-1 w-full border border-luxury-gold/20 bg-luxury-dark text-luxury-text rounded-lg p-3"></label>'+
