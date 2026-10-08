@@ -1,73 +1,109 @@
-/* Limperial Showroom — high-contrast controls on all catalog backdrops.
-   Background artwork remains untouched. Surfaces and type follow the chosen
-   light/dark app theme and stay readable across custom and seasonal images. */
+/* Limperial Showroom — adaptive luxury chrome.
+   The artwork is never recolored. Only the exposed header and pagination chrome
+   respond to the actual background brightness; content panels stay readable. */
 :root {
-  --sr-surface: rgba(255, 251, 244, .97);
-  --sr-control: #fffaf2;
-  --sr-ink: #2f241a;
-  --sr-muted: #574838;
-  --sr-accent-ink: #87500d;
-  --sr-border: rgba(145, 100, 42, .46);
-  --sr-hover: #f4e3c5;
-  --sr-active: #e6b466;
-  --sr-shadow: 0 8px 26px rgba(49, 28, 8, .13);
+  --sr-ink: #292725;
+  --sr-muted: #605d58;
+  --sr-accent-ink: #895b28;
+  --sr-control: #fcfbf8;
+  --sr-control-ink: #34312c;
+  --sr-control-border: rgba(64, 55, 43, .19);
+  --sr-control-hover: #f1eee8;
+  --sr-selected: #dfb879;
+  --sr-chrome: rgba(250, 249, 247, .93);
+  --sr-chrome-ink: #292724;
+  --sr-chrome-muted: #625b52;
+  --sr-chrome-accent: #895b28;
+  --sr-chrome-control: rgba(255, 255, 255, .75);
+  --sr-chrome-hover: rgba(232, 222, 204, .75);
+  --sr-chrome-line: rgba(75, 62, 44, .16);
+  --sr-shadow: 0 12px 35px rgba(28, 25, 22, .13);
 }
 body.theme-dark {
-  --sr-surface: rgba(13, 19, 30, .97);
-  --sr-control: #232a36;
-  --sr-ink: #fff6e8;
-  --sr-muted: #dfd1bc;
-  --sr-accent-ink: #f1c984;
-  --sr-border: rgba(224, 179, 107, .46);
-  --sr-hover: #39404c;
-  --sr-active: #e6b466;
-  --sr-shadow: 0 8px 26px rgba(0, 0, 0, .28);
+  --sr-ink: #f5f1eb;
+  --sr-muted: #c7c0b5;
+  --sr-accent-ink: #e6bd7c;
+  --sr-control: #22262b;
+  --sr-control-ink: #f5f1eb;
+  --sr-control-border: rgba(230, 221, 202, .23);
+  --sr-control-hover: #30353c;
+  --sr-chrome: rgba(21, 24, 28, .95);
+  --sr-chrome-ink: #f6f3ee;
+  --sr-chrome-muted: #ddd4c8;
+  --sr-chrome-accent: #e9bf7c;
+  --sr-chrome-control: rgba(255, 255, 255, .08);
+  --sr-chrome-hover: rgba(255, 255, 255, .17);
+  --sr-chrome-line: rgba(255, 255, 255, .18);
+  --sr-shadow: 0 14px 36px rgba(0, 0, 0, .3);
+}
+/* A bright seasonal/default image gets restrained smoked glass instead of
+   competing beige/gold. A dark image gets softly lit ivory glass. */
+body.seasonal-theme-active[data-showroom-backdrop-tone="light"] {
+  --sr-chrome: rgba(26, 28, 31, .87);
+  --sr-chrome-ink: #f8f5ee;
+  --sr-chrome-muted: #e3ddd4;
+  --sr-chrome-accent: #edc98c;
+  --sr-chrome-control: rgba(255, 255, 255, .09);
+  --sr-chrome-hover: rgba(255, 255, 255, .19);
+  --sr-chrome-line: rgba(255, 255, 255, .23);
+  --sr-shadow: 0 14px 38px rgba(24, 23, 22, .24);
+}
+body.seasonal-theme-active[data-showroom-backdrop-tone="dark"] {
+  --sr-chrome: rgba(250, 249, 246, .91);
+  --sr-chrome-ink: #262726;
+  --sr-chrome-muted: #5d5a55;
+  --sr-chrome-accent: #825624;
+  --sr-chrome-control: rgba(255, 255, 255, .78);
+  --sr-chrome-hover: rgba(235, 229, 217, .94);
+  --sr-chrome-line: rgba(51, 47, 41, .19);
+  --sr-shadow: 0 13px 36px rgba(0, 0, 0, .24);
 }
 
-/* Header lives directly over the artwork, so translucency alone isn't enough. */
+/* Exposed chrome: legible and quiet, never gold text on beige artwork. */
 #main-app > header {
-  background: var(--sr-surface) !important;
-  border-bottom: 1px solid var(--sr-border) !important;
-  box-shadow: 0 3px 18px rgba(50, 29, 9, .15);
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
+  background: var(--sr-chrome) !important;
+  border-bottom: 1px solid var(--sr-chrome-line) !important;
+  color: var(--sr-chrome-ink) !important;
+  box-shadow: 0 5px 22px rgba(18, 19, 19, .13);
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
+  backdrop-filter: blur(18px) saturate(110%);
 }
 #main-app > header #management-mode-control,
 #main-app > header #sync-status {
-  background: var(--sr-control) !important;
-  border: 1px solid var(--sr-border) !important;
-  color: var(--sr-muted) !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  background: var(--sr-chrome-control) !important;
+  border: 1px solid var(--sr-chrome-line) !important;
+  color: var(--sr-chrome-ink) !important;
+  box-shadow: none;
 }
 #main-app > header #management-mode-control span,
 #main-app > header #status-text {
-  color: var(--sr-ink) !important;
-  font-size: 10px;
+  color: var(--sr-chrome-ink) !important;
   font-weight: 700;
 }
-#main-app > header #management-mode-control i {
-  color: var(--sr-accent-ink) !important;
-}
+#main-app > header #management-mode-control i { color: var(--sr-chrome-accent) !important; }
 #main-app > header #showroom-management-actions button,
 #main-app > header #theme-toggle-btn,
-#main-app > header #pwa-install-btn {
-  background: var(--sr-control) !important;
-  color: var(--sr-accent-ink) !important;
-  border: 1px solid var(--sr-border) !important;
-  box-shadow: 0 1px 4px rgba(40, 24, 8, .11);
-  font-weight: 750;
+#main-app > header #pwa-install-btn,
+#main-app > header button[onclick="fetchSheetData()"] {
+  background: var(--sr-chrome-control) !important;
+  color: var(--sr-chrome-ink) !important;
+  border: 1px solid var(--sr-chrome-line) !important;
+  box-shadow: none;
+  font-weight: 700;
+}
+#main-app > header #showroom-management-actions button i,
+#main-app > header #theme-toggle-btn i,
+#main-app > header #pwa-install-btn i {
+  color: var(--sr-chrome-accent) !important;
 }
 #main-app > header #showroom-management-actions button:hover,
 #main-app > header #theme-toggle-btn:hover,
-#main-app > header #pwa-install-btn:hover {
-  background: var(--sr-hover) !important;
-  border-color: var(--sr-accent-ink) !important;
-  box-shadow: 0 3px 9px rgba(40,24,8,.15);
+#main-app > header #pwa-install-btn:hover,
+#main-app > header button[onclick="fetchSheetData()"]:hover {
+  background: var(--sr-chrome-hover) !important;
+  border-color: var(--sr-chrome-accent) !important;
 }
 #main-app > header button[onclick="fetchSheetData()"] {
-  color: var(--sr-accent-ink) !important;
-  background: var(--sr-control) !important;
-  border: 1px solid var(--sr-border) !important;
   width: 30px;
   height: 30px;
   border-radius: 10px;
@@ -75,115 +111,93 @@ body.theme-dark {
   align-items: center;
   justify-content: center;
 }
-#main-app > header button[onclick="fetchSheetData()"]:hover {
-  background: var(--sr-hover) !important;
-}
 #main-app > header img[alt="Limperial Luxury"] {
-  filter: drop-shadow(0 1px 1px rgba(40,24,8,.17));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .15));
 }
 
-/* Clearer labels and control states in the search/filter card. */
+/* Inside opaque product/filter surfaces, use neutral ink and discreet borders. */
 #catalog-controls-panel label,
-#catalog-controls-panel .text-luxury-muted {
-  color: var(--sr-muted) !important;
-}
+#catalog-controls-panel .text-luxury-muted { color: var(--sr-muted) !important; }
 #catalog-controls-panel button:not(.bg-luxury-gold) {
-  color: var(--sr-accent-ink) !important;
-  border-color: var(--sr-border) !important;
+  color: var(--sr-control-ink) !important;
+  border-color: var(--sr-control-border) !important;
 }
 #catalog-controls-panel button:not(.bg-luxury-gold):hover {
-  background: var(--sr-hover) !important;
+  background: var(--sr-control-hover) !important;
 }
 #catalog-controls-panel button.bg-luxury-gold {
-  color: #291b0b !important;
-  background: var(--sr-active) !important;
-  border-color: #aa7335 !important;
+  background: var(--sr-selected) !important;
+  color: #302315 !important;
+  border-color: rgba(117, 75, 28, .28) !important;
 }
-#catalog-controls-panel button i {
-  color: inherit !important;
+#catalog-controls-panel button i { color: inherit !important; }
+#catalog-controls-panel input,
+#catalog-controls-panel select {
+  border-color: var(--sr-control-border) !important;
+  color: var(--sr-control-ink) !important;
+}
+#catalog-controls-panel #search-input::placeholder {
+  color: var(--sr-muted);
+  opacity: .9;
 }
 
-/* The pagination is outside the cards: give it an opaque floating surface. */
+/* Floating pagination lives directly on the background artwork. */
 #pagination-container:not(.hidden) {
-  background: var(--sr-surface) !important;
-  border: 1px solid var(--sr-border) !important;
+  background: var(--sr-chrome) !important;
+  border: 1px solid var(--sr-chrome-line) !important;
   border-radius: 16px;
   padding: 12px 16px !important;
   margin-top: 18px !important;
   box-shadow: var(--sr-shadow);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  color: var(--sr-ink) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
+  backdrop-filter: blur(18px) saturate(110%);
+  color: var(--sr-chrome-ink) !important;
 }
-#pagination-container > div {
-  color: var(--sr-ink) !important;
-}
-#pagination-container span.text-luxury-gold {
-  color: var(--sr-accent-ink) !important;
-}
-#pagination-container select {
-  background: var(--sr-control) !important;
-  color: var(--sr-ink) !important;
-  border: 1px solid var(--sr-border) !important;
-  font-weight: 700;
-}
+#pagination-container > div { color: var(--sr-chrome-ink) !important; }
+#pagination-container > div:last-child { flex-wrap: wrap; justify-content: center; }
+#pagination-container .text-luxury-muted { color: var(--sr-chrome-muted) !important; }
+#pagination-container span.text-luxury-gold { color: var(--sr-chrome-accent) !important; }
+#pagination-container select,
 #pagination-container button {
-  background: var(--sr-control) !important;
-  color: var(--sr-ink) !important;
-  border: 1px solid var(--sr-border) !important;
-  font-weight: 700;
+  background: var(--sr-chrome-control) !important;
+  color: var(--sr-chrome-ink) !important;
+  border: 1px solid var(--sr-chrome-line) !important;
+  font-weight: 650;
 }
-#pagination-container button:not(:disabled):hover {
-  background: var(--sr-hover) !important;
-  color: var(--sr-accent-ink) !important;
+#pagination-container button:not(.bg-luxury-gold):not(:disabled):hover {
+  background: var(--sr-chrome-hover) !important;
+  border-color: var(--sr-chrome-accent) !important;
 }
 #pagination-container button.bg-luxury-gold {
-  background: var(--sr-active) !important;
-  color: #261708 !important;
-  border-color: #a76c24 !important;
+  background: var(--sr-selected) !important;
+  color: #302315 !important;
+  border: 1px solid rgba(117, 75, 28, .4) !important;
+  font-weight: 750;
 }
-#pagination-container button.cursor-not-allowed {
-  opacity: .45;
-  cursor: not-allowed;
-}
-#pagination-container > div:last-child {
-  flex-wrap: wrap;
-  justify-content: center;
-}
-#pagination-container span.text-luxury-muted {
-  color: var(--sr-muted) !important;
-}
+#pagination-container button.cursor-not-allowed { opacity: .4; cursor: not-allowed; }
 
-/* Product and order controls retain gold branding, but never gold-on-ivory. */
+/* Gold is an accent for prices and primary selections—not every outline. */
 #product-grid .select-btn:not(.bg-luxury-gold),
-#product-grid button[title^="Share"] {
-  background: var(--sr-control) !important;
-  color: var(--sr-accent-ink) !important;
-  border: 1px solid var(--sr-border) !important;
-}
-#product-grid .select-btn:not(.bg-luxury-gold):hover,
-#product-grid button[title^="Share"]:hover {
-  background: var(--sr-hover) !important;
-}
-#product-grid .select-btn.bg-luxury-gold {
-  background: var(--sr-active) !important;
-  color: #25180b !important;
-}
-#product-grid .font-serif.text-luxury-gold,
-#main-app aside h2.text-luxury-gold,
-#main-app aside #ledger-net {
-  color: var(--sr-accent-ink) !important;
-}
+#product-grid button[title^="Share"],
 #main-app aside button[onclick^="openSavedListsModal"],
 #main-app aside button[onclick="addServiceFee()"] {
   background: var(--sr-control) !important;
-  color: var(--sr-accent-ink) !important;
-  border: 1px solid var(--sr-border) !important;
+  color: var(--sr-control-ink) !important;
+  border: 1px solid var(--sr-control-border) !important;
 }
+#product-grid .select-btn:not(.bg-luxury-gold):hover,
+#product-grid button[title^="Share"]:hover,
 #main-app aside button[onclick^="openSavedListsModal"]:hover,
 #main-app aside button[onclick="addServiceFee()"]:hover {
-  background: var(--sr-hover) !important;
+  background: var(--sr-control-hover) !important;
 }
+#product-grid .select-btn.bg-luxury-gold {
+  background: var(--sr-selected) !important;
+  color: #302315 !important;
+}
+#product-grid .font-serif.text-luxury-gold,
+#main-app aside h2.text-luxury-gold,
+#main-app aside #ledger-net { color: var(--sr-accent-ink) !important; }
 #main-app :is(button, select, input):focus-visible {
   outline: 2px solid var(--sr-accent-ink);
   outline-offset: 2px;
