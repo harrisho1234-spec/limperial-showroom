@@ -208,6 +208,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+    <link rel="stylesheet" href="showroom-readability.css?v=20261008-contrast1">
 </head>
 <body class="bg-luxury-dark text-luxury-text font-sans min-h-screen lg:h-screen flex flex-col antialiased lg:overflow-hidden transition-colors duration-300">
 
@@ -288,7 +289,7 @@
             <section class="flex-1 flex flex-col min-w-0 lg:h-full lg:overflow-hidden h-full">
                 
                 <!-- Product catalog search and filters: sized to the left pane, not the full viewport -->
-                <div class="bg-luxury-card border border-luxury-gold/15 rounded-2xl p-4 sm:p-5 mb-4 shadow-xl shrink-0 transition-colors duration-300 space-y-4">
+                <div id="catalog-controls-panel" class="bg-luxury-card border border-luxury-gold/15 rounded-2xl p-4 sm:p-5 mb-4 shadow-xl shrink-0 transition-colors duration-300 space-y-4">
                     <!-- Search: dedicated full-width row, so long text never collides with action buttons -->
                     <div class="relative min-w-0">
                         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-luxury-gold/50 text-base pointer-events-none"></i>
@@ -5608,7 +5609,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261008-quotation-revisions1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261008-contrast1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
