@@ -204,6 +204,7 @@
     <link rel="stylesheet" href="showroom-phase1.css?v=20261008-lightselect1">
     <link rel="stylesheet" href="showroom-dark-polish.css?v=20261008-selectioncontrast1">
     <link rel="stylesheet" href="showroom-mobile-compact.css?v=20261008-mobilecompact1">
+    <link rel="stylesheet" href="showroom-selling.css?v=20261008-sellanalytics1">
 </head>
 <body class="bg-luxury-dark text-luxury-text font-sans min-h-screen lg:h-screen flex flex-col antialiased lg:overflow-hidden transition-colors duration-300">
 
@@ -261,6 +262,7 @@
                         <button type="button" id="showroom-background-manage-button" class="rounded-xl border border-luxury-gold/30 px-3 py-2 text-xs font-bold text-luxury-gold" title="Manage the normal showroom background">
                             <i class="fa-regular fa-image mr-1"></i><span class="hidden xl:inline">Showroom </span>Background
                         </button>
+                        <button type="button" id="showroom-analytics-button" onclick="window.ShowroomAnalytics?.open()" class="rounded-xl border border-luxury-gold/30 px-3 py-2 text-xs font-bold text-luxury-gold" title="Management-only product interest report"><i class="fa-solid fa-chart-column mr-1"></i><span class="hidden xl:inline">Product </span>Analytics</button>
                         <button type="button" id="seasonal-promotions-manage-button" class="rounded-xl border border-luxury-gold/30 px-3 py-2 text-xs font-bold text-luxury-gold" title="Manage seasonal promotion campaigns">
                             <i class="fa-solid fa-star mr-1"></i><span class="hidden xl:inline">Seasonal </span>Promotions
                         </button>
@@ -491,7 +493,7 @@
         </main>
     </div>
 
-    <div class="lg:hidden fixed bottom-6 right-6 z-40">
+    <div id="mobile-cart-floating" class="lg:hidden fixed bottom-6 right-6 z-40">
         <button onclick="toggleMobileCart(true)" class="relative h-14 w-14 rounded-full bg-gradient-to-br from-luxury-gold to-amber-600 flex items-center justify-center shadow-2xl border border-luxury-gold/30 hover:scale-105 active:scale-95 transition-transform duration-150">
             <i class="fa-solid fa-receipt text-[#0a0f19] text-xl"></i>
             <span id="mobile-cart-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[11px] font-bold h-6 w-6 rounded-full flex items-center justify-center border-2 border-luxury-dark">0</span>
@@ -2337,15 +2339,14 @@
                 const setSearchFields = product.isSet
                     ? [String(product.itemName || ''), String(product.code || ''), String(product.description || '')].join(' ')
                     : '';
-                const matchesSearch = !searchVal || searchableItems.some(item => {
-                    const itemDisplayBrand = getDisplayBrand(item.brand, showCostMode);
-                    return String(item.code || '').toLowerCase().includes(searchVal) ||
-                        itemDisplayBrand.toLowerCase().includes(searchVal) ||
-                        String(item.brand || '').toLowerCase().includes(searchVal) ||
-                        String(item.itemName || '').toLowerCase().includes(searchVal) ||
-                        String(item.location || '').toLowerCase().includes(searchVal) ||
-                        String(item.description || '').toLowerCase().includes(searchVal);
-                }) || setSearchFields.toLowerCase().includes(searchVal);
+                // Multi-word queries now match across code, title, material,
+                // category, brand, description and created-set components.
+                const matchesSearch = !searchVal || (window.ShowroomSearchCore
+                    ? window.ShowroomSearchCore.score(product, searchVal, componentItems) >= 0
+                    : searchableItems.some(item => {
+                        const fields = [item.code,item.brand,item.itemName,item.location,item.description, item.class,item.subclass];
+                        return fields.some(value => String(value||'').toLowerCase().includes(searchVal));
+                    }) || setSearchFields.toLowerCase().includes(searchVal));
 
                 const matchesBrand = !currentBrandFilter || (product.isSet
                     ? componentItems.some(item => itemMatchesBrandFilter(item, currentBrandFilter))
@@ -2369,14 +2370,21 @@
                 return (!window.SeasonalPromos?.showingAll || window.SeasonalPromos.isFeatured(product)) && matchesSearch && matchesSetsOnly && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesKeyMaterial && matchesPromo;
             });
 
-            if (sortNewArrival) {
-                filteredProducts.sort((a, b) => {
-                    const da = getAgingDays(a), db = getAgingDays(b);
-                    if (da === null && db === null) return 0;
-                    if (da === null) return 1;
-                    if (db === null) return -1;
-                    return da - db;
+            // Relevance outranks arrival age when searching; Newest First
+            // still resolves equally relevant products.
+            if (searchVal && window.ShowroomSearchCore) {
+                filteredProducts.sort((a,b) => {
+                    const delta=window.ShowroomSearchCore.score(b,searchVal,getSetFilterComponents(b)) -
+                      window.ShowroomSearchCore.score(a,searchVal,getSetFilterComponents(a));
+                    if(delta!==0)return delta;
+                    if(sortNewArrival){
+                        const da=getAgingDays(a), db=getAgingDays(b);
+                        return (da??999999)-(db??999999);
+                    }
+                    return 0;
                 });
+            }else if(sortNewArrival){
+                filteredProducts.sort((a,b)=>(getAgingDays(a)??999999)-(getAgingDays(b)??999999));
             }
 
             const emptyState = document.getElementById('empty-state');
@@ -2640,6 +2648,7 @@
 
         function openProductDetailModal(productId) {
             const sourceItem = products.find(p => p.id === productId); if (!sourceItem) return;
+            window.ShowroomAnalytics?.record(sourceItem,'view');
             window.ShowroomPhase1?.recordViewed(productId);
             const item = window.SeasonalPromos?.view(sourceItem) || sourceItem;
             const modal = document.getElementById('product-detail-modal'); const container = document.getElementById('product-detail-modal-container'); if (!modal || !container) return;
@@ -3021,6 +3030,7 @@
             const dc = document.getElementById('desktop-cart-count'); if (dc) dc.textContent = totalCount;
             const mb = document.getElementById('mobile-cart-badge'); if (mb) mb.textContent = totalCount;
             renderDesktopCartItems(); renderMobileCartItems(); calculateAndDrawTotals();
+            window.ShowroomSelling?.refreshCart();
             updateRecommendedSets();
             window.ShowroomPhase1?.scheduleDraft();
         }
@@ -3514,6 +3524,7 @@
             } else {
                 if (deskSec) deskSec.classList.add('hidden'); if (mobSec) mobSec.classList.add('hidden');
             }
+            window.ShowroomSelling?.refreshCart();
         }
 
         function handleDiscountChange(source) {
@@ -4397,6 +4408,9 @@
                     : '"' + record.name + '" saved successfully.';
                 setSavedListSavingState('done', savedQuoteDisplay ? 'Saved as ' + savedQuoteDisplay + '.' : 'Saved successfully.');
                 window.ShowroomPhase1?.savedSuccessfully();
+                if (documentType === 'quotation' && record?.quoteNo) {
+                    window.ShowroomAnalytics?.recordQuote(record);
+                }
                 showNotification(successMessage, "success");
                 await new Promise(resolve => setTimeout(resolve, 900));
                 closeSavedListsModal();
@@ -5609,5 +5623,8 @@
     <script src="seasonal-promotions.js?v=20261008-backgroundmorph2"></script>
     <script src="showroom-phase1-core.js?v=20261008-recent3days1"></script>
     <script src="showroom-phase1.js?v=20261008-lightselect1"></script>
+    <script src="showroom-search-core.js?v=20261008-sellanalytics1"></script>
+    <script src="showroom-selling.js?v=20261008-sellanalytics1"></script>
+    <script src="showroom-analytics.js?v=20261008-sellanalytics1"></script>
 </body>
 </html>
