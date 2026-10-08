@@ -714,17 +714,22 @@
     notify('Campaign '+(!existing.is_enabled?'enabled':'disabled')+'.','success');
     await refresh();
   }
-  function revokeBackgroundPreview(){
-    if(pendingBackgroundPreviewUrl){URL.revokeObjectURL(pendingBackgroundPreviewUrl);pendingBackgroundPreviewUrl='';}
+  function revokeBackgroundPreview(mode='light'){
+    const dark=mode==='dark';
+    const url=dark?pendingBackgroundDarkPreviewUrl:pendingBackgroundPreviewUrl;
+    if(url)URL.revokeObjectURL(url);
+    if(dark)pendingBackgroundDarkPreviewUrl='';else pendingBackgroundPreviewUrl='';
   }
   function resetBackgroundEditor(c){
-    revokeBackgroundPreview();
-    pendingBackgroundFile=null;
-    pendingBackgroundMeta='';
-    removeBackground=false;
+    revokeBackgroundPreview();revokeBackgroundPreview('dark');
+    pendingBackgroundFile=null;pendingBackgroundMeta='';removeBackground=false;
+    pendingBackgroundDarkFile=null;pendingBackgroundDarkMeta='';removeBackgroundDark=false;
     editorBackgroundPath=c?.custom_background_path||'';
     editorBackgroundName=c?.custom_background_name||'';
     editorBackgroundUpdatedAt=c?.custom_background_updated_at||null;
+    editorBackgroundDarkPath=c?.custom_background_dark_path||'';
+    editorBackgroundDarkName=c?.custom_background_dark_name||'';
+    editorBackgroundDarkUpdatedAt=c?.custom_background_dark_updated_at||null;
   }
   function editCampaign(c){
     editing=true;editVersion=c?.updated_at||null;editId=c?.id||null;chosen=new Map(campaignItems(c||{}).map(item=>[codeOf(item.code),{code:codeOf(item.code),promo_price:item.promo_price??null}]));
@@ -757,8 +762,10 @@
       '</form></div>';
     ui('sp-product-search')?.addEventListener('input',e=>{searchQuery=e.target.value;renderPicker();});
     ui('sp-theme')?.addEventListener('change',renderThemePreview);
-    ui('sp-background-file')?.addEventListener('change',handleBackgroundFile);
-    ui('sp-background-remove')?.addEventListener('click',removeCustomBackground);
+    ui('sp-background-file')?.addEventListener('change',e=>handleBackgroundFile(e,'light'));
+    ui('sp-background-dark-file')?.addEventListener('change',e=>handleBackgroundFile(e,'dark'));
+    ui('sp-background-remove')?.addEventListener('click',()=>removeCustomBackground('light'));
+    ui('sp-background-dark-remove')?.addEventListener('click',()=>removeCustomBackground('dark'));
     renderBackgroundStatus();
     renderThemePreview();
     ui('sp-cancel-edit')?.addEventListener('click',()=>{resetBackgroundEditor(null);editId=null;editing=false;chosen.clear();renderManager();});
@@ -772,31 +779,49 @@
       '<option value="">Default L\'Imperial background</option>'+options+'</select><div id="sp-theme-preview" class="mt-2"></div></label>';
   }
   function backgroundUploadControl(){
+    const picker=(mode,desc)=>{
+      const dark=mode==='dark',suffix=dark?'-dark':'',label=dark?'☾ Dark Mode':'☀ Light Mode';
+      return '<div class="rounded-lg border border-luxury-gold/20 bg-luxury-card/70 p-3 space-y-2">'+
+        '<div class="flex flex-wrap items-center justify-between gap-2">'+
+        '<div><div class="text-xs font-bold text-luxury-text">'+label+'</div><p class="text-[10px] text-luxury-muted">'+desc+'</p></div>'+
+        '<button type="button" id="sp-background'+suffix+'-remove" class="hidden px-3 py-1.5 rounded-lg border border-red-400/30 text-red-500 text-[10px] font-bold">Remove '+(dark?'Dark':'Light')+' Image</button></div>'+
+        '<input id="sp-background'+suffix+'-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Custom campaign '+mode+' mode background" class="block w-full text-xs text-luxury-muted file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-950 cursor-pointer">'+
+        '<div id="sp-background'+suffix+'-status" class="text-[10px] text-luxury-muted"></div></div>';
+    };
     return '<div class="sm:col-span-2 rounded-xl border border-luxury-gold/20 bg-luxury-accent/20 p-3 space-y-2">'+
-      '<div class="flex flex-wrap items-center justify-between gap-2"><div><div class="text-[11px] font-bold text-luxury-text">Custom Background Upload</div>'+
-      '<div class="text-[10px] text-luxury-muted mt-0.5">Overrides the selected built-in theme for this campaign.</div></div>'+
-      '<button type="button" id="sp-background-remove" class="hidden px-3 py-1.5 rounded-lg border border-red-400/30 text-red-500 text-[10px] font-bold">Remove Custom Image</button></div>'+
-      '<input id="sp-background-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="block w-full text-xs text-luxury-muted file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-950 cursor-pointer">'+
-      '<div class="text-[10px] text-luxury-muted">Recommended: 2560 × 1440 (16:9). Minimum: 1920 × 1080. JPG, PNG, WebP or animated GIF, maximum 8 MB.</div>'+
-      '<div id="sp-background-status" class="text-[10px] text-luxury-muted"></div></div>';
+      '<div class="text-[11px] font-bold text-luxury-text">Custom Seasonal Backgrounds</div>'+
+      '<div class="text-[10px] text-luxury-muted">Upload separate images for the same promotion in Light Mode and Dark Mode. The artwork fades smoothly when you switch modes. Missing variants use the other image or built-in preset.</div>'+
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">'+
+      picker('light','Overrides the seasonal preset in light mode')+
+      picker('dark','Optional evening theme; falls back to light image')+'</div>'+
+      '<div class="text-[10px] text-luxury-muted">Recommended per image: 2560 × 1440 (16:9). Minimum: 1920 × 1080. JPG, PNG, WebP or GIF, maximum 8 MB each.</div></div>';
   }
-  function currentCustomPreview(){
+  function currentCustomPreview(mode='light'){
+    const dark=mode==='dark';
+    if(dark){
+      if(pendingBackgroundDarkPreviewUrl)return pendingBackgroundDarkPreviewUrl;
+      return !removeBackgroundDark&&editorBackgroundDarkPath?storagePublicUrl(editorBackgroundDarkPath):'';
+    }
     if(pendingBackgroundPreviewUrl)return pendingBackgroundPreviewUrl;
-    if(!removeBackground&&editorBackgroundPath)return storagePublicUrl(editorBackgroundPath);
-    return '';
+    return !removeBackground&&editorBackgroundPath?storagePublicUrl(editorBackgroundPath):'';
   }
   function renderBackgroundStatus(){
-    const status=ui('sp-background-status'),removeBtn=ui('sp-background-remove');
-    if(!status)return;
-    const hasCustom=!!currentCustomPreview();
-    if(pendingBackgroundFile){
-      status.innerHTML='<span class="text-luxury-gold font-semibold">Ready to upload:</span> '+escapeHtml(pendingBackgroundFile.name)+(pendingBackgroundMeta?' · '+escapeHtml(pendingBackgroundMeta):'');
-    }else if(!removeBackground&&editorBackgroundPath){
-      status.innerHTML='<span class="text-luxury-gold font-semibold">Current custom image:</span> '+escapeHtml(editorBackgroundName||'Uploaded seasonal background');
-    }else{
-      status.textContent='No custom background selected. The built-in theme will be used.';
+    for(const mode of ['light','dark']){
+      const dark=mode==='dark',suffix=dark?'-dark':'';
+      const status=ui('sp-background'+suffix+'-status'),removeBtn=ui('sp-background'+suffix+'-remove');
+      const file=dark?pendingBackgroundDarkFile:pendingBackgroundFile;
+      const meta=dark?pendingBackgroundDarkMeta:pendingBackgroundMeta;
+      const removed=dark?removeBackgroundDark:removeBackground;
+      const path=dark?editorBackgroundDarkPath:editorBackgroundPath;
+      const name=dark?editorBackgroundDarkName:editorBackgroundName;
+      if(status){
+        if(file)status.textContent='Ready to upload: '+file.name+' · '+meta;
+        else if(removed)status.textContent=mode+' image will be removed when saved.';
+        else if(path)status.textContent='Saved: '+(name||'Uploaded seasonal background');
+        else status.textContent='No custom '+mode+' image; built-in theme or other image will be used.';
+      }
+      if(removeBtn)removeBtn.classList.toggle('hidden',!currentCustomPreview(mode)&&!path);
     }
-    if(removeBtn)removeBtn.classList.toggle('hidden',!hasCustom);
   }
   function imageDimensions(file){
     return new Promise((resolve,reject)=>{
@@ -806,52 +831,51 @@
       img.src=url;
     });
   }
-  async function handleBackgroundFile(event){
+  async function handleBackgroundFile(event,mode='light'){
     const input=event.currentTarget,file=input?.files?.[0];
     if(!file)return;
-    if(!BACKGROUND_TYPES.has(file.type)){
-      notify('Use a JPG, PNG, WebP or GIF background image.','error');input.value='';return;
+    const meta=await validateBackgroundImage(file,input);if(!meta)return;
+    revokeBackgroundPreview(mode);
+    if(mode==='dark'){
+      pendingBackgroundDarkFile=file;pendingBackgroundDarkMeta=meta;removeBackgroundDark=false;
+      pendingBackgroundDarkPreviewUrl=URL.createObjectURL(file);
+    }else{
+      pendingBackgroundFile=file;pendingBackgroundMeta=meta;removeBackground=false;
+      pendingBackgroundPreviewUrl=URL.createObjectURL(file);
     }
-    if(file.size>MAX_BACKGROUND_BYTES){
-      notify('Background image is larger than 8 MB. Please export a smaller file.','error');input.value='';return;
-    }
-    let dims;
-    try{dims=await imageDimensions(file);}catch(e){notify('The selected image could not be opened.','error');input.value='';return;}
-    if(dims.width<MIN_BACKGROUND_WIDTH||dims.height<MIN_BACKGROUND_HEIGHT){
-      notify('Background is '+dims.width+' × '+dims.height+'. Please use at least 1920 × 1080 to avoid pixelation.','error');input.value='';return;
-    }
-    revokeBackgroundPreview();
-    pendingBackgroundFile=file;
-    pendingBackgroundMeta=dims.width+' × '+dims.height+' · '+(file.size/1048576).toFixed(1)+' MB';
-    removeBackground=false;
-    pendingBackgroundPreviewUrl=URL.createObjectURL(file);
-    renderBackgroundStatus();
-    renderThemePreview();
+    renderBackgroundStatus();renderThemePreview();
   }
-  function removeCustomBackground(){
-    revokeBackgroundPreview();
-    pendingBackgroundFile=null;pendingBackgroundMeta='';removeBackground=true;
-    const input=ui('sp-background-file');if(input)input.value='';
+  function removeCustomBackground(mode='light'){
+    revokeBackgroundPreview(mode);
+    if(mode==='dark'){
+      pendingBackgroundDarkFile=null;pendingBackgroundDarkMeta='';removeBackgroundDark=true;
+    }else{
+      pendingBackgroundFile=null;pendingBackgroundMeta='';removeBackground=true;
+    }
+    const input=ui(mode==='dark'?'sp-background-dark-file':'sp-background-file');
+    if(input)input.value='';
     renderBackgroundStatus();renderThemePreview();
   }
   function renderThemePreview(){
     const wrap=ui('sp-theme-preview');if(!wrap)return;
-    const custom=currentCustomPreview();
-    if(custom){
-      const label=pendingBackgroundFile?pendingBackgroundFile.name:(editorBackgroundName||'Custom Background');
-      wrap.innerHTML='<div class="relative h-32 sm:h-44 overflow-hidden rounded-xl border border-luxury-gold/25 bg-luxury-dark">'+
-        '<img src="'+escapeHtml(custom)+'" alt="" class="absolute inset-0 w-full h-full object-cover object-center">'+
-        '<div class="absolute inset-0 bg-black/5"></div>'+
-        '<div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white"><div class="text-[10px] uppercase tracking-widest font-bold">Custom Background</div><div class="text-[9px] opacity-85 mt-0.5">'+escapeHtml(label)+' · overrides built-in theme</div></div></div>';
+    const key=ui('sp-theme')?.value||'',preset=themePresets()[key];
+    const light=currentCustomPreview('light'),dark=currentCustomPreview('dark');
+    const builtin=preset?.backgroundDesktop||preset?.backgroundMobile||'';
+    const customLight=light||dark,customDark=dark||light;
+    const lightSrc=customLight||builtin,darkSrc=customDark||builtin;
+    if(!lightSrc&&!darkSrc){
+      wrap.innerHTML='<div class="rounded-xl border border-luxury-gold/10 bg-luxury-accent/25 px-3 py-3 text-[10px] text-luxury-muted">No seasonal artwork. The normal showroom light/dark background will remain.</div>';
       return;
     }
-    const key=ui('sp-theme')?.value||'',preset=themePresets()[key];
-    if(!preset){wrap.innerHTML='<div class="rounded-xl border border-luxury-gold/10 bg-luxury-accent/25 px-3 py-3 text-[10px] text-luxury-muted">No seasonal artwork. The normal showroom background will remain.</div>';return;}
-    const image=preset.backgroundDesktop||preset.backgroundMobile||'';
-    wrap.innerHTML='<div class="relative h-32 sm:h-44 overflow-hidden rounded-xl border border-luxury-gold/20 bg-luxury-dark">'+
-      '<img src="'+escapeHtml(image)+'" alt="" class="absolute inset-0 w-full h-full object-cover object-center">'+
-      '<div class="absolute inset-0" style="background:'+escapeHtml(preset.overlay||'rgba(12,18,24,.30)')+'"></div>'+
-      '<div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/65 to-transparent text-white"><div class="text-[10px] uppercase tracking-widest font-bold">'+escapeHtml(preset.label)+'</div><div class="text-[9px] opacity-80 mt-0.5">Built-in theme preview · upload a custom image above to override it</div></div></div>';
+    const box=(title,src,note)=>
+      '<div class="rounded-xl border border-luxury-gold/20 bg-luxury-dark/40 overflow-hidden">'+
+      '<div class="relative h-24 sm:h-32">'+
+      '<img src="'+escapeHtml(src)+'" alt="'+escapeHtml(title)+' artwork preview" class="absolute inset-0 w-full h-full object-cover object-center">'+
+      '<div class="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-white text-[10px] font-bold">'+title+'</div></div>'+
+      '<div class="text-[9px] text-luxury-muted p-2">'+escapeHtml(note)+'</div></div>';
+    wrap.innerHTML='<div class="grid grid-cols-2 gap-2">'+
+      box('☀ Light Mode',lightSrc,light?'Custom image':dark?'Uses dark custom image':'Built-in theme')+
+      box('☾ Dark Mode',darkSrc,dark?'Custom image':light?'Uses light custom image':'Built-in theme')+'</div>';
   }
   function field(label,id,value,type,placeholder){
     return '<label class="text-[11px] font-bold text-luxury-muted block">'+escapeHtml(label)+'<input '+(id==='sp-percent'||id==='sp-badge'?'':'required ')+'id="'+id+'" type="'+type+'" '+(type==='number'?'min="0" max="100" step="0.01"':'')+
