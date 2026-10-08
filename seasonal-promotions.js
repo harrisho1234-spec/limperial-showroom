@@ -722,7 +722,10 @@
     }
   }
   function bind(){
-    const btn=ui('seasonal-promotions-manage-button');if(btn)btn.addEventListener('click',openManager);
+    const promoBtn=ui('seasonal-promotions-manage-button');
+    const backgroundBtn=ui('showroom-background-manage-button');
+    if(promoBtn)promoBtn.addEventListener('click',()=>openManager('campaigns'));
+    if(backgroundBtn)backgroundBtn.addEventListener('click',()=>openManager('background'));
     document.body.insertAdjacentHTML('beforeend',modalHtml());
     ui('sp-close')?.addEventListener('click',closeManager);
     ui('seasonal-promo-modal')?.addEventListener('click',e=>{if(e.target.id==='seasonal-promo-modal')closeManager();});
@@ -745,7 +748,8 @@
     });
   }
   window.SeasonalPromos={refresh,catalogUpdated:renderBanner,view,reset:()=>{showingAll=false;renderBanner();},setManagerMode,
-    afterAddToCart,isFeatured, get showingAll(){return showingAll;},openManager};
+    afterAddToCart,isFeatured, get showingAll(){return showingAll;},openManager,
+    openBackgroundManager:()=>openManager('background')};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
   else bind();
 })();
