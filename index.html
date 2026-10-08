@@ -648,7 +648,7 @@
                     </div>
                 </div>
                 <div id="retrieve-lists-panel" class="hidden space-y-3">
-                    <div class="flex items-center justify-between"><span class="text-[10px] uppercase tracking-wider text-luxury-muted font-bold">Saved Lists</span><span id="saved-lists-count" class="text-[10px] text-luxury-gold font-semibold"></span></div>
+                    <div class="flex items-center justify-between gap-2"><button id="saved-quotation-versions-back" onclick="openRetrieveListsPanel()" class="hidden text-[10px] text-luxury-gold font-bold hover:underline">← All Saved Lists</button><span id="saved-lists-heading" class="text-[10px] uppercase tracking-wider text-luxury-muted font-bold">Saved Lists</span><span id="saved-lists-count" class="text-[10px] text-luxury-gold font-semibold"></span></div>
                     <div id="saved-lists-list" class="max-h-72 overflow-y-auto space-y-2"><div class="text-center py-8 text-xs text-luxury-muted">Loading saved lists...</div></div>
                     <button onclick="closeSavedListsModal()" class="w-full py-2.5 bg-luxury-lightBg hover:bg-luxury-accent text-luxury-soft border border-luxury-gold/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200">Close</button>
                 </div>
@@ -844,6 +844,8 @@
         let activeSavedQuotationName = '';
         let activeSavedQuotationNo = '';
         let activeSavedQuotationRevision = 0;
+        let activeViewedQuotationRevision = null; // historical view; next saved revision always follows the latest
+        let savedQuotationVersionOptions = new Map();
         let documentFormStates = {
             quotation: { initialized: false },
             sales_order: { initialized: false },
@@ -3646,7 +3648,9 @@
         function currentQuotationRevision() {
             if (documentType !== 'quotation') return 0;
             const currentNo = String(document.getElementById('quote-no-input')?.value || '').trim();
-            return currentNo && currentNo === activeSavedQuotationNo ? activeSavedQuotationRevision : 0;
+            return currentNo && currentNo === activeSavedQuotationNo
+                ? (activeViewedQuotationRevision === null ? activeSavedQuotationRevision : activeViewedQuotationRevision)
+                : 0;
         }
 
         function quotationDisplayNumber(quoteNo, revision = currentQuotationRevision()) {
@@ -3666,6 +3670,7 @@
             activeSavedQuotationName = '';
             activeSavedQuotationNo = '';
             activeSavedQuotationRevision = 0;
+            activeViewedQuotationRevision = null;
         }
 
         function getQuotationPrefix() {
@@ -3758,6 +3763,10 @@
                 return;
             }
             if (isEditingSavedQuotation()) {
+                if (activeViewedQuotationRevision !== null) {
+                    help.textContent = 'Viewing historical ' + (activeViewedQuotationRevision > 0 ? 'Rev ' + activeViewedQuotationRevision : 'Original') + '. Saving will create Rev ' + (activeSavedQuotationRevision + 1) + ' without changing this historical version.';
+                    return;
+                }
                 help.textContent = activeSavedQuotationRevision > 0
                     ? 'Saved as Rev ' + activeSavedQuotationRevision + '. The next save will become Rev ' + (activeSavedQuotationRevision + 1) + '.'
                     : 'Original saved quotation. The next save will become Rev 1.';
@@ -3905,6 +3914,170 @@
             }
         }
 
+
+        // Full immutable historical quotations are stored in separate Google Sheets
+        // saved-list rows. The normal saved quotation ID remains the latest version,
+        // so existing Sales & Order Management import links continue to work.
+        function quotationArchiveId(sourceId, revision) {
+            return String(sourceId) + '--REV-' + String(Math.max(0, Number(revision) || 0));
+        }
+
+        async function getSavedQuotationCloudRecord(recordId) {
+            const response = await jsonpRequest({ action: 'get', recordId, _cb: Date.now() });
+            return response?.record || null;
+        }
+
+        async function getExistingArchivedQuotation(recordId) {
+            try {
+                return await getSavedQuotationCloudRecord(recordId);
+            } catch (err) {
+                if (/not found|does not exist|no saved|missing record/i.test(String(err?.message || ''))) return null;
+                throw err;
+            }
+        }
+
+        async function ensureQuotationPreviousVersion() {
+            const sourceId = activeSavedQuotationId;
+            if (!sourceId || !activeSavedQuotationNo) throw new Error('Open a saved quotation before revising it.');
+            const original = SAVED_LISTS_API_URL
+                ? await getSavedQuotationCloudRecord(sourceId)
+                : savedInterestLists.find(list => String(list.id) === sourceId);
+            if (!original || original.deleted || String(original.status || '').toLowerCase() === 'delete') {
+                throw new Error('The original saved quotation is not available. Revision was cancelled.');
+            }
+            if (savedQuotationNumber(original) !== activeSavedQuotationNo) {
+                throw new Error('Quotation number differs from the saved record. Please reopen it.');
+            }
+            const previousRev = savedQuotationRevision(original);
+            if (previousRev !== activeSavedQuotationRevision) {
+                throw new Error('A newer quotation revision exists. Please reopen the latest version before saving.');
+            }
+            const archiveId = quotationArchiveId(sourceId, previousRev);
+            let archive = SAVED_LISTS_API_URL
+                ? await getExistingArchivedQuotation(archiveId)
+                : savedInterestLists.find(list => String(list.id) === archiveId);
+            if (archive && (archive.state?.quotationArchiveOf !== sourceId || savedQuotationRevision(archive) !== previousRev)) {
+                throw new Error('A saved revision archive conflicts with this quotation. No changes were made.');
+            }
+            if (!archive) {
+                archive = {
+                    id: archiveId,
+                    name: original.name || activeSavedQuotationName || 'Saved Quotation',
+                    savedAt: original.savedAt || new Date().toISOString(),
+                    state: { ...cloneForStorage(original.state || {}), quotationArchiveOf: sourceId }
+                };
+                if (SAVED_LISTS_API_URL) {
+                    await postSavedListsRequest({
+                        action: 'save', recordId: archive.id, name: archive.name,
+                        savedAt: archive.savedAt, payload: JSON.stringify(archive.state)
+                    });
+                    let confirmed = null;
+                    for (let attempt = 0; attempt < 5; attempt++) {
+                        try {
+                            confirmed = await getSavedQuotationCloudRecord(archiveId);
+                            if (confirmed?.state?.quotationArchiveOf === sourceId && savedQuotationRevision(confirmed) === previousRev) break;
+                        } catch (_) { /* no-cors POST may still be processing */ }
+                        confirmed = null;
+                        await new Promise(resolve => setTimeout(resolve, 450 * (attempt + 1)));
+                    }
+                    if (!confirmed) throw new Error('The previous revision could not be archived in Google Sheets. Nothing was overwritten.');
+                    archive = confirmed;
+                }
+            }
+            const local = getLocalSavedInterestLists();
+            if (!local.some(item => String(item.id) === archiveId)) {
+                local.unshift(archive);
+                savedInterestLists = local;
+                setLocalSavedInterestLists(local);
+            }
+        }
+
+        async function openQuotationVersions(recordId) {
+            const listEl = document.getElementById('saved-lists-list');
+            const countEl = document.getElementById('saved-lists-count');
+            const heading = document.getElementById('saved-lists-heading');
+            const backBtn = document.getElementById('saved-quotation-versions-back');
+            if (!listEl) return;
+            if (heading) heading.textContent = 'Quotation Versions';
+            if (backBtn) backBtn.classList.remove('hidden');
+            if (countEl) countEl.textContent = '';
+            listEl.textContent = 'Loading saved versions…';
+            savedQuotationVersionOptions = new Map();
+            try {
+                await loadSavedInterestLists();
+                const main = savedInterestLists.find(item => String(item.id) === String(recordId) && !item.state?.quotationArchiveOf);
+                if (!main) throw new Error('The quotation is no longer available.');
+                const currentRev = savedQuotationRevision(main);
+                const versions = new Map();
+                // Older snapshots already recorded in Sales & Order Management are
+                // also readable here for signed-in users with quotations.view.
+                try {
+                    const cloudHistory = await window.QuotationRegistry?.listRevisions?.(recordId) || [];
+                    for (const r of cloudHistory) {
+                        const n = Number(r.revision_no);
+                        if (!Number.isInteger(n) || n < 0 || n >= currentRev || !r.source_payload) continue;
+                        versions.set(n, {
+                            id: main.id, name: r.source_name || main.name,
+                            quoteNo: r.quote_no || savedQuotationNumber(main),
+                            savedAt: r.saved_at, state: r.source_payload
+                        });
+                    }
+                } catch (historyError) {
+                    console.warn('Authenticated quotation snapshots unavailable:', historyError);
+                }
+                savedInterestLists.filter(item =>
+                    String(item.state?.quotationArchiveOf || '') === String(recordId) &&
+                    !item.deleted && String(item.status || '').toLowerCase() !== 'delete'
+                ).forEach(item => {
+                    versions.set(savedQuotationRevision(item), item);
+                });
+                versions.set(currentRev, main); // latest must always open from the current saved record
+                listEl.replaceChildren();
+                const revisions = [...versions.entries()].sort((a, b) => a[0] - b[0]);
+                for (const [revision, snapshot] of revisions) {
+                    savedQuotationVersionOptions.set(revision, { mainId: main.id, snapshot });
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center gap-3 p-3 bg-luxury-dark border border-luxury-gold/15 rounded-xl';
+                    const info = document.createElement('div');
+                    info.className = 'min-w-0 flex-1';
+                    const title = document.createElement('div');
+                    title.className = 'text-xs font-semibold text-luxury-text';
+                    title.textContent = quotationDisplayNumber(savedQuotationNumber(main), revision) + (revision === currentRev ? ' · Latest' : ' · Preserved');
+                    const meta = document.createElement('div');
+                    meta.className = 'text-[10px] text-luxury-muted mt-1';
+                    const itemCount = Array.isArray(snapshot.state?.cart) ? snapshot.state.cart.length : 0;
+                    meta.textContent = itemCount + ' line item(s)' + (snapshot.savedAt ? ' · ' + formatSavedListDate(snapshot.savedAt) : '');
+                    info.append(title, meta);
+                    const open = document.createElement('button');
+                    open.type = 'button';
+                    open.className = 'shrink-0 rounded-lg border border-luxury-gold/30 text-luxury-gold hover:bg-luxury-accent px-3 py-2 text-xs font-bold';
+                    open.textContent = 'Open';
+                    open.onclick = () => openSavedQuotationRevision(revision);
+                    row.append(info, open);
+                    listEl.append(row);
+                }
+                if (countEl) countEl.textContent = revisions.length + ' version' + (revisions.length === 1 ? '' : 's');
+                if (currentRev > 0 && revisions.length < currentRev + 1) {
+                    const note = document.createElement('p');
+                    note.className = 'text-[10px] text-luxury-muted px-2 py-1';
+                    note.textContent = 'Some earlier versions predate Showroom archiving. Sign in to Sales & Order Management with quotation-view permission to see available older snapshots.';
+                    listEl.append(note);
+                }
+            } catch (err) {
+                listEl.textContent = err?.message || 'Could not load quotation versions.';
+                showNotification(err?.message || 'Could not load quotation versions.', 'error');
+            }
+        }
+
+        function openSavedQuotationRevision(revision) {
+            const option = savedQuotationVersionOptions.get(Number(revision));
+            if (!option) {
+                showNotification('That quotation version could not be found.', 'error');
+                return;
+            }
+            retrieveSavedInterestList(option.mainId, option.snapshot);
+        }
+
         function openSavedListsModal(mode = 'save') {
             // "Open" is a direct shortcut to saved documents, even when the cart is empty.
             // "Save" skips the previous Save / Retrieve menu and opens the save form.
@@ -3985,7 +4158,10 @@
             const countEl = document.getElementById('saved-lists-count');
             if (!listEl) return;
             const lists = Array.isArray(savedInterestLists) ? savedInterestLists : [];
-            const visibleLists = lists.filter(list => !list.deleted && String(list.status || '').toLowerCase() !== 'delete');
+            const visibleLists = lists.filter(list => !list.deleted && String(list.status || '').toLowerCase() !== 'delete' && !list.state?.quotationArchiveOf);
+            document.getElementById('saved-quotation-versions-back')?.classList.add('hidden');
+            const heading = document.getElementById('saved-lists-heading');
+            if (heading) heading.textContent = 'Saved Lists';
             if (countEl) countEl.textContent = visibleLists.length + (visibleLists.length === 1 ? ' list' : ' lists');
             if (visibleLists.length === 0) {
                 listEl.innerHTML = `<div class="text-center py-8 text-xs text-luxury-muted"><i class="fa-regular fa-folder-open text-lg mb-2 block text-luxury-gold/30"></i>No saved lists yet.</div>`;
@@ -4031,6 +4207,18 @@
                     return false;
                 };
 
+                const versionsBtn = document.createElement('button');
+                versionsBtn.type = 'button';
+                versionsBtn.className = 'shrink-0 h-9 px-2 rounded-lg bg-luxury-card border border-luxury-gold/20 text-luxury-gold hover:bg-luxury-gold hover:text-slate-950 transition-colors flex items-center justify-center gap-1 text-[10px] font-bold';
+                versionsBtn.title = 'View Original and all saved quotation revisions';
+                versionsBtn.setAttribute('aria-label', 'View quotation versions');
+                versionsBtn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i><span>Versions</span>';
+                versionsBtn.onclick = function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openQuotationVersions(list.id);
+                };
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.type = 'button';
                 deleteBtn.className = 'shrink-0 h-9 w-9 rounded-lg bg-luxury-card border border-red-500/15 text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:border-red-500/30 transition-colors flex items-center justify-center';
@@ -4047,8 +4235,10 @@
                 row.appendChild(button);
                 // Only real quotations can enter the quotation import/history flow.
                 // Sales Order, Inventory and Delivery Order remain normal saved documents.
-                if (isQuotation) row.appendChild(sendBtn);
-                else row.appendChild(deleteBtn);
+                if (isQuotation) {
+                    row.appendChild(versionsBtn);
+                    row.appendChild(sendBtn);
+                } else row.appendChild(deleteBtn);
                 listEl.appendChild(row);
             });
         }
@@ -4116,9 +4306,14 @@
             let revisingExistingQuotation = false;
             let previousSavedRecord = null;
             let previousQuotationRevision = activeSavedQuotationRevision;
+            const previousViewedQuotationRevision = activeViewedQuotationRevision;
 
             try {
                 revisingExistingQuotation = isEditingSavedQuotation();
+                if (revisingExistingQuotation) {
+                    setSavedListSavingState('saving', 'Preserving the previous quotation version…');
+                    await ensureQuotationPreviousVersion();
+                }
                 const nextQuotationRevision = revisingExistingQuotation ? activeSavedQuotationRevision + 1 : 0;
                 record = buildSavedInterestListRecord(name, {
                     recordId: revisingExistingQuotation ? activeSavedQuotationId : '',
@@ -4241,6 +4436,7 @@
                     activeSavedQuotationName = record.name;
                     activeSavedQuotationNo = record.quoteNo;
                     activeSavedQuotationRevision = savedQuotationRevision(record);
+                    activeViewedQuotationRevision = null;
                     updateQuotationNumberHelp();
                     updateQuotationPreview();
                 }
@@ -4265,6 +4461,7 @@
                     savedInterestLists = local;
                     setLocalSavedInterestLists(savedInterestLists);
                     activeSavedQuotationRevision = previousQuotationRevision;
+                    activeViewedQuotationRevision = previousViewedQuotationRevision;
                     updateQuotationNumberHelp();
                     updateQuotationPreview();
                 }
@@ -4355,9 +4552,10 @@
             }).filter(Boolean);
         }
 
-        async function retrieveSavedInterestList(listId) {
-            const selected = savedInterestLists.find(list => String(list.id) === String(listId));
-            if (!selected) { showNotification("Saved list could not be found.", "error"); return; }
+        async function retrieveSavedInterestList(listId, historicalRecord = null) {
+            const baseRecord = savedInterestLists.find(list => String(list.id) === String(listId));
+            const selected = historicalRecord || baseRecord;
+            if (!selected || !baseRecord) { showNotification("Saved list could not be found.", "error"); return; }
             const state = selected.state || {};
             cart = rehydrateCartForCurrentInventory(state.cart);
             discountPctValue = Number(state.discountPctValue) || 0;
@@ -4381,10 +4579,12 @@
 
             const restoredDocType = state.documentType || documentType || 'quotation';
             if (restoredDocType === 'quotation') {
-                activeSavedQuotationId = String(selected.id || '').trim();
-                activeSavedQuotationName = String(selected.name || '').trim();
-                activeSavedQuotationNo = savedQuotationNumber(selected);
-                activeSavedQuotationRevision = savedQuotationRevision(selected);
+                activeSavedQuotationId = String(baseRecord.id || '').trim();
+                activeSavedQuotationName = String(baseRecord.name || '').trim();
+                activeSavedQuotationNo = savedQuotationNumber(baseRecord);
+                activeSavedQuotationRevision = savedQuotationRevision(baseRecord);
+                const openedRevision = savedQuotationRevision(selected);
+                activeViewedQuotationRevision = openedRevision === activeSavedQuotationRevision ? null : openedRevision;
                 const restoredPrefix = prefixFromQuotationNumber(activeSavedQuotationNo);
                 const prefixSelect = document.getElementById('quote-prefix-select');
                 if (prefixSelect && restoredPrefix) prefixSelect.value = restoredPrefix;
@@ -4401,7 +4601,9 @@
             if (documentType === 'quotation') syncQuotationTypeFromNumber();
             updateQuotationNumberHelp();
             updateQuotationPreview(); closeSavedListsModal();
-            showNotification(`"${selected.name || 'Saved List'}" retrieved.`, "success");
+            showNotification(activeViewedQuotationRevision !== null
+                ? 'Historical quotation opened. Saving changes will create Rev ' + (activeSavedQuotationRevision + 1) + '.'
+                : `"${selected.name || 'Saved List'}" retrieved.`, "success");
         }
 
         function confirmClearCart() {
@@ -5451,7 +5653,7 @@
     <script src="assets/seasonal/pchum-ben-data/10.js?v=20261007-pchumdata1"></script>
     <script src="assets/seasonal/pchum-ben-data/11.js?v=20261007-pchumdata1"></script>
     <script src="promotion-config.js?v=20261007-theme6"></script>
-    <script src="quotation-registry.js?v=20261007-revisionhistory1"></script>
+    <script src="quotation-registry.js?v=20261008-history-read1"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
     <script src="seasonal-promotions.js?v=20261008-accountpermissions3"></script>
 </body>
