@@ -22,6 +22,7 @@ function score(product,query,components=[]){
       let weight=-1;
       if(f.code===term)weight=100;
       else if(f.code.startsWith(term))weight=66;
+      else if(f.code.includes(term))weight=54;
       else if(f.name.includes(term))weight=f.name.startsWith(term)?55:47;
       else if(f.category.includes(term))weight=38;
       else if(f.details.includes(term))weight=17;
