@@ -490,130 +490,175 @@
       renderManager();
     }catch(e){renderLogin('Sign-in could not complete. Please try again.');}
   }
-  function revokeDefaultBackgroundPreview(){
-    if(defaultBackgroundPreviewUrl){URL.revokeObjectURL(defaultBackgroundPreviewUrl);defaultBackgroundPreviewUrl='';}
+  function revokeDefaultBackgroundPreview(mode='light'){
+    const dark=mode==='dark';
+    const url=dark?defaultBackgroundDarkPreviewUrl:defaultBackgroundPreviewUrl;
+    if(url)URL.revokeObjectURL(url);
+    if(dark)defaultBackgroundDarkPreviewUrl='';else defaultBackgroundPreviewUrl='';
   }
   function resetDefaultBackgroundDraft(){
     revokeDefaultBackgroundPreview();
-    defaultBackgroundFile=null;
-    defaultBackgroundMeta='';
-    removeDefaultBackground=false;
+    revokeDefaultBackgroundPreview('dark');
+    defaultBackgroundFile=null;defaultBackgroundMeta='';removeDefaultBackground=false;
+    defaultBackgroundDarkFile=null;defaultBackgroundDarkMeta='';removeDefaultBackgroundDark=false;
   }
-  function currentDefaultBackgroundPreview(){
+  function currentDefaultBackgroundPreview(mode='light'){
+    const dark=mode==='dark';
+    if(dark){
+      if(defaultBackgroundDarkPreviewUrl)return defaultBackgroundDarkPreviewUrl;
+      return !removeDefaultBackgroundDark&&defaultBackground?.custom_background_dark_path
+        ? storagePublicUrl(defaultBackground.custom_background_dark_path):'';
+    }
     if(defaultBackgroundPreviewUrl)return defaultBackgroundPreviewUrl;
-    if(!removeDefaultBackground&&defaultBackground?.custom_background_path)return storagePublicUrl(defaultBackground.custom_background_path);
-    return '';
+    return !removeDefaultBackground&&defaultBackground?.custom_background_path
+      ?storagePublicUrl(defaultBackground.custom_background_path):'';
   }
   function defaultBackgroundCard(){
+    const inputClass='block w-full text-xs text-luxury-muted file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-950 cursor-pointer';
+    const picker=(mode,label,note)=>{
+      const dark=mode==='dark',id=dark?'-dark':'';
+      return '<div class="rounded-xl border border-luxury-gold/20 bg-luxury-card/60 p-3 space-y-2">'+
+        '<div class="flex flex-wrap gap-2 justify-between items-center"><div><div class="text-xs font-semibold text-luxury-text">'+label+'</div><div class="text-[10px] text-luxury-muted">'+note+'</div></div>'+
+        '<button type="button" id="sp-default-background'+id+'-remove" class="hidden px-3 py-2 rounded-lg border border-red-400/30 text-red-500 text-[10px] font-bold">Remove '+(dark?'Dark':'Light')+' Image</button></div>'+
+        '<div id="sp-default-background'+id+'-preview"></div>'+
+        '<input id="sp-default-background'+id+'-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="'+inputClass+'" aria-label="'+label+'">'+
+        '<div id="sp-default-background'+id+'-status" class="text-[10px] text-luxury-muted"></div></div>';
+    };
     return '<div class="rounded-xl border border-luxury-gold/25 bg-luxury-accent/20 p-4 space-y-3">'+
-      '<div class="flex flex-wrap items-start justify-between gap-3"><div><div class="font-serif text-luxury-gold font-bold text-base">Default Showroom Background</div>'+
-      '<div class="text-[10px] text-luxury-muted mt-1">Used whenever no active seasonal campaign has its own background. Seasonal campaign artwork temporarily overrides this image.</div></div>'+
-      '<button type="button" id="sp-default-background-remove" class="hidden px-3 py-2 rounded-lg border border-red-400/30 text-red-500 text-[10px] font-bold">Remove Background</button></div>'+
-      '<div id="sp-default-background-preview"></div>'+
-      '<div class="rounded-lg border border-luxury-gold/15 bg-luxury-card/60 p-3 space-y-2">'+
-      '<input id="sp-default-background-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="block w-full text-xs text-luxury-muted file:mr-3 file:rounded-lg file:border-0 file:bg-luxury-gold file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-950 cursor-pointer">'+
-      '<div class="text-[10px] text-luxury-muted">Recommended: 2560 × 1440 (16:9). Minimum: 1920 × 1080. JPG, PNG, WebP or animated GIF, maximum 8 MB.</div>'+
-      '<div id="sp-default-background-status" class="text-[10px] text-luxury-muted"></div>'+
-      '<div class="flex justify-end"><button type="button" id="sp-default-background-save" class="px-4 py-2.5 bg-luxury-gold text-slate-950 rounded-lg text-xs font-bold">Save Default Background</button></div></div></div>';
+      '<div><div class="font-serif text-luxury-gold font-bold text-base">Showroom Backgrounds — Light & Dark</div>'+
+      '<div class="text-[10px] text-luxury-muted mt-1">Choose separate artwork for each display mode. Switching the moon/sun theme will smoothly fade to the matching background. Campaign artwork takes priority when a promotion is active.</div></div>'+
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">'+
+      picker('light','☀ Light Mode','Main daytime artwork')+
+      picker('dark','☾ Dark Mode','Optional evening artwork; light image is used if omitted')+'</div>'+
+      '<div class="text-[10px] text-luxury-muted">Recommended per image: 2560 × 1440 (16:9). Minimum: 1920 × 1080. JPG, PNG, WebP or GIF, maximum 8 MB each.</div>'+
+      '<div class="flex justify-end"><button type="button" id="sp-default-background-save" class="px-4 py-2.5 bg-luxury-gold text-slate-950 rounded-lg text-xs font-bold">Save Backgrounds</button></div></div>';
   }
   function updateDefaultBackgroundUI(){
-    const preview=ui('sp-default-background-preview');
-    const status=ui('sp-default-background-status');
-    const removeBtn=ui('sp-default-background-remove');
+    for(const mode of ['light','dark']){
+      const dark=mode==='dark',suffix=dark?'-dark':'';
+      const preview=ui('sp-default-background'+suffix+'-preview');
+      const status=ui('sp-default-background'+suffix+'-status');
+      const removeBtn=ui('sp-default-background'+suffix+'-remove');
+      const image=currentDefaultBackgroundPreview(mode);
+      const file=dark?defaultBackgroundDarkFile:defaultBackgroundFile;
+      const meta=dark?defaultBackgroundDarkMeta:defaultBackgroundMeta;
+      const removed=dark?removeDefaultBackgroundDark:removeDefaultBackground;
+      const name=dark?defaultBackground?.custom_background_dark_name:defaultBackground?.custom_background_name;
+      const path=dark?defaultBackground?.custom_background_dark_path:defaultBackground?.custom_background_path;
+      if(preview)preview.innerHTML=image
+        ? '<div class="relative h-28 sm:h-36 overflow-hidden rounded-xl border border-luxury-gold/25 bg-luxury-dark"><img src="'+escapeHtml(image)+'" alt="'+mode+' mode artwork preview" class="absolute inset-0 w-full h-full object-cover object-center"><div class="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-white text-[10px] font-semibold">'+escapeHtml(file?.name||name||'Uploaded artwork')+'</div></div>'
+        : '<div class="rounded-xl border border-luxury-gold/10 bg-luxury-dark/30 px-4 py-6 text-center text-[10px] text-luxury-muted">'+(dark?'No dark-mode image — light artwork will be used.':'No light-mode image — built-in background will be used.')+'</div>';
+      if(status){
+        if(file)status.textContent='Ready to upload: '+file.name+' · '+meta;
+        else if(removed)status.textContent=mode+' image will be removed when saved.';
+        else if(path)status.textContent='Saved: '+(name||'Uploaded artwork');
+        else status.textContent='Not uploaded';
+      }
+      if(removeBtn)removeBtn.classList.toggle('hidden',!image&&!path);
+    }
     const saveBtn=ui('sp-default-background-save');
-    const image=currentDefaultBackgroundPreview();
-    if(preview){
-      preview.innerHTML=image
-        ? '<div class="relative h-32 sm:h-44 overflow-hidden rounded-xl border border-luxury-gold/25 bg-luxury-dark"><img src="'+escapeHtml(image)+'" alt="" class="absolute inset-0 w-full h-full object-cover object-center"><div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white"><div class="text-[10px] uppercase tracking-widest font-bold">Default Showroom Background</div><div class="text-[9px] opacity-85 mt-0.5">'+escapeHtml(defaultBackgroundFile?.name||defaultBackground?.custom_background_name||'Uploaded background')+'</div></div></div>'
-        : '<div class="rounded-xl border border-luxury-gold/10 bg-luxury-dark/30 px-4 py-6 text-center text-[10px] text-luxury-muted">No custom default background. The normal L\'Imperial showroom background will be used when there is no seasonal override.</div>';
-    }
-    if(status){
-      if(defaultBackgroundFile)status.innerHTML='<span class="text-luxury-gold font-semibold">Ready to upload:</span> '+escapeHtml(defaultBackgroundFile.name)+(defaultBackgroundMeta?' · '+escapeHtml(defaultBackgroundMeta):'');
-      else if(removeDefaultBackground)status.innerHTML='<span class="text-red-500 font-semibold">Background will be removed when you save.</span>';
-      else if(defaultBackground?.custom_background_path)status.innerHTML='<span class="text-luxury-gold font-semibold">Current default image:</span> '+escapeHtml(defaultBackground.custom_background_name||'Uploaded background');
-      else status.textContent='No custom default image saved yet.';
-    }
-    if(removeBtn)removeBtn.classList.toggle('hidden',!image&&!defaultBackground?.custom_background_path);
-    if(saveBtn)saveBtn.disabled=!defaultBackgroundFile&&!removeDefaultBackground;
+    if(saveBtn)saveBtn.disabled=!defaultBackgroundFile&&!defaultBackgroundDarkFile&&!removeDefaultBackground&&!removeDefaultBackgroundDark;
   }
-  async function handleDefaultBackgroundFile(event){
-    const input=event.currentTarget,file=input?.files?.[0];
-    if(!file)return;
+  async function validateBackgroundImage(file,input){
     if(!BACKGROUND_TYPES.has(file.type)){
-      notify('Use a JPG, PNG, WebP or GIF background image.','error');input.value='';return;
+      notify('Use a JPG, PNG, WebP or GIF background image.','error');
+      if(input)input.value='';return null;
     }
     if(file.size>MAX_BACKGROUND_BYTES){
-      notify('Background image is larger than 8 MB. Please export a smaller file.','error');input.value='';return;
+      notify('Background image is larger than 8 MB. Please export a smaller file.','error');
+      if(input)input.value='';return null;
     }
     let dims;
-    try{dims=await imageDimensions(file);}catch(e){notify('The selected image could not be opened.','error');input.value='';return;}
-    if(dims.width<MIN_BACKGROUND_WIDTH||dims.height<MIN_BACKGROUND_HEIGHT){
-      notify('Background is '+dims.width+' × '+dims.height+'. Please use at least 1920 × 1080 to avoid pixelation.','error');input.value='';return;
+    try{dims=await imageDimensions(file);}catch(e){
+      notify('The selected image could not be opened.','error');if(input)input.value='';return null;
     }
-    revokeDefaultBackgroundPreview();
-    defaultBackgroundFile=file;
-    defaultBackgroundMeta=dims.width+' × '+dims.height+' · '+(file.size/1048576).toFixed(1)+' MB';
-    removeDefaultBackground=false;
-    defaultBackgroundPreviewUrl=URL.createObjectURL(file);
+    if(dims.width<MIN_BACKGROUND_WIDTH||dims.height<MIN_BACKGROUND_HEIGHT){
+      notify('Background is '+dims.width+' × '+dims.height+'. Please use at least 1920 × 1080 to avoid pixelation.','error');
+      if(input)input.value='';return null;
+    }
+    return dims.width+' × '+dims.height+' · '+(file.size/1048576).toFixed(1)+' MB';
+  }
+  async function handleDefaultBackgroundFile(event,mode='light'){
+    const input=event.currentTarget,file=input?.files?.[0];
+    if(!file)return;
+    const meta=await validateBackgroundImage(file,input);if(!meta)return;
+    revokeDefaultBackgroundPreview(mode);
+    if(mode==='dark'){
+      defaultBackgroundDarkFile=file;defaultBackgroundDarkMeta=meta;removeDefaultBackgroundDark=false;
+      defaultBackgroundDarkPreviewUrl=URL.createObjectURL(file);
+    }else{
+      defaultBackgroundFile=file;defaultBackgroundMeta=meta;removeDefaultBackground=false;
+      defaultBackgroundPreviewUrl=URL.createObjectURL(file);
+    }
     updateDefaultBackgroundUI();
   }
-  function removeDefaultBackgroundImage(){
-    revokeDefaultBackgroundPreview();
-    defaultBackgroundFile=null;
-    defaultBackgroundMeta='';
-    removeDefaultBackground=true;
-    const input=ui('sp-default-background-file');if(input)input.value='';
+  function removeDefaultBackgroundImage(mode='light'){
+    revokeDefaultBackgroundPreview(mode);
+    if(mode==='dark'){
+      defaultBackgroundDarkFile=null;defaultBackgroundDarkMeta='';removeDefaultBackgroundDark=true;
+    }else{
+      defaultBackgroundFile=null;defaultBackgroundMeta='';removeDefaultBackground=true;
+    }
+    const input=ui(mode==='dark'?'sp-default-background-dark-file':'sp-default-background-file');
+    if(input)input.value='';
     updateDefaultBackgroundUI();
   }
-  async function uploadDefaultBackgroundFile(file){
+  async function uploadDefaultBackgroundFile(file,mode='light'){
     const {data:userData,error:userError}=await client.auth.getUser();
     const user=userData?.user;
     if(userError||!user)throw new Error(userError?.message||'Please sign in again before uploading.');
     const token=globalThis.crypto?.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36);
-    const path='defaults/'+user.id+'/'+Date.now()+'-showroom-default-'+token+'.'+backgroundExtension(file);
+    const path='defaults/'+user.id+'/'+Date.now()+'-showroom-'+mode+'-'+token+'.'+backgroundExtension(file);
     const {error}=await client.storage.from(BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
     if(error)throw error;
     return path;
   }
   async function saveDefaultBackground(){
     if(!authorized)return;
-    if(!defaultBackgroundFile&&!removeDefaultBackground)return;
+    if(!defaultBackgroundFile&&!defaultBackgroundDarkFile&&!removeDefaultBackground&&!removeDefaultBackgroundDark)return;
     const btn=ui('sp-default-background-save');
-    if(btn){btn.disabled=true;btn.textContent=defaultBackgroundFile?'Uploading…':'Saving…';}
-    const oldPath=defaultBackground?.custom_background_path||'';
-    let uploadedPath='';
+    if(btn){btn.disabled=true;btn.textContent='Saving backgrounds…';}
+    const oldLight=defaultBackground?.custom_background_path||'';
+    const oldDark=defaultBackground?.custom_background_dark_path||'';
+    const uploaded=[];
     try{
-      let nextPath=removeDefaultBackground?null:(defaultBackground?.custom_background_path||null);
-      let nextName=removeDefaultBackground?null:(defaultBackground?.custom_background_name||null);
-      let nextUpdated=removeDefaultBackground?null:(defaultBackground?.custom_background_updated_at||null);
+      let lightPath=removeDefaultBackground?null:(oldLight||null);
+      let lightName=removeDefaultBackground?null:(defaultBackground?.custom_background_name||null);
+      let lightUpdated=removeDefaultBackground?null:(defaultBackground?.custom_background_updated_at||null);
+      let darkPath=removeDefaultBackgroundDark?null:(oldDark||null);
+      let darkName=removeDefaultBackgroundDark?null:(defaultBackground?.custom_background_dark_name||null);
+      let darkUpdated=removeDefaultBackgroundDark?null:(defaultBackground?.custom_background_dark_updated_at||null);
       if(defaultBackgroundFile){
-        uploadedPath=await uploadDefaultBackgroundFile(defaultBackgroundFile);
-        nextPath=uploadedPath;
-        nextName=defaultBackgroundFile.name.slice(0,255);
-        nextUpdated=new Date().toISOString();
+        lightPath=await uploadDefaultBackgroundFile(defaultBackgroundFile,'light');uploaded.push(lightPath);
+        lightName=defaultBackgroundFile.name.slice(0,255);lightUpdated=new Date().toISOString();
+      }
+      if(defaultBackgroundDarkFile){
+        darkPath=await uploadDefaultBackgroundFile(defaultBackgroundDarkFile,'dark');uploaded.push(darkPath);
+        darkName=defaultBackgroundDarkFile.name.slice(0,255);darkUpdated=new Date().toISOString();
       }
       const {data:userData}=await client.auth.getUser();
       const payload={
-        custom_background_path:nextPath,
-        custom_background_name:nextName,
-        custom_background_updated_at:nextUpdated,
-        updated_at:new Date().toISOString(),
-        updated_by:userData?.user?.id||null
+        custom_background_path:lightPath,custom_background_name:lightName,custom_background_updated_at:lightUpdated,
+        custom_background_dark_path:darkPath,custom_background_dark_name:darkName,custom_background_dark_updated_at:darkUpdated,
+        updated_at:new Date().toISOString(),updated_by:userData?.user?.id||null
       };
-      const {data,error}=await client.from(DEFAULT_BG_TABLE).update(payload).eq('id','default').select('id,custom_background_path,custom_background_name,custom_background_updated_at,updated_at').single();
+      const {data,error}=await client.from(DEFAULT_BG_TABLE).update(payload).eq('id','default')
+        .select('id,custom_background_path,custom_background_name,custom_background_updated_at,custom_background_dark_path,custom_background_dark_name,custom_background_dark_updated_at,updated_at').single();
       if(error)throw error;
       defaultBackground=data||{id:'default',...payload};
-      if(oldPath&&oldPath!==nextPath)await deleteBackgroundFile(oldPath);
       resetDefaultBackgroundDraft();
-      applyTheme();
-      updateDefaultBackgroundUI();
-      notify(nextPath?'Default showroom background saved.':'Default showroom background removed.','success');
+      applyTheme();updateDefaultBackgroundUI();
+      notify('Light and dark showroom backgrounds saved.','success');
+      // Avoid deleting an image still used by the opposite display mode.
+      for(const old of [oldLight,oldDark]){
+        if(old&&old!==lightPath&&old!==darkPath)await deleteBackgroundFile(old);
+      }
     }catch(error){
-      if(uploadedPath)await deleteBackgroundFile(uploadedPath);
-      notify('Default background was not saved: '+(error?.message||'Unknown error.'),'error');
+      for(const item of uploaded)await deleteBackgroundFile(item);
+      notify('Backgrounds were not saved: '+(error?.message||'Unknown error.'),'error');
       updateDefaultBackgroundUI();
     }finally{
-      if(btn){btn.textContent='Save Default Background';btn.disabled=!defaultBackgroundFile&&!removeDefaultBackground;}
+      if(btn){btn.textContent='Save Backgrounds';btn.disabled=!defaultBackgroundFile&&!defaultBackgroundDarkFile&&!removeDefaultBackground&&!removeDefaultBackgroundDark;}
     }
   }
 
@@ -638,8 +683,10 @@
         '<button id="sp-logout" class="px-3 py-2 border border-luxury-gold/20 rounded-lg text-xs text-luxury-muted">Sign Out</button></div>'+
         defaultBackgroundCard();
       ui('sp-retry')?.addEventListener('click',refresh);
-      ui('sp-default-background-file')?.addEventListener('change',handleDefaultBackgroundFile);
-      ui('sp-default-background-remove')?.addEventListener('click',removeDefaultBackgroundImage);
+      ui('sp-default-background-file')?.addEventListener('change',e=>handleDefaultBackgroundFile(e,'light'));
+      ui('sp-default-background-dark-file')?.addEventListener('change',e=>handleDefaultBackgroundFile(e,'dark'));
+      ui('sp-default-background-remove')?.addEventListener('click',()=>removeDefaultBackgroundImage('light'));
+      ui('sp-default-background-dark-remove')?.addEventListener('click',()=>removeDefaultBackgroundImage('dark'));
       ui('sp-default-background-save')?.addEventListener('click',saveDefaultBackground);
       updateDefaultBackgroundUI();
     }else{
