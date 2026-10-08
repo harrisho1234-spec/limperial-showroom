@@ -212,3 +212,225 @@ body.theme-dark #catalog-controls-panel button.sp1-tool-feature {
     padding:18px;gap:10px;
   }
 }
+
+
+/* ---------------------------------------------------------------
+   ORIGINAL L'IMPERIAL PALETTE (visual-only overrides)
+   Style all newer Phase 1 controls using the app's established
+   gold #dfb26c, navy #090c12, ivory #f9f6f0, and classic serif.
+   Keep HTML, layout, actions, stored drafts and quotation logic as-is.
+   --------------------------------------------------------------- */
+.sp1-backdrop {
+  --sp1-bg: #ffffff;
+  --sp1-paper: #f9f6f0;
+  --sp1-card: #ffffff;
+  --sp1-ink: #1c1a17;
+  --sp1-muted: #5c5345;
+  --sp1-border: rgba(185, 134, 65, .29);
+  --sp1-gold: #dfb26c;
+  --sp1-gold-ink: #936027;
+  --sp1-primary-bg: #111827;
+  --sp1-primary-text: #dfb26c;
+  --sp1-hover: #f4eee3;
+  --sp1-shadow: 0 20px 64px rgba(9, 12, 18, .42);
+}
+body.theme-dark .sp1-backdrop {
+  --sp1-bg: #111827;
+  --sp1-paper: #090c12;
+  --sp1-card: #192436;
+  --sp1-ink: #f8fafc;
+  --sp1-muted: #cbd5e1;
+  --sp1-border: rgba(223, 178, 108, .30);
+  --sp1-gold-ink: #dfb26c;
+  --sp1-primary-bg: #dfb26c;
+  --sp1-primary-text: #090c12;
+  --sp1-hover: #263449;
+  --sp1-shadow: 0 24px 72px rgba(0, 0, 0, .55);
+}
+#showroom-phase1-tools {
+  border-top-color: rgba(223, 178, 108, .24);
+}
+#catalog-controls-panel button.sp1-tool-btn {
+  background: var(--luxury-accent) !important;
+  border: 1px solid rgba(223, 178, 108, .30) !important;
+  color: var(--sr-gold-ink, #936027) !important;
+}
+#catalog-controls-panel button.sp1-tool-btn:hover {
+  background: var(--luxury-lightbg) !important;
+  border-color: #dfb26c !important;
+}
+#catalog-controls-panel button.sp1-tool-feature {
+  background: #111827 !important;
+  border-color: #dfb26c !important;
+  color: #dfb26c !important;
+}
+#catalog-controls-panel button.sp1-tool-feature:hover {
+  background: #1e293b !important;
+  color: #f0cd93 !important;
+}
+body.theme-dark #catalog-controls-panel button.sp1-tool-feature {
+  background: #dfb26c !important;
+  border-color: #dfb26c !important;
+  color: #090c12 !important;
+}
+body.theme-dark #catalog-controls-panel button.sp1-tool-feature:hover {
+  background: #cda05b !important;
+  color: #090c12 !important;
+}
+.sp1-draft-status[data-status="unsaved"],
+.sp1-draft-status[data-status="available"] {
+  color: var(--sr-gold-ink, #936027);
+}
+#product-grid .sp1-card-button {
+  background: var(--luxury-accent);
+  color: var(--sr-gold-ink, #936027);
+  border-color: rgba(223, 178, 108, .33);
+}
+#product-grid .sp1-card-button:hover,
+#product-grid .sp1-card-button.is-active {
+  color: var(--sr-gold-ink, #936027);
+  background: var(--luxury-lightbg);
+  border-color: #dfb26c;
+}
+.sp1-backdrop {
+  background: rgba(9,12,18,.79);
+}
+.sp1-panel {
+  background: var(--sp1-bg);
+  color: var(--sp1-ink);
+  border-color: var(--sp1-border);
+  box-shadow: var(--sp1-shadow);
+}
+.sp1-panel-head,
+.sp1-row,
+.sp1-diff-row {
+  border-color: var(--sp1-border);
+}
+.sp1-panel-heading strong {
+  color: var(--sp1-gold-ink);
+}
+.sp1-panel-heading p,
+.sp1-hint,
+.sp1-row-main small {
+  color: var(--sp1-muted);
+}
+.sp1-row-main strong,
+.sp1-row-main {
+  color: var(--sp1-ink);
+}
+.sp1-icon-button,
+.sp1-secondary {
+  background: var(--sp1-paper);
+  color: var(--sp1-ink);
+  border-color: var(--sp1-border);
+}
+.sp1-primary {
+  background: var(--sp1-primary-bg);
+  color: var(--sp1-primary-text);
+  border-color: var(--sp1-gold);
+}
+.sp1-icon-button:hover,
+.sp1-secondary:hover {
+  background: var(--sp1-hover);
+  color: var(--sp1-ink);
+  border-color: var(--sp1-gold);
+}
+.sp1-primary:hover {
+  background: var(--sp1-primary-bg);
+  color: var(--sp1-primary-text);
+  filter: brightness(1.14);
+  border-color: var(--sp1-gold);
+}
+.sp1-product-image,
+.sp1-product-column,
+.sp1-presentation-card {
+  background: var(--sp1-card);
+  color: var(--sp1-muted);
+  border-color: var(--sp1-border);
+}
+.sp1-product-image {
+  background: var(--sp1-paper);
+}
+.sp1-product-image img {
+  background: #ffffff; /* preserves the original colors of product photography */
+}
+.sp1-product-column>strong,
+.sp1-product-column dd,
+.sp1-presentation-info h3 {
+  color: var(--sp1-ink);
+}
+.sp1-product-column>p,
+.sp1-product-column dt,
+.sp1-presentation-info p,
+.sp1-presentation-meta {
+  color: var(--sp1-muted);
+}
+.sp1-presentation .sp1-panel {
+  background: var(--sp1-bg);
+}
+.sp1-presentation .sp1-panel-body {
+  color: var(--sp1-ink);
+}
+.sp1-presentation-top,
+.sp1-presentation-meta {
+  border-color: var(--sp1-border);
+}
+.sp1-presentation-top>span {
+  color: var(--sp1-gold-ink);
+  font-family: "Playfair Display", "Battambang", serif;
+}
+.sp1-presentation-top small {
+  color: var(--sp1-muted);
+}
+.sp1-presentation-top>strong {
+  color: var(--sp1-ink);
+}
+.sp1-presentation-price {
+  color: var(--sp1-gold-ink);
+}
+.sp1-diff-totals {
+  background: var(--sp1-paper);
+  color: var(--sp1-ink);
+  border: 1px solid var(--sp1-border);
+}
+.sp1-diff-totals small {
+  color: var(--sp1-muted);
+}
+.sp1-diff-totals strong {
+  color: var(--sp1-gold-ink);
+}
+.sp1-diff-flag {
+  background: var(--sp1-paper);
+  color: var(--sp1-gold-ink);
+  border: 1px solid var(--sp1-border);
+}
+/* Status colors remain meaningful: additions green, removals red. */
+.sp1-diff-added .sp1-diff-flag {
+  background: #e6f1e9;
+  color: #295e39;
+}
+.sp1-diff-removed .sp1-diff-flag {
+  background: #f7e7e7;
+  color: #8b3d3d;
+}
+#saved-lists-list button.sp1-version-compare {
+  background: var(--luxury-accent);
+  color: var(--sr-gold-ink, #936027);
+  border-color: rgba(223, 178, 108, .36);
+}
+#saved-lists-list button.sp1-version-compare:hover {
+  background: var(--luxury-lightbg);
+  border-color: #dfb26c;
+}
+.sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-product-image {
+  border-color: var(--sp1-border);
+}
+.sp1-panel :is(button,input,select):focus-visible,
+#catalog-controls-panel .sp1-tool-btn:focus-visible,
+#product-grid .sp1-card-button:focus-visible {
+  outline: 2px solid #dfb26c;
+  outline-offset: 2px;
+}
+@media(max-width:767px) {
+  .sp1-presentation .sp1-panel { border-color: var(--sp1-border); }
+}
