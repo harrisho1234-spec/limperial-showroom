@@ -168,3 +168,47 @@ body.theme-dark #catalog-controls-panel button.sp1-tool-feature {
 }
 .sp1-panel .sp1-danger-outline:hover { background:#faeded;border-color:#972f2b; }
 .sp1-panel .sp1-danger-outline:disabled { opacity:.40;cursor:not-allowed; }
+
+/* Make a single selected furniture set an actual showcase instead of a
+   narrow card floating in a wide presentation canvas. */
+.sp1-presentation-grid:has(> .sp1-presentation-card:only-child) {
+  grid-template-columns: minmax(0,1fr);
+}
+.sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-presentation-card {
+  display:grid;
+  grid-template-columns:minmax(0,1.3fr) minmax(230px,.7fr);
+  align-items:stretch;
+  min-height:390px;
+}
+.sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-product-image {
+  min-height:390px;
+  height:min(62vh,580px);
+  border-right:1px solid #e5e0d8;
+}
+.sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-presentation-info {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:clamp(18px,3vw,42px);
+  gap:14px;
+}
+.sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-presentation-info h3 {
+  font-size:clamp(23px,2.5vw,34px);
+}
+.sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-presentation-info p {
+  font-size:13px;line-height:1.75;
+}
+.sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-presentation-price {
+  font-size:clamp(21px,2.5vw,30px);
+}
+@media(max-width:767px) {
+  .sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-presentation-card {
+    display:block;min-height:0;
+  }
+  .sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-product-image {
+    height:250px;min-height:0;border-right:0;border-bottom:1px solid #e5e0d8;
+  }
+  .sp1-presentation-grid:has(> .sp1-presentation-card:only-child) .sp1-presentation-info {
+    padding:18px;gap:10px;
+  }
+}
