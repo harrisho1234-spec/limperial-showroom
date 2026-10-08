@@ -83,3 +83,55 @@ test('autosave persists a draft and only confirmed save clears it',()=>{
   vars.window.ShowroomPhase1.savedSuccessfully();
   assert.equal(JSON.parse(storage.get('limperial_showroom_drafts_v1')).length,0);
 });
+
+test('recently viewed keeps only products viewed in last 3 days, newest first',()=>{
+  const core=loadCore();
+  const now=Date.parse('2026-10-08T00:00:00Z');
+  const ago=(hours)=>new Date(now-hours*60*60*1000).toISOString();
+  const items=[
+    {id:'fresh',viewedAt:ago(2)},
+    {id:'expired',viewedAt:ago(74)},
+    {id:'border',viewedAt:ago(72)},
+    {id:'old-duplicate',viewedAt:ago(30)},
+    {id:'fresh',viewedAt:ago(5)},
+    {id:'future',viewedAt:ago(-2)},
+    {id:'recent',viewedAt:ago(1)}
+  ];
+  const recent=core.freshRecentViews(items,now);
+  assert.deepEqual(Array.from(recent,x=>x.id),['recent','fresh','old-duplicate']);
+  assert.equal(core.RECENT_RETENTION_MS,72*60*60*1000);
+});
+test('recently viewed caps retained products to 24 while preserving the newest',()=>{
+  const core=loadCore();
+  const now=Date.parse('2026-10-08T00:00:00Z');
+  const items=Array.from({length:30},(_,i)=>({id:'product-'+i,viewedAt:new Date(now-(i+1)*1000).toISOString()}));
+  const kept=core.freshRecentViews(items,now);
+  assert.equal(kept.length,24);
+  assert.equal(kept[0].id,'product-0');
+  assert.equal(kept.at(-1).id,'product-23');
+});
+test('legacy recent IDs receive a 3-day migration window and favorites are untouched',()=>{
+  const browser={};
+  vm.runInNewContext(source('showroom-phase1-core.js'),{window:browser});
+  const storage=new Map([
+    ['limperial_showroom_recent_v1',JSON.stringify(['X-1','X-2'])],
+    ['limperial_showroom_favorites_v1',JSON.stringify(['FAV-1'])]
+  ]);
+  const localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
+  let init;
+  const doc={readyState:'loading',addEventListener:(event,fn)=>{if(event==='DOMContentLoaded')init=fn},getElementById:()=>null,hidden:false};
+  const ctx={
+    window:{...browser,addEventListener(){}},document:doc,localStorage,
+    products:[],cart:[],discountPctValue:0,discountFlatValue:0,partnerCommType:'pct',partnerCommValue:0,hasPartner:false,documentType:'quotation',
+    documentFormStates:{quotation:{initialized:false}},showPreOrderOnDoc:true,
+    activeSavedQuotationId:'',activeSavedQuotationName:'',activeSavedQuotationNo:'',activeSavedQuotationRevision:0,activeViewedQuotationRevision:null,
+    captureDocumentFormState(){},showNotification(){},
+    setTimeout(){return 1},clearTimeout(){}
+  };
+  vm.runInNewContext(source('showroom-phase1.js'),ctx);
+  init();
+  const recent=JSON.parse(storage.get('limperial_showroom_recent_v1'));
+  assert.deepEqual(recent.map(x=>x.id),['X-1','X-2']);
+  assert.ok(recent.every(x=>Date.now()-Date.parse(x.viewedAt)<10000));
+  assert.equal(storage.get('limperial_showroom_favorites_v1'),JSON.stringify(['FAV-1']));
+});
