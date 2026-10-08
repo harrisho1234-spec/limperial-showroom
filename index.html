@@ -208,7 +208,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
-    <link rel="stylesheet" href="showroom-readability.css?v=20261008-contrast1">
+    <link rel="stylesheet" href="showroom-readability.css?v=20261008-adaptiveglass1">
 </head>
 <body class="bg-luxury-dark text-luxury-text font-sans min-h-screen lg:h-screen flex flex-col antialiased lg:overflow-hidden transition-colors duration-300">
 
@@ -5609,7 +5609,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261008-contrast1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261008-adaptiveglass1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
@@ -5656,6 +5656,6 @@
     <script src="promotion-config.js?v=20261007-theme6"></script>
     <script src="quotation-registry.js?v=20261008-history-read1"></script>
     <script src="seasonal-core.js?v=20261007-theme6"></script>
-    <script src="seasonal-promotions.js?v=20261008-accountpermissions3"></script>
+    <script src="seasonal-promotions.js?v=20261008-adaptiveglass1"></script>
 </body>
 </html>
