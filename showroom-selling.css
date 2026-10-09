@@ -30,6 +30,31 @@
 }
 .ss-suggestion-add:hover {background:#dfb26c;color:#111827}
 .ss-mobile-bar {display:none}
+.ss-bar-open-quotes {display:none}
+/* On tablets only, saved quotations live next to Open Cart in the persistent
+   bottom bar. The same original saved-list dialog remains authoritative. */
+@media (min-width:768px) and (max-width:1023px) {
+  #ss-mobile-bar .ss-bar-open-quotes {
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    min-height:38px;padding:0 13px;white-space:nowrap;
+    border-radius:10px;border:1px solid rgba(223,178,108,.58);
+    background:rgba(223,178,108,.09);color:#dfb26c;
+    font-size:12px;font-weight:800;
+  }
+  #ss-mobile-bar .ss-bar-open-quotes:hover {background:rgba(223,178,108,.2)}
+  #ss-mobile-bar .ss-bar-open-quotes:focus-visible {
+    outline:2px solid #dfb26c;outline-offset:2px;
+  }
+  body:not(.theme-dark) #ss-mobile-bar .ss-bar-open-quotes {
+    background:#fff8ec;color:#815019;border-color:#b99563;
+  }
+  body:not(.theme-dark) #ss-mobile-bar .ss-bar-open-quotes:hover {
+    background:#f1e1c7;
+  }
+  /* Remove the duplicate tablet action inside Open Cart only.
+     The phone-sized cart and the desktop sidebar keep their original controls. */
+  #mobile-cart-open-saved-lists {display:none!important}
+}
 @media(max-width:1023px) {
   #ss-mobile-bar:not([hidden]) {
     display:flex;align-items:center;gap:9px;
