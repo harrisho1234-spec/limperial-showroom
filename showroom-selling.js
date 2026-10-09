@@ -103,9 +103,16 @@ function ensureMobileBar(){
   const plus=document.createElement('button');plus.id='ss-qty-plus';plus.type='button';plus.textContent='+';plus.setAttribute('aria-label','Increase last item quantity');
   step.append(minus,number,plus);
   const cartBtn=document.createElement('button');cartBtn.type='button';cartBtn.className='ss-bar-cart';cartBtn.innerHTML='<i class="fa-solid fa-receipt"></i> Open Cart';
-  cartBtn.setAttribute('aria-label','Open Customer Interest List and saved quotations');
+  cartBtn.setAttribute('aria-label','Open Customer Interest List');
   cartBtn.onclick=()=>toggleMobileCart(true);
-  bar.append(title,step,cartBtn);
+  // Tablet-only entry point: open saved quotations without first opening the cart.
+  const quotationsBtn=document.createElement('button');
+  quotationsBtn.id='ss-open-quotations';quotationsBtn.type='button';
+  quotationsBtn.className='ss-bar-open-quotes';
+  quotationsBtn.innerHTML='<i class="fa-solid fa-folder-open" aria-hidden="true"></i> Open Quotations';
+  quotationsBtn.setAttribute('aria-label','Open saved quotations and customer lists');
+  quotationsBtn.onclick=()=>openSavedListsModal('open');
+  bar.append(title,step,quotationsBtn,cartBtn);
   document.body.append(bar);
   minus.onclick=()=>quickQty(-1);plus.onclick=()=>quickQty(1);
 }
