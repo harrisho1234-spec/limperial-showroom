@@ -204,7 +204,7 @@
     <link rel="stylesheet" href="showroom-phase1.css?v=20261008-lightselect1">
     <link rel="stylesheet" href="showroom-dark-polish.css?v=20261008-selectioncontrast1">
     <link rel="stylesheet" href="showroom-mobile-compact.css?v=20261008-mobilecompact1">
-    <link rel="stylesheet" href="showroom-selling.css?v=20261008-mobilebar2">
+    <link rel="stylesheet" href="showroom-selling.css?v=20261009-tabletopen1">
 </head>
 <body class="bg-luxury-dark text-luxury-text font-sans min-h-screen lg:h-screen flex flex-col antialiased lg:overflow-hidden transition-colors duration-300">
 
@@ -502,7 +502,7 @@
                     <h2 class="font-serif text-lg font-semibold text-luxury-gold">Customer Interest List</h2>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button onclick="openSavedListsModal('open')" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Open a previously saved quotation or customer list"><i class="fa-solid fa-folder-open"></i><span>Open</span></button>
+                    <button id="mobile-cart-open-saved-lists" onclick="openSavedListsModal('open')" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Open a previously saved quotation or customer list"><i class="fa-solid fa-folder-open"></i><span>Open</span></button>
                     <button onclick="openSavedListsModal()" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Save the current quotation or customer list"><i class="fa-solid fa-floppy-disk"></i><span>Save</span></button>
                     <button id="mobile-cart-bundle-btn" onclick="promptCreateSet()" class="hidden bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-cubes mr-1"></i> Combine Set</button>
                     <button id="mobile-create-set-btn" onclick="openCreateSetModal()" class="hidden bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/40 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-square-plus mr-1"></i> Create Set</button>
@@ -5620,7 +5620,7 @@
     <script src="showroom-phase1-core.js?v=20261008-recent3days1"></script>
     <script src="showroom-phase1.js?v=20261008-lightselect1"></script>
     <script src="showroom-search-core.js?v=20261008-sellanalytics1"></script>
-    <script src="showroom-selling.js?v=20261008-mobilebar2"></script>
+    <script src="showroom-selling.js?v=20261009-tabletopen1"></script>
     <script src="showroom-analytics.js?v=20261008-sellanalytics1"></script>
 </body>
 </html>
