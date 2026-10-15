@@ -842,6 +842,7 @@
         let recommendedFocusItemId = null;
         let saveListsRequestToken = 0;
         let isSavingInterestList = false;
+        let pendingSavedListConfirmation = null; // An opaque POST may have saved successfully even if read-back is delayed.
         let activeSavedQuotationId = '';
         let activeSavedQuotationName = '';
         let activeSavedQuotationNo = '';
@@ -3823,6 +3824,55 @@
             });
         }
 
+        // The Google Apps Script POST is opaque (no-cors). Only a matching
+        // read-back confirms persistence; failure to read it is NOT proof that
+        // Google Sheets rejected the save. Retry the same ID and revision.
+        async function confirmSavedListReadBack(record, attempts = 7) {
+            const expectedRevision = savedDocumentType(record) === 'quotation'
+                ? savedQuotationRevision(record) : 0;
+            for (let attempt = 0; attempt < attempts; attempt++) {
+                try {
+                    const response = await jsonpRequest({ action: 'get', recordId: record.id });
+                    const received = response?.record;
+                    if (received && String(received.id) === String(record.id)) {
+                        const actualRevision = savedDocumentType(record) === 'quotation'
+                            ? savedQuotationRevision(received) : 0;
+                        if (actualRevision >= expectedRevision) return received;
+                    }
+                } catch (err) {
+                    // A temporary JSONP error is handled like an unconfirmed
+                    // read, not as a failed write.
+                    console.warn('[Showroom] Saved-list read-back temporarily unavailable:', err);
+                }
+                if (attempt < attempts - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 550 * Math.min(attempt + 1, 4)));
+                }
+            }
+            return null;
+        }
+
+        function finishConfirmedSavedList(record, cloudRecord) {
+            const mergedRecord = record.quoteNo ? { ...cloudRecord, quoteNo: record.quoteNo } : cloudRecord;
+            const stored = getLocalSavedInterestLists();
+            const index = stored.findIndex(item => String(item.id) === String(record.id));
+            if (index >= 0) stored[index] = mergedRecord;
+            else stored.unshift(mergedRecord);
+            savedInterestLists = stored;
+            setLocalSavedInterestLists(stored);
+            if (savedDocumentType(record) === 'quotation' && record.quoteNo) {
+                activeSavedQuotationId = record.id;
+                activeSavedQuotationName = record.name;
+                activeSavedQuotationNo = record.quoteNo;
+                activeSavedQuotationRevision = savedQuotationRevision(mergedRecord);
+                activeViewedQuotationRevision = null;
+                updateQuotationNumberHelp();
+                updateQuotationPreview();
+            }
+            if (pendingSavedListConfirmation?.id === record.id) pendingSavedListConfirmation = null;
+            return mergedRecord;
+        }
+
+
         async function sendSavedInterestListToSales(recordId, listName = '') {
             const id = String(recordId || '').trim();
             if (!id) { showNotification("This saved quotation has no record ID.", "error"); return; }
@@ -4233,6 +4283,11 @@
                 spinner?.classList.add('hidden');
                 if (status) { status.textContent = 'Done'; status.className = 'mt-3 text-sm font-bold uppercase tracking-[0.2em] text-emerald-400'; }
                 if (msg) msg.textContent = message || 'List saved successfully.';
+            } else if (state === 'pending') {
+                overlay?.classList.remove('hidden');
+                spinner?.classList.add('hidden');
+                if (status) { status.textContent = 'Confirmation Pending'; status.className = 'mt-3 text-sm font-bold uppercase tracking-[0.2em] text-amber-400'; }
+                if (msg) msg.textContent = message || 'Save submitted. Waiting for Google Sheets confirmation.';
             } else if (state === 'error') {
                 overlay?.classList.remove('hidden');
                 spinner?.classList.add('hidden');
@@ -4250,6 +4305,50 @@
             if (isSavingInterestList) return;
             if (cart.length === 0) { showNotification("Please select at least one product before saving the list.", "error"); return; }
             if (documentType === 'quotation' && !validateQuotationRequiredInfo()) return;
+            // A previously sent revision may already exist. Verify or re-send
+            // the IDENTICAL record instead of allocating another revision.
+            if (pendingSavedListConfirmation) {
+                const pending = pendingSavedListConfirmation;
+                const sameQuotation = documentType === 'quotation' &&
+                    (String(activeSavedQuotationId) === String(pending.id) ||
+                     String(document.getElementById('quote-no-input')?.value || '') === String(pending.quoteNo || ''));
+                if (sameQuotation) {
+                    isSavingInterestList = true;
+                    setSavedListSavingState('saving', 'Checking the previously submitted revision…');
+                    try {
+                        let confirmed = await confirmSavedListReadBack(pending, 3);
+                        if (!confirmed) {
+                            // Idempotent retry: never create a new saved record
+                            // or a new revision number during uncertainty.
+                            await postSavedListsRequest({
+                                action: 'save', name: pending.name, recordId: pending.id,
+                                savedAt: pending.savedAt, payload: JSON.stringify(pending.state)
+                            });
+                            confirmed = await confirmSavedListReadBack(pending, 5);
+                        }
+                        if (!confirmed) {
+                            setSavedListSavingState('pending', 'Google Sheets has not confirmed this revision yet. Check status again later.');
+                            showNotification('Quotation revision submission is still awaiting confirmation. No new revision was created.', 'info');
+                            return;
+                        }
+                        finishConfirmedSavedList(pending, confirmed);
+                        const display = quotationDisplayNumber(pending.quoteNo, savedQuotationRevision(confirmed));
+                        setSavedListSavingState('done', 'Confirmed: ' + display);
+                        showNotification(display + ' saved and verified.', 'success');
+                        window.ShowroomPhase1?.savedSuccessfully();
+                        await new Promise(resolve => setTimeout(resolve, 750));
+                        closeSavedListsModal();
+                    } catch (err) {
+                        console.warn('[Showroom] Pending revision confirmation is unavailable:', err);
+                        setSavedListSavingState('pending', 'Save may have completed. Please check its status before making another revision.');
+                        showNotification('Could not verify the submitted revision yet. This does not mean the save failed.', 'info');
+                    } finally {
+                        isSavingInterestList = false;
+                        setSavedListSavingState('idle');
+                    }
+                    return;
+                }
+            }
             const input = document.getElementById('saved-list-name-input');
             const name = (input?.value || '').trim();
             if (!name) { showNotification("Please enter a name for this saved list.", "error"); input?.focus(); return; }
@@ -4258,6 +4357,8 @@
             setSavedListSavingState('saving', 'Saving your Customer Interest List…');
             let record = null;
             let reservedNewQuotation = false;
+            let cloudWriteMayHaveCommitted = false;
+            let cloudSavedConfirmed = false;
             let revisingExistingQuotation = false;
             let previousSavedRecord = null;
             let previousQuotationRevision = activeSavedQuotationRevision;
@@ -4329,6 +4430,7 @@
                 if (SAVED_LISTS_API_URL) {
                     setSavedListSavingState('saving', documentType === 'quotation' ? 'Saving quotation to shared history…' : 'Saving your Customer Interest List…');
 
+                    cloudWriteMayHaveCommitted = true;
                     await postSavedListsRequest({
                         action: 'save',
                         name: record.name,
@@ -4337,30 +4439,10 @@
                         payload: JSON.stringify(record.state)
                     });
 
-                    let cloudRecord = null;
-                    for (let attempt = 0; attempt < 5; attempt++) {
-                        try {
-                            const verifyResponse = await jsonpRequest({ action: 'get', recordId: record.id, _cb: Date.now() });
-                            if (verifyResponse?.record?.id === record.id) {
-                                const expectedRevision = documentType === 'quotation' ? savedQuotationRevision(record) : 0;
-                                const confirmedRevision = documentType === 'quotation' ? savedQuotationRevision(verifyResponse.record) : 0;
-                                if (confirmedRevision >= expectedRevision) {
-                                    cloudRecord = verifyResponse.record;
-                                    break;
-                                }
-                            }
-                        } catch (verifyError) {
-                            if (attempt === 4) throw verifyError;
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
-                    }
-
-                    if (!cloudRecord) throw new Error('Google Sheets did not confirm the saved list.');
-
-                    const idx = savedInterestLists.findIndex(item => item.id === record.id);
-                    const mergedCloudRecord = record.quoteNo ? { ...cloudRecord, quoteNo: record.quoteNo } : cloudRecord;
-                    if (idx > -1) savedInterestLists[idx] = mergedCloudRecord; else savedInterestLists.unshift(mergedCloudRecord);
-                    setLocalSavedInterestLists(savedInterestLists);
+                    const cloudRecord = await confirmSavedListReadBack(record);
+                    if (!cloudRecord) throw new Error('Google Sheets save was submitted, but read-back confirmation is delayed.');
+                    cloudSavedConfirmed = true;
+                    finishConfirmedSavedList(record, cloudRecord);
 
                     if (documentType === 'quotation' && record.quoteNo && window.QuotationRegistry?.confirm) {
                         let confirmed = false;
@@ -4381,7 +4463,7 @@
                             }
                         }
                         if (!confirmed) {
-                            showNotification('Quotation was saved, but permanent history confirmation is still pending.', 'error');
+                            showNotification('Quotation saved to Google Sheets. Numbering history is still syncing.', 'info');
                         }
                     }
                 }
@@ -4403,15 +4485,37 @@
                     ? savedQuoteDisplay + ' saved.'
                     : '"' + record.name + '" saved successfully.';
                 setSavedListSavingState('done', savedQuoteDisplay ? 'Saved as ' + savedQuoteDisplay + '.' : 'Saved successfully.');
-                window.ShowroomPhase1?.savedSuccessfully();
+                try { window.ShowroomPhase1?.savedSuccessfully(); } catch (err) { console.warn('Draft cleanup after save was delayed:', err); }
                 if (documentType === 'quotation' && record?.quoteNo) {
-                    window.ShowroomAnalytics?.recordQuote(record);
+                    try { window.ShowroomAnalytics?.recordQuote(record); } catch (err) { console.warn('Sales analytics tracking after save was delayed:', err); }
                 }
                 showNotification(successMessage, "success");
                 await new Promise(resolve => setTimeout(resolve, 900));
                 closeSavedListsModal();
             } catch (e) {
-                console.error('Saved Interest List cloud save failed:', e);
+                console.error('Saved Interest List save/confirmation issue:', e);
+                if (cloudWriteMayHaveCommitted && record && !cloudSavedConfirmed) {
+                    // Opaque POST + failed GET is ambiguous, NOT a failed save.
+                    // Preserve the submitted revision locally and keep the
+                    // original active revision until the cloud confirms it.
+                    pendingSavedListConfirmation = { ...record };
+                    const pendingLabel = record.quoteNo
+                        ? quotationDisplayNumber(record.quoteNo, savedQuotationRevision(record))
+                        : record.name;
+                    setSavedListSavingState('pending', pendingLabel + ' was submitted. Google Sheets confirmation is delayed.');
+                    const submitBtn = document.getElementById('saved-list-submit-btn');
+                    if (submitBtn) submitBtn.textContent = 'Check Save Status';
+                    showNotification(pendingLabel + ' submitted. Confirmation pending — click Check Save Status before saving another revision.', 'info');
+                    await new Promise(resolve => setTimeout(resolve, 1600));
+                    return;
+                }
+                if (cloudSavedConfirmed && record) {
+                    // The actual write succeeded: do not undo it just because
+                    // a nonessential UI callback failed after confirmation.
+                    finishConfirmedSavedList(record, record);
+                    showNotification(quotationDisplayNumber(record.quoteNo, savedQuotationRevision(record)) + ' was saved.', 'success');
+                    return;
+                }
                 if (revisingExistingQuotation && record && previousSavedRecord) {
                     const local = getLocalSavedInterestLists();
                     const revisionIndex = local.findIndex(item => String(item.id || '') === String(record.id || ''));
