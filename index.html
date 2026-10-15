@@ -2978,7 +2978,21 @@
         }
 
         function removeCartItem(id) { const index = cart.findIndex(c => c.id === id || (c.type !== 'set' && c.item.id === id)); if (index > -1) { cart.splice(index, 1); showNotification("Item removed.", "info"); } updateCartVisuals(); renderProductGrid(); }
-        function onCartCheckboxChange() { const checkedCount = document.querySelectorAll('.cart-item-checkbox:checked').length; const bundleBtn = document.getElementById('cart-bundle-btn'); const createBtn = document.getElementById('create-set-btn'); const mobileBundleBtn = document.getElementById('mobile-cart-bundle-btn'); const mobileCreateBtn = document.getElementById('mobile-create-set-btn'); if (bundleBtn) bundleBtn.classList.toggle('hidden', checkedCount < 2); if (createBtn) createBtn.classList.toggle('hidden', checkedCount < 2); if (mobileBundleBtn) mobileBundleBtn.classList.toggle('hidden', checkedCount < 2); if (mobileCreateBtn) mobileCreateBtn.classList.toggle('hidden', checkedCount < 2); }
+        function onCartCheckboxChange() {
+            const checkedCount = document.querySelectorAll('.cart-item-checkbox:checked').length;
+            const canMakeSet = checkedCount >= 2;
+            // Keep the regular Open / Save controls uncluttered. The set
+            // action row only becomes visible when two or more items are selected.
+            for (const id of ['cart-bundle-btn', 'create-set-btn', 'mobile-cart-bundle-btn', 'mobile-create-set-btn',
+                              'desktop-cart-selection-actions', 'mobile-cart-selection-actions']) {
+                document.getElementById(id)?.classList.toggle('hidden', !canMakeSet);
+            }
+            const selectionLabel = checkedCount + (checkedCount === 1 ? ' item selected' : ' items selected');
+            for (const id of ['desktop-cart-selected-count', 'mobile-cart-selected-count']) {
+                const target = document.getElementById(id);
+                if (target) target.textContent = selectionLabel;
+            }
+        }
         function promptCreateSet() { editingSetId = null; document.getElementById('set-name-input').value = ''; document.getElementById('set-name-modal-title').textContent = "Name Your Set Bundle"; document.getElementById('set-name-modal').classList.remove('pointer-events-none', 'opacity-0'); document.getElementById('set-name-modal').classList.add('opacity-100'); document.getElementById('set-name-modal-container').classList.remove('scale-95'); document.getElementById('set-name-modal-container').classList.add('scale-100'); }
         function openRenameSetModal(setId) { const targetSet = cart.find(c => c.id === setId); if (!targetSet) return; editingSetId = setId; document.getElementById('set-name-input').value = targetSet.setName; document.getElementById('set-name-modal-title').textContent = "Rename Set Bundle"; document.getElementById('set-name-modal').classList.remove('pointer-events-none', 'opacity-0'); document.getElementById('set-name-modal').classList.add('opacity-100'); document.getElementById('set-name-modal-container').classList.remove('scale-95'); document.getElementById('set-name-modal-container').classList.add('scale-100'); }
         function closeSetNameModal() { document.getElementById('set-name-modal').classList.add('pointer-events-none', 'opacity-0'); document.getElementById('set-name-modal').classList.remove('opacity-100'); document.getElementById('set-name-modal-container').classList.add('scale-95'); document.getElementById('set-name-modal-container').classList.remove('scale-100'); editingSetId = null; }
@@ -3048,7 +3062,7 @@
             const totalCount = cart.reduce((sum, current) => sum + current.quantity, 0);
             const dc = document.getElementById('desktop-cart-count'); if (dc) dc.textContent = totalCount;
             const mb = document.getElementById('mobile-cart-badge'); if (mb) mb.textContent = totalCount;
-            renderDesktopCartItems(); renderMobileCartItems(); calculateAndDrawTotals();
+            renderDesktopCartItems(); renderMobileCartItems(); onCartCheckboxChange(); calculateAndDrawTotals();
             window.ShowroomSelling?.refreshCart();
             updateRecommendedSets();
             window.ShowroomPhase1?.scheduleDraft();
