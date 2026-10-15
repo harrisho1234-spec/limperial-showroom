@@ -5725,7 +5725,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261015-quotation-save-confirm1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261015-cart-toolbar1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
