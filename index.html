@@ -3782,7 +3782,7 @@
             try { localStorage.setItem(SAVED_LISTS_LOCAL_KEY, JSON.stringify(list)); } catch (e) {}
         }
 
-        function jsonpRequest(params = {}) {
+        function jsonpRequest(params = {}, options = {}) {
             return new Promise((resolve, reject) => {
                 if (!SAVED_LISTS_API_URL) return reject(new Error('Saved lists API is not configured.'));
                 const callbackName = '__limperialSavedListsCb_' + Date.now() + '_' + (++saveListsRequestToken);
@@ -3796,7 +3796,7 @@
                 const timer = setTimeout(() => {
                     if (finished) return;
                     finished = true; cleanup(); reject(new Error('Saved lists service timed out.'));
-                }, 15000);
+                }, Math.max(1000, Number(options.timeoutMs) || 15000));
                 window[callbackName] = (data) => {
                     if (finished) return;
                     finished = true; clearTimeout(timer); cleanup();
@@ -3827,12 +3827,12 @@
         // The Google Apps Script POST is opaque (no-cors). Only a matching
         // read-back confirms persistence; failure to read it is NOT proof that
         // Google Sheets rejected the save. Retry the same ID and revision.
-        async function confirmSavedListReadBack(record, attempts = 7) {
+        async function confirmSavedListReadBack(record, attempts = 6) {
             const expectedRevision = savedDocumentType(record) === 'quotation'
                 ? savedQuotationRevision(record) : 0;
             for (let attempt = 0; attempt < attempts; attempt++) {
                 try {
-                    const response = await jsonpRequest({ action: 'get', recordId: record.id });
+                    const response = await jsonpRequest({ action: 'get', recordId: record.id }, { timeoutMs: 4000 });
                     const received = response?.record;
                     if (received && String(received.id) === String(record.id)) {
                         const actualRevision = savedDocumentType(record) === 'quotation'
@@ -4332,10 +4332,26 @@
                             return;
                         }
                         finishConfirmedSavedList(pending, confirmed);
+                        // A delayed read-back means the initial save never
+                        // reached numbering-history confirmation. Retry that
+                        // secondary sync, without changing the same revision.
+                        if (window.QuotationRegistry?.confirm) {
+                            try {
+                                await window.QuotationRegistry.confirm({
+                                    recordId: pending.id, quoteNo: pending.quoteNo,
+                                    name: pending.name, savedAt: pending.savedAt,
+                                    amount: currentQuotationAmountValue(),
+                                    state: confirmed.state || pending.state
+                                });
+                            } catch (historyError) {
+                                console.warn('[Showroom] Numbering history is still syncing:', historyError);
+                            }
+                        }
                         const display = quotationDisplayNumber(pending.quoteNo, savedQuotationRevision(confirmed));
                         setSavedListSavingState('done', 'Confirmed: ' + display);
                         showNotification(display + ' saved and verified.', 'success');
-                        window.ShowroomPhase1?.savedSuccessfully();
+                        try { window.ShowroomPhase1?.savedSuccessfully(); } catch (draftError) { console.warn('Draft cleanup was delayed:', draftError); }
+                        try { window.ShowroomAnalytics?.recordQuote(pending); } catch (analyticsError) { console.warn('Analytics tracking was delayed:', analyticsError); }
                         await new Promise(resolve => setTimeout(resolve, 750));
                         closeSavedListsModal();
                     } catch (err) {
