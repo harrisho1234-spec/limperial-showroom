@@ -408,17 +408,28 @@
             </section>
 
             <aside class="hidden lg:flex w-[380px] bg-luxury-card border border-luxury-gold/20 rounded-2xl flex-col shadow-2xl h-full overflow-hidden shrink-0 transition-colors duration-300">
-                <div class="p-4 border-b border-luxury-gold/15 flex items-center justify-between shrink-0">
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-receipt text-luxury-gold"></i>
-                        <h2 class="font-serif text-lg font-semibold text-luxury-gold">Customer Interest List</h2>
+                <!-- Desktop: keep ordinary saved-list actions separate from selected-item tools. -->
+                <div id="desktop-cart-heading" class="p-4 border-b border-luxury-gold/15 shrink-0">
+                    <div class="flex items-center justify-between gap-3 min-w-0">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <i class="fa-solid fa-receipt text-luxury-gold shrink-0" aria-hidden="true"></i>
+                            <h2 class="font-serif text-base font-semibold text-luxury-gold leading-tight">Customer Interest List</h2>
+                        </div>
+                        <span id="desktop-cart-count" class="shrink-0 bg-luxury-gold text-[#0a0f19] text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="openSavedListsModal('open')" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Open a previously saved quotation or customer list"><i class="fa-solid fa-folder-open"></i><span>Open</span></button>
-                        <button onclick="openSavedListsModal()" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Save the current quotation or customer list"><i class="fa-solid fa-floppy-disk"></i><span>Save</span></button>
-                        <button id="cart-bundle-btn" onclick="promptCreateSet()" class="hidden bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-cubes mr-1"></i> Combine Set</button>
-                        <button id="create-set-btn" onclick="openCreateSetModal()" class="hidden bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/40 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-square-plus mr-1"></i> Create Set</button>
-                        <span id="desktop-cart-count" class="bg-luxury-gold text-[#0a0f19] text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    <div class="flex gap-2 mt-3">
+                        <button type="button" onclick="openSavedListsModal('open')" class="flex-1 min-w-0 min-h-[36px] inline-flex items-center justify-center gap-2 px-3 py-2 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[11px] font-bold transition-all duration-200 shadow-sm" title="Open a previously saved quotation or customer list"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Open</button>
+                        <button type="button" onclick="openSavedListsModal()" class="flex-1 min-w-0 min-h-[36px] inline-flex items-center justify-center gap-2 px-3 py-2 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[11px] font-bold transition-all duration-200 shadow-sm" title="Save the current quotation or customer list"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
+                    </div>
+                    <div id="desktop-cart-selection-actions" class="hidden mt-3 rounded-xl border border-luxury-gold/25 bg-luxury-accent/40 p-2.5" aria-live="polite">
+                        <div class="flex items-center justify-between gap-2 mb-2 text-[11px]">
+                            <span class="font-bold text-luxury-gold"><i class="fa-solid fa-check-double mr-1" aria-hidden="true"></i><span id="desktop-cart-selected-count">0 items selected</span></span>
+                            <span class="text-luxury-muted text-[10px]">Set actions</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" id="cart-bundle-btn" onclick="promptCreateSet()" class="hidden w-full min-h-[38px] rounded-lg bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2 py-2 text-[11px] font-bold shadow-sm" title="Combine the selected products into one bundle"><i class="fa-solid fa-cubes mr-1" aria-hidden="true"></i>Combine Set</button>
+                            <button type="button" id="create-set-btn" onclick="openCreateSetModal()" class="hidden w-full min-h-[38px] rounded-lg bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/40 px-2 py-2 text-[11px] font-bold" title="Create a reusable set from the selected products"><i class="fa-solid fa-square-plus mr-1" aria-hidden="true"></i>Create Set</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -496,17 +507,28 @@
     <div id="mobile-cart-drawer" class="lg:hidden fixed inset-0 bg-black/80 z-50 backdrop-blur-sm pointer-events-none opacity-0 transition-opacity duration-300 flex justify-end flex-col">
         <div id="mobile-cart-content" class="bg-luxury-card rounded-t-3xl max-h-[85vh] w-full flex flex-col drawer-transition transform translate-y-full border-t border-luxury-gold/20">
             <div class="h-1.5 w-12 bg-luxury-accent rounded-full mx-auto my-3"></div>
-            <div class="px-4 pb-3 flex items-center justify-between border-b border-luxury-gold/10">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-receipt text-luxury-gold"></i>
-                    <h2 class="font-serif text-lg font-semibold text-luxury-gold">Customer Interest List</h2>
+            <!-- Tablet/phone drawer uses the same uncluttered cart actions. -->
+            <div id="mobile-cart-heading" class="px-4 pb-3 border-b border-luxury-gold/10">
+                <div class="flex items-center justify-between gap-3 min-w-0">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i class="fa-solid fa-receipt text-luxury-gold shrink-0" aria-hidden="true"></i>
+                        <h2 class="font-serif text-base font-semibold text-luxury-gold leading-tight">Customer Interest List</h2>
+                    </div>
+                    <button type="button" onclick="toggleMobileCart(false)" class="shrink-0 p-2 text-luxury-muted hover:text-luxury-text" aria-label="Close Customer Interest List"><i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i></button>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <button id="mobile-cart-open-saved-lists" onclick="openSavedListsModal('open')" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Open a previously saved quotation or customer list"><i class="fa-solid fa-folder-open"></i><span>Open</span></button>
-                    <button onclick="openSavedListsModal()" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-sm" title="Save the current quotation or customer list"><i class="fa-solid fa-floppy-disk"></i><span>Save</span></button>
-                    <button id="mobile-cart-bundle-btn" onclick="promptCreateSet()" class="hidden bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-cubes mr-1"></i> Combine Set</button>
-                    <button id="mobile-create-set-btn" onclick="openCreateSetModal()" class="hidden bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/40 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 shadow-md"><i class="fa-solid fa-square-plus mr-1"></i> Create Set</button>
-                    <button onclick="toggleMobileCart(false)" class="p-2 text-luxury-muted hover:text-luxury-text"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <div class="flex gap-2 mt-2">
+                    <button type="button" id="mobile-cart-open-saved-lists" onclick="openSavedListsModal('open')" class="flex-1 min-w-0 min-h-[36px] inline-flex items-center justify-center gap-2 px-3 py-2 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[11px] font-bold shadow-sm" title="Open a saved quotation or customer list"><i class="fa-solid fa-folder-open" aria-hidden="true"></i>Open</button>
+                    <button type="button" onclick="openSavedListsModal()" class="flex-1 min-w-0 min-h-[36px] inline-flex items-center justify-center gap-2 px-3 py-2 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[11px] font-bold shadow-sm" title="Save the current quotation or customer list"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>Save</button>
+                </div>
+                <div id="mobile-cart-selection-actions" class="hidden mt-3 rounded-xl border border-luxury-gold/25 bg-luxury-accent/40 p-2.5" aria-live="polite">
+                    <div class="flex items-center justify-between gap-2 mb-2 text-[11px]">
+                        <span class="font-bold text-luxury-gold"><i class="fa-solid fa-check-double mr-1" aria-hidden="true"></i><span id="mobile-cart-selected-count">0 items selected</span></span>
+                        <span class="text-luxury-muted text-[10px]">Set actions</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="mobile-cart-bundle-btn" onclick="promptCreateSet()" class="hidden w-full min-h-[38px] rounded-lg bg-gradient-to-r from-luxury-gold to-amber-600 hover:from-luxury-goldHover text-[#0a0f19] px-2 py-2 text-[11px] font-bold shadow-sm" title="Combine the selected products into one bundle"><i class="fa-solid fa-cubes mr-1" aria-hidden="true"></i>Combine Set</button>
+                        <button type="button" id="mobile-create-set-btn" onclick="openCreateSetModal()" class="hidden w-full min-h-[38px] rounded-lg bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/40 px-2 py-2 text-[11px] font-bold" title="Create a reusable set from selected products"><i class="fa-solid fa-square-plus mr-1" aria-hidden="true"></i>Create Set</button>
+                    </div>
                 </div>
             </div>
 
