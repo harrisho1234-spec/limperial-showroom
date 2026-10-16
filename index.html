@@ -680,35 +680,41 @@
         </div>
     </div>
 
-    <div id="product-detail-modal" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-2xl shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col md:flex-row my-auto overflow-hidden" id="product-detail-modal-container">
-            <div class="w-full md:w-1/2 bg-luxury-dark flex items-center justify-center p-4 relative min-h-[300px]" style="touch-action:pan-y pinch-zoom">
-                <img id="detail-modal-image" src="" alt="" class="w-full h-full object-contain rounded-lg" draggable="false">
-                <span id="detail-modal-brand" class="absolute top-4 left-4 bg-luxury-accent/95 text-luxury-gold text-xs font-bold px-3 py-1 rounded tracking-widest uppercase border border-luxury-gold/30 backdrop-blur-sm shadow-md"></span>
-                <button id="detail-modal-prev" type="button" onclick="navigateProductDetail(-1)" aria-label="Previous product" title="Previous product" class="hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full border border-luxury-gold/25 bg-luxury-dark/85 text-luxury-gold hover:bg-luxury-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-luxury-gold shadow-lg disabled:opacity-25 disabled:cursor-default" data-product-nav><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
-                <button id="detail-modal-next" type="button" onclick="navigateProductDetail(1)" aria-label="Next product" title="Next product" class="hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full border border-luxury-gold/25 bg-luxury-dark/85 text-luxury-gold hover:bg-luxury-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-luxury-gold shadow-lg disabled:opacity-25 disabled:cursor-default" data-product-nav><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
-                <span id="detail-modal-position" class="hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-luxury-dark/85 border border-luxury-gold/20 text-luxury-soft text-[10px] font-bold tracking-wide shadow-sm select-none" aria-live="polite"></span>
+    <div id="product-detail-modal" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-5 overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-[900px] shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col md:flex-row my-auto overflow-hidden" id="product-detail-modal-container">
+            <div class="w-full md:w-[52%] bg-luxury-dark flex flex-col p-3 sm:p-5 relative" style="touch-action:pan-y pinch-zoom">
+                <div class="relative flex-1 flex items-center justify-center min-h-[245px] sm:min-h-[330px] md:min-h-[430px] rounded-xl overflow-hidden bg-luxury-lightBg/20">
+                    <img id="detail-modal-image" src="" alt="" onclick="openProductPhotoViewer()" title="Click to enlarge product photo" class="w-full h-full max-h-[420px] md:max-h-[480px] object-contain rounded-lg cursor-zoom-in select-none" draggable="false">
+                    <span id="detail-modal-brand" class="absolute top-3 left-3 bg-luxury-accent/95 text-luxury-gold text-[10px] font-bold px-3 py-1 rounded tracking-wide uppercase border border-luxury-gold/30 backdrop-blur-sm shadow-md pointer-events-none"></span>
+                    <button type="button" id="detail-modal-zoom-button" onclick="openProductPhotoViewer()" aria-label="Enlarge product image" title="Zoom photo" class="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-luxury-dark/90 text-luxury-gold border border-luxury-gold/40 hover:bg-luxury-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-luxury-gold flex items-center justify-center"><i class="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true"></i></button>
+                </div>
+                <div id="detail-modal-navigation-row" class="hidden mt-3 w-full items-center gap-2">
+                    <button id="detail-modal-prev" type="button" onclick="navigateProductDetail(-1)" aria-label="Previous product" title="Previous product" class="inline-flex w-11 h-11 shrink-0 items-center justify-center rounded-xl border border-luxury-gold/45 bg-luxury-accent text-luxury-gold hover:bg-luxury-gold hover:text-[#0a0f19] focus-visible:outline focus-visible:outline-2 focus-visible:outline-luxury-gold shadow-sm disabled:opacity-30 disabled:cursor-default" data-product-nav><i class="fa-solid fa-chevron-left text-lg" aria-hidden="true"></i></button>
+                    <span id="detail-modal-position" class="flex-1 min-w-0 text-center text-luxury-muted text-xs font-semibold" aria-live="polite"></span>
+                    <button id="detail-modal-next" type="button" onclick="navigateProductDetail(1)" aria-label="Next product" title="Next product" class="inline-flex w-11 h-11 shrink-0 items-center justify-center rounded-xl border border-luxury-gold/45 bg-luxury-accent text-luxury-gold hover:bg-luxury-gold hover:text-[#0a0f19] focus-visible:outline focus-visible:outline-2 focus-visible:outline-luxury-gold shadow-sm disabled:opacity-30 disabled:cursor-default" data-product-nav><i class="fa-solid fa-chevron-right text-lg" aria-hidden="true"></i></button>
+                </div>
             </div>
-            <div class="w-full md:w-1/2 p-6 flex flex-col justify-between">
+            <div class="w-full md:w-[48%] p-5 sm:p-6 lg:p-8 flex flex-col justify-between gap-5">
                 <div>
                     <div class="flex justify-between items-start mb-2">
                         <span id="detail-modal-class" class="text-xs uppercase tracking-widest text-luxury-muted font-extrabold bg-luxury-accent/40 px-2.5 py-0.5 rounded border border-luxury-gold/10"></span>
                         <button onclick="closeProductDetailModal()" class="p-1 text-luxury-muted hover:text-luxury-text transition-colors" title="Close details"><i class="fa-solid fa-xmark text-lg"></i></button>
                     </div>
-                    <h3 id="detail-modal-title" class="font-serif text-2xl text-luxury-darker font-bold mb-3 leading-snug"></h3>
+                    <h3 id="detail-modal-title" class="font-serif text-3xl text-luxury-darker font-bold mb-3 leading-tight break-words"></h3>
                     <div class="flex items-center mb-4 flex-wrap gap-2">
                         <p id="detail-modal-code-badge" class="text-xs font-mono text-luxury-gold inline-block bg-luxury-dark/95 border border-luxury-gold/20 px-2.5 py-1 rounded"></p>
                         <span id="detail-modal-promo-badge" class="text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded inline-block hidden"></span>
                     </div>
-                    <div class="space-y-3 text-sm text-luxury-soft mb-6">
-                        <div id="detail-modal-desc-container" class="flex items-center gap-2 bg-luxury-dark/40 py-2 px-3 rounded-lg border border-luxury-gold/5">
-                            <i class="fa-solid fa-arrows-up-down-left-right text-luxury-gold/50"></i><span id="detail-modal-description"></span>
+                    <div class="space-y-4 text-sm text-luxury-soft mb-5">
+                        <div id="detail-modal-desc-container" class="bg-luxury-accent/30 py-3 px-3 rounded-lg border border-luxury-gold/15">
+                            <span id="detail-modal-desc-label" class="text-[10px] uppercase tracking-wider font-bold text-luxury-muted block mb-1">Specifications / Dimensions</span>
+                            <span id="detail-modal-description" class="font-semibold text-base leading-relaxed text-luxury-darker break-words"></span>
                         </div>
                         <div class="grid grid-cols-2 gap-4 pt-2 border-t border-luxury-gold/5">
                             <div><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Warehouse Loc</span><strong id="detail-modal-location" class="text-luxury-darker"></strong></div>
                             <div id="detail-modal-aging-container" class="hidden"><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Aging Days</span><strong id="detail-modal-aging" class="text-luxury-darker"></strong></div>
                             <div id="detail-modal-arrival-container" class="hidden"><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Arrival Date</span><strong id="detail-modal-arrival" class="text-luxury-darker"></strong></div>
-                            <div><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Availability</span><span class="flex items-center gap-1.5 flex-wrap"><strong id="detail-modal-qty" class="text-luxury-darker"></strong><span id="detail-modal-new-badge" class="hidden sticker-new px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">New</span></span></div>
+                            <div><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Stock Availability</span><span class="flex items-center gap-1.5 flex-wrap mt-1"><strong id="detail-modal-qty" class="inline-flex px-2.5 py-1 rounded-lg border font-semibold text-xs"></strong><span id="detail-modal-new-badge" class="hidden text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1">New Arrival</span></span><span id="detail-modal-stock-note" class="text-[11px] text-luxury-muted block mt-2"></span></div>
                         </div>
                         <div id="detail-modal-management-sec" class="hidden">
                             <div class="grid grid-cols-2 gap-4 pt-3 border-t border-luxury-gold/15 bg-luxury-accent/30 p-3 rounded-lg border border-luxury-gold/10">
@@ -718,11 +724,27 @@
                         </div>
                     </div>
                 </div>
-                <div class="pt-4 border-t border-luxury-gold/10 flex items-center justify-between">
+                <div class="pt-5 border-t border-luxury-gold/15 flex flex-wrap items-end justify-between gap-3">
                     <div id="detail-modal-price" class="flex flex-col"></div>
-                    <div id="detail-modal-action-btn-container"></div>
+                    <div id="detail-modal-action-btn-container" class="flex flex-col gap-1.5"></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="detail-photo-viewer" class="hidden fixed inset-0 z-[100] bg-[#080a0e]/95 flex flex-col items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Enlarged product photo">
+        <div class="absolute top-3 left-4 right-4 flex justify-between items-center gap-3 z-10">
+            <div class="min-w-0"><div id="detail-photo-caption" class="text-white text-sm font-semibold truncate"></div><div class="text-white/60 text-[11px]">Scroll or pinch to zoom · Drag to move</div></div>
+            <button type="button" onclick="closeProductPhotoViewer()" aria-label="Close enlarged photo" title="Close photo" class="w-11 h-11 shrink-0 rounded-full bg-white/15 text-white hover:bg-white/25 flex items-center justify-center"><i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i></button>
+        </div>
+        <div id="detail-photo-stage" class="w-full h-full flex items-center justify-center overflow-hidden touch-none cursor-grab active:cursor-grabbing" style="touch-action:none">
+            <img id="detail-photo-full" alt="" src="" draggable="false" class="max-w-full max-h-[84dvh] object-contain select-none" style="transform:translate(0px,0px) scale(1);transform-origin:center center;will-change:transform">
+        </div>
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 p-2 rounded-xl bg-black/65 border border-white/20 text-white shadow-xl">
+            <button type="button" onclick="adjustProductPhotoZoom(-0.4)" aria-label="Zoom out" title="Zoom out" class="w-10 h-10 rounded-lg hover:bg-white/15 text-lg"><i class="fa-solid fa-minus" aria-hidden="true"></i></button>
+            <span id="detail-photo-zoom-label" class="min-w-[52px] text-center text-xs font-bold">100%</span>
+            <button type="button" onclick="adjustProductPhotoZoom(0.4)" aria-label="Zoom in" title="Zoom in" class="w-10 h-10 rounded-lg hover:bg-white/15 text-lg"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+            <button type="button" onclick="resetProductPhotoZoom()" aria-label="Reset zoom" title="Reset zoom" class="px-3 h-10 rounded-lg hover:bg-white/15 text-xs font-bold">Reset</button>
         </div>
     </div>
 
