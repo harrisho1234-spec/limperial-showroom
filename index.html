@@ -714,7 +714,7 @@
                             <div><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Warehouse Loc</span><strong id="detail-modal-location" class="text-luxury-darker"></strong></div>
                             <div id="detail-modal-aging-container" class="hidden"><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Aging Days</span><strong id="detail-modal-aging" class="text-luxury-darker"></strong></div>
                             <div id="detail-modal-arrival-container" class="hidden"><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Arrival Date</span><strong id="detail-modal-arrival" class="text-luxury-darker"></strong></div>
-                            <div><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Stock Availability</span><span class="flex items-center gap-1.5 flex-wrap mt-1"><strong id="detail-modal-qty" class="inline-flex px-2.5 py-1 rounded-lg border font-semibold text-xs"></strong><span id="detail-modal-new-badge" class="hidden text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1">New Arrival</span></span><span id="detail-modal-stock-note" class="text-[11px] text-luxury-muted block mt-2"></span></div>
+                            <div><span class="text-[10px] uppercase tracking-wider text-luxury-muted block">Stock Availability</span><span class="flex items-center gap-1.5 flex-wrap mt-1"><strong id="detail-modal-qty" class="inline-flex px-2.5 py-1 rounded-lg border font-semibold text-xs"></strong><span id="detail-modal-new-badge" class="hidden text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1">New Arrival</span></span></div>
                         </div>
                         <div id="detail-modal-management-sec" class="hidden">
                             <div class="grid grid-cols-2 gap-4 pt-3 border-t border-luxury-gold/15 bg-luxury-accent/30 p-3 rounded-lg border border-luxury-gold/10">
@@ -2940,7 +2940,6 @@
                 (item.preorderAvailable === true || item.preOrderAvailable === true ||
                  ['yes','true','preorder','pre-order'].includes(String(item.preOrder||'').toLowerCase()));
             const qtyEl = document.getElementById('detail-modal-qty');
-            const stockNote = document.getElementById('detail-modal-stock-note');
             if (qtyEl) {
                 qtyEl.textContent = item.isSet ? 'Set · Confirm availability'
                     : hasStock ? 'Available · ' + qty + ' pcs'
@@ -2950,11 +2949,6 @@
                       : isPreorder ? 'bg-amber-50 border-amber-200 text-amber-800'
                       : 'bg-rose-50 border-rose-200 text-rose-800');
             }
-            if (stockNote) stockNote.textContent = item.isSet
-                ? 'Check component stock before confirming this set.'
-                : hasStock ? 'Based on showroom catalog quantity; confirm before delivery.'
-                : isPreorder ? 'Pre-order availability must be confirmed with procurement.'
-                : 'No stock recorded in the showroom catalog. Pre-order not confirmed.';
             const newBadge = document.getElementById('detail-modal-new-badge');
             // New Arrival indicates age, not stock: avoid confusing NEW + OUT OF STOCK.
             if (newBadge) newBadge.classList.toggle('hidden', !(hasStock && isNewArrivalItem(item)));
