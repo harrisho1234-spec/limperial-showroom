@@ -1,5 +1,5 @@
 // Limperial Luxury Showroom Service Worker - V25 Clean Slate
-const CACHE_NAME = 'limperial-v4-product-popup-swipe-20261016';
+const CACHE_NAME = 'limperial-v4-product-popup-premium-20261016';
 
 const STATIC_ASSETS = [
   './',
