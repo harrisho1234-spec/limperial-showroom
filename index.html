@@ -682,9 +682,12 @@
 
     <div id="product-detail-modal" class="fixed inset-0 bg-black/90 z-50 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-luxury-card border border-luxury-gold/25 rounded-2xl w-full max-w-2xl shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col md:flex-row my-auto overflow-hidden" id="product-detail-modal-container">
-            <div class="w-full md:w-1/2 bg-luxury-dark flex items-center justify-center p-4 relative min-h-[300px]">
-                <img id="detail-modal-image" src="" alt="" class="w-full h-full object-contain rounded-lg">
+            <div class="w-full md:w-1/2 bg-luxury-dark flex items-center justify-center p-4 relative min-h-[300px]" style="touch-action:pan-y pinch-zoom">
+                <img id="detail-modal-image" src="" alt="" class="w-full h-full object-contain rounded-lg" draggable="false">
                 <span id="detail-modal-brand" class="absolute top-4 left-4 bg-luxury-accent/95 text-luxury-gold text-xs font-bold px-3 py-1 rounded tracking-widest uppercase border border-luxury-gold/30 backdrop-blur-sm shadow-md"></span>
+                <button id="detail-modal-prev" type="button" onclick="navigateProductDetail(-1)" aria-label="Previous product" title="Previous product" class="hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full border border-luxury-gold/25 bg-luxury-dark/85 text-luxury-gold hover:bg-luxury-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-luxury-gold shadow-lg disabled:opacity-25 disabled:cursor-default" data-product-nav><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                <button id="detail-modal-next" type="button" onclick="navigateProductDetail(1)" aria-label="Next product" title="Next product" class="hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full border border-luxury-gold/25 bg-luxury-dark/85 text-luxury-gold hover:bg-luxury-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-luxury-gold shadow-lg disabled:opacity-25 disabled:cursor-default" data-product-nav><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                <span id="detail-modal-position" class="hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-luxury-dark/85 border border-luxury-gold/20 text-luxury-soft text-[10px] font-bold tracking-wide shadow-sm select-none" aria-live="polite"></span>
             </div>
             <div class="w-full md:w-1/2 p-6 flex flex-col justify-between">
                 <div>
@@ -845,6 +848,8 @@
         let showPreOrderOnDoc = true;
         let currentPage = 1;
         let itemsPerPage = 12;
+        let productModalSequence = [];
+        let productModalActiveIndex = -1;
         let colWidths = { no: 35, desc: 220, pic: 60, qty: 50, price: 85, amt: 85, costUnit: 85, costTotal: 85, margin: 85, discount: 75, totalAmt: 90 };
         let editingSetId = null;
         let editingItemCartId = null;
