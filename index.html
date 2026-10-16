@@ -872,6 +872,9 @@
         let itemsPerPage = 12;
         let productModalSequence = [];
         let productModalActiveIndex = -1;
+        let productModalLastSwipeAt = 0;
+        let productPhotoScale = 1;
+        let productPhotoOffset = {x:0,y:0};
         let colWidths = { no: 35, desc: 220, pic: 60, qty: 50, price: 85, amt: 85, costUnit: 85, costTotal: 85, margin: 85, discount: 75, totalAmt: 90 };
         let editingSetId = null;
         let editingItemCartId = null;
@@ -1929,6 +1932,9 @@
                 let nameKey = findKey(['itemname', 'productname', 'name', 'item']);
                 let descKey = findKey(['description', 'dimensions', 'size', 'specs']);
                 let qtyKey = findKey(['qty', 'quantity', 'stock', 'currentqty']);
+                // Only a dedicated source column may mark an item as orderable.
+                // Zero quantity alone is never proof that pre-order is available.
+                let preOrderKey = keys.find(k => /^(pre.?order|pre.?order.?available|made.?to.?order|orderable)$/i.test(String(k||'').replace(/[ _-]/g,'')));
                 let actualPriceKey = keys.find(k => k && k.toLowerCase().replace(/[^a-z0-9]/g, '').includes('actualsalesprice'));
                 let normalPriceKey = keys.find(k => k && k.toLowerCase().replace(/[^a-z0-9]/g, '').includes('salesprice') && !k.toLowerCase().includes('actual'));
                 let costingKey = findKey(['costing', 'cost', 'unitcost', 'purchaseprice']);
@@ -1969,6 +1975,8 @@
                 let parsedCosting = parseFloat(String(costing).replace(/[^0-9.-]+/g, "")) || 0;
                 let parsedMargin = parseFloat(String(margin).replace(/[^0-9.-]+/g, "")) || 0;
                 let parsedQty = parseInt(String(qty).replace(/[^0-9]+/g, "")) || 0;
+                const preOrderSource = preOrderKey ? String(row[preOrderKey] || '').trim().toLowerCase() : '';
+                const preorderAvailable = ['yes','true','1','available','preorder','pre-order','made to order'].includes(preOrderSource);
                 let parsedClass = String(classKey ? row[classKey] : '').replace('Classic', '').replace(',', '').trim();
 
                 const cleanPromo = (val) => {
@@ -2013,6 +2021,7 @@
                     margin: activeMargin, location: String(location).trim(), arrivalDate: String(arrivalDate).trim(),
                     aging: String(aging).trim(), promotion: cleanPromotion, pricePromotion: cleanPricePromotion,
                     keyMaterial: String(keyMaterial).trim(),
+                    preorderAvailable,
                     imgLink: String(imgLink).trim()
                 };
             }).filter(item => item.code || item.itemName);
@@ -2695,23 +2704,17 @@
         function updateProductDetailNavigation() {
             const count = productModalSequence.length;
             const multiple = count > 1;
+            const row = document.getElementById('detail-modal-navigation-row');
             const prev = document.getElementById('detail-modal-prev');
             const next = document.getElementById('detail-modal-next');
             const position = document.getElementById('detail-modal-position');
-            if (prev) {
-                prev.classList.toggle('hidden', !multiple);
-                prev.classList.toggle('flex', multiple);
-                prev.disabled = !multiple || productModalActiveIndex <= 0;
+            if (row) {
+                row.classList.toggle('hidden', !multiple);
+                row.classList.toggle('flex', multiple);
             }
-            if (next) {
-                next.classList.toggle('hidden', !multiple);
-                next.classList.toggle('flex', multiple);
-                next.disabled = !multiple || productModalActiveIndex >= count - 1;
-            }
-            if (position) {
-                position.classList.toggle('hidden', !multiple);
-                position.textContent = multiple ? (productModalActiveIndex + 1) + ' / ' + count + ' · Swipe to browse' : '';
-            }
+            if (prev) prev.disabled = !multiple || productModalActiveIndex <= 0;
+            if (next) next.disabled = !multiple || productModalActiveIndex >= count - 1;
+            if (position) position.textContent = multiple ? (productModalActiveIndex + 1) + ' of ' + count + ' · Swipe to browse' : '';
         }
 
         function navigateProductDetail(direction) {
@@ -2741,6 +2744,7 @@
                 const dx = point.clientX - from.x, dy = point.clientY - from.y;
                 if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
                 if (Date.now() - from.at > 1200) return;
+                productModalLastSwipeAt = Date.now();
                 navigateProductDetail(dx < 0 ? 1 : -1);
             }, { passive: true });
             container.addEventListener('touchcancel', () => { start = null; }, { passive: true });
@@ -2748,7 +2752,8 @@
                 if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
                 if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
                 const modal = document.getElementById('product-detail-modal');
-                if (!modal || modal.classList.contains('pointer-events-none')) return;
+                if (!modal || modal.classList.contains('pointer-events-none') ||
+                    !document.getElementById('detail-photo-viewer')?.classList.contains('hidden')) return;
                 if (event.target.closest?.(interactive)) return;
                 if (productModalSequence.length <= 1) return;
                 event.preventDefault();
@@ -2776,25 +2781,63 @@
             const item = window.SeasonalPromos?.view(sourceItem) || sourceItem;
             const modal = document.getElementById('product-detail-modal'); const container = document.getElementById('product-detail-modal-container'); if (!modal || !container) return;
             const directImg = resolveGoogleDriveImg(item.imgLink); const modalImg = document.getElementById('detail-modal-image');
-            if (modalImg) { if (directImg) { modalImg.src = directImg; modalImg.style.display = 'block'; } else { modalImg.src = ''; modalImg.style.display = 'none'; } }
+            if (modalImg) {
+                modalImg.src = directImg || '';
+                modalImg.alt = 'Photo of ' + (item.itemName || item.code || 'product');
+                modalImg.style.display = directImg ? 'block' : 'none';
+            }
+            const zoomButton = document.getElementById('detail-modal-zoom-button');
+            if (zoomButton) {
+                zoomButton.disabled = !directImg;
+                zoomButton.classList.toggle('hidden', !directImg);
+            }
             document.getElementById('detail-modal-brand').textContent = item.isSet ? 'Set' : getDisplayBrand(item.brand, showCostMode);
-            document.getElementById('detail-modal-class').textContent = item.class; document.getElementById('detail-modal-title').textContent = item.itemName; document.getElementById('detail-modal-code-badge').textContent = 'SKU: ' + item.code;
+            document.getElementById('detail-modal-class').textContent = item.class; document.getElementById('detail-modal-title').textContent = item.itemName; document.getElementById('detail-modal-code-badge').textContent = 'Code: ' + (item.code || '—');
             const descContainer = document.getElementById('detail-modal-desc-container'); const descEl = document.getElementById('detail-modal-description');
-            if (descContainer && descEl) { if (item.description) { descContainer.style.display = 'flex'; descEl.textContent = item.description; } else descContainer.style.display = 'none'; }
-            document.getElementById('detail-modal-location').textContent = item.location || 'Showroom'; document.getElementById('detail-modal-qty').textContent = item.isSet ? `${item.availabilityQty ?? item.qty ?? 0} Pcs` : (item.qty > 0 ? (item.qty + ' In Stock') : 'Out of Stock');
+            if (descContainer && descEl) {
+                const details = String(item.description||'').trim();
+                descContainer.style.display = details ? 'block' : 'none';
+                descEl.textContent = details;
+                const label = document.getElementById('detail-modal-desc-label');
+                if (label) label.textContent = /(?:^|[\s,;])(?:L|W|H|D)\s*[:=]?\s*\d/i.test(details)
+                    ? 'Dimensions / Specifications' : 'Product Specifications';
+            }
+            document.getElementById('detail-modal-location').textContent = item.location || 'Showroom';
+            const qty = Number(item.qty||0);
+            const hasStock = !item.isSet && qty > 0;
+            const isPreorder = !item.isSet && !hasStock &&
+                (item.preorderAvailable === true || item.preOrderAvailable === true ||
+                 ['yes','true','preorder','pre-order'].includes(String(item.preOrder||'').toLowerCase()));
+            const qtyEl = document.getElementById('detail-modal-qty');
+            const stockNote = document.getElementById('detail-modal-stock-note');
+            if (qtyEl) {
+                qtyEl.textContent = item.isSet ? 'Set · Confirm availability'
+                    : hasStock ? 'Available · ' + qty + ' pcs'
+                    : isPreorder ? 'Pre-order · Confirm lead time' : 'Out of Stock';
+                qtyEl.className = 'inline-flex px-2.5 py-1 rounded-lg border font-semibold text-xs '+
+                    (hasStock ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : isPreorder ? 'bg-amber-50 border-amber-200 text-amber-800'
+                      : 'bg-rose-50 border-rose-200 text-rose-800');
+            }
+            if (stockNote) stockNote.textContent = item.isSet
+                ? 'Check component stock before confirming this set.'
+                : hasStock ? 'Based on showroom catalog quantity; confirm before delivery.'
+                : isPreorder ? 'Pre-order availability must be confirmed with procurement.'
+                : 'No stock recorded in the showroom catalog. Pre-order not confirmed.';
             const newBadge = document.getElementById('detail-modal-new-badge');
-            if (newBadge) { if (!item.isSet && isNewArrivalItem(item)) newBadge.classList.remove('hidden'); else newBadge.classList.add('hidden'); }
+            // New Arrival indicates age, not stock: avoid confusing NEW + OUT OF STOCK.
+            if (newBadge) newBadge.classList.toggle('hidden', !(hasStock && isNewArrivalItem(item)));
             
             const modalPrice = document.getElementById('detail-modal-price');
             if (modalPrice) {
                 const hasPromo = !item.isSet && item.promotion && item.promotion.toLowerCase() !== 'n/a' && item.promotion.trim() !== '';
                 if (item.isSet) {
-                    modalPrice.innerHTML = `<div><span class="text-[9px] uppercase tracking-wider text-luxury-muted block font-bold">Set Price</span><span class="text-2xl font-serif text-luxury-gold font-bold">${formatCurrency(item.setPrice ?? item.price)}</span></div>`;
+                    modalPrice.innerHTML = `<div><span class="text-[10px] uppercase tracking-wider text-luxury-muted block font-bold">Set Price</span><span class="text-3xl font-serif text-luxury-gold font-bold">${formatCurrency(item.setPrice ?? item.price)}</span></div>`;
                 } else if (hasPromo) {
                     const matchPct = item.promotion.match(/(\d+(?:\.\d+)?)\s*%/); const pct = matchPct ? parseFloat(matchPct[1]) : 0;
                     let priceAfterPct = item.price; if (pct > 0) priceAfterPct = getActualSalesPrice(item) * (1 - pct / 100); else if (item.pricePromotion) priceAfterPct = parseFloat(String(item.pricePromotion).replace(/[^0-9.-]+/g, "")) || 0;
-                    modalPrice.innerHTML = `<div class="flex flex-col"><div class="flex items-center space-x-2"><span class="text-sm text-luxury-muted line-through">${formatCurrency(getActualSalesPrice(item))}</span></div><div class="flex items-baseline space-x-2 mt-0.5"><span class="text-2xl font-serif text-amber-500 font-bold">${formatCurrency(priceAfterPct)}</span><span class="text-xs font-semibold text-amber-500">(${pct > 0 ? pct + '% OFF' : 'Promo Price'})</span></div></div>`;
-                } else modalPrice.innerHTML = `<div><span class="text-[9px] uppercase tracking-wider text-luxury-muted block font-bold">Actual Sales Price</span><span class="text-2xl font-serif text-luxury-gold font-bold">${formatCurrency(item.price)}</span></div>`;
+                    modalPrice.innerHTML = `<div class="flex flex-col"><div class="flex items-center space-x-2"><span class="text-sm text-luxury-muted line-through">${formatCurrency(getActualSalesPrice(item))}</span></div><div class="flex items-baseline space-x-2 mt-0.5"><span class="text-3xl font-serif text-amber-500 font-bold">${formatCurrency(priceAfterPct)}</span><span class="text-xs font-semibold text-amber-500">(${pct > 0 ? pct + '% OFF' : 'Promo Price'})</span></div></div>`;
+                } else modalPrice.innerHTML = `<div><span class="text-[10px] uppercase tracking-wider text-luxury-muted block font-bold">Actual Sales Price</span><span class="text-3xl font-serif text-luxury-gold font-bold">${formatCurrency(item.price)}</span></div>`;
             }
             
             const agingCont = document.getElementById('detail-modal-aging-container'); const agingEl = document.getElementById('detail-modal-aging');
@@ -2802,13 +2845,7 @@
             const mgtSec = document.getElementById('detail-modal-management-sec');
             if (mgtSec) { if (showCostMode) { mgtSec.style.display = 'block'; document.getElementById('detail-modal-costing').textContent = formatCurrency(getCosting(item)); document.getElementById('detail-modal-margin').textContent = formatCurrency(item.margin); } else mgtSec.style.display = 'none'; }
             
-            const actionCont = document.getElementById('detail-modal-action-btn-container');
-            if (actionCont) {
-                const isInCart = item.isSet ? cart.some(c => c.type === 'set' && String(c.setId || c.id) === String(item.setId || item.id)) : cart.some(c => c.type !== 'set' && c.item.id === item.id); actionCont.innerHTML = '';
-                const btn = document.createElement('button'); btn.className = `px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${isInCart ? 'bg-luxury-gold text-[#0a0f19] hover:bg-luxury-goldHover' : 'bg-luxury-accent text-luxury-gold border border-luxury-gold/30 hover:bg-luxury-gold/10'}`;
-                btn.innerHTML = isInCart ? '<i class="fa-solid fa-check mr-1.5"></i>Interested' : 'Select';
-                btn.addEventListener('click', () => { toggleCartSelection(item.id); closeProductDetailModal(); }); actionCont.appendChild(btn);
-            }
+            refreshProductDetailAction(item);
             modal.classList.remove('pointer-events-none', 'opacity-0'); modal.classList.add('opacity-100'); container.classList.remove('scale-95'); container.classList.add('scale-100');
         }
 
