@@ -1761,7 +1761,7 @@
             const selectedItems = [];
             document.querySelectorAll('.cart-item-checkbox:checked').forEach(cb => {
                 const id = cb.getAttribute('data-id');
-                const cartItem = cart.find(c => c.id === id || (c.type !== 'set' && c.item.id === id));
+                const cartItem = findCartLine(id);
                 if (cartItem && !selectedItems.includes(cartItem)) selectedItems.push(cartItem);
             });
             return selectedItems;
@@ -2677,7 +2677,7 @@
         function setItemsPerPage(num) { itemsPerPage = num; currentPage = 1; renderProductGrid(); }
 
         function openEditItemModal(uniqueId) {
-            const cartItem = cart.find(c => c.type !== 'set' && c.item.id === uniqueId); if (!cartItem) return;
+            const cartItem = findCartLine(uniqueId); if (!cartItem) return;
             editingItemCartId = uniqueId;
             document.getElementById('edit-item-name-input').value = cartItem.item.itemName || ''; document.getElementById('edit-item-spec-input').value = cartItem.item.description || '';
             const modal = document.getElementById('edit-item-modal'); const container = document.getElementById('edit-item-modal-container');
@@ -2692,7 +2692,7 @@
 
         function confirmEditItem() {
             if (!editingItemCartId) return;
-            const cartItem = cart.find(c => c.type !== 'set' && c.item.id === editingItemCartId);
+            const cartItem = findCartLine(editingItemCartId);
             if (cartItem) {
                 cartItem.item.itemName = document.getElementById('edit-item-name-input').value.trim() || 'Unnamed Item';
                 cartItem.item.description = document.getElementById('edit-item-spec-input').value.trim();
@@ -3090,6 +3090,32 @@
             }).join('');
         }
 
+        // Each cart line has an identity independent of its catalog product.
+        // Duplicating the line never merges quantity, price or discount.
+        function newCartLineId() {
+            let id;
+            do {
+                id = 'line_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 11);
+            } while (cart.some(c => String(c.id || '') === id));
+            return id;
+        }
+        function cartLineKey(entry) { return String(entry?.id ?? entry?.item?.id ?? ''); }
+        function findCartLine(key) { return cart.find(c => cartLineKey(c) === String(key)); }
+        function findCartLineIndex(key) { return cart.findIndex(c => cartLineKey(c) === String(key)); }
+
+        function duplicateCartRow(key) {
+            const index = findCartLineIndex(key);
+            if (index < 0) return;
+            const original = cart[index];
+            if (!original.item || original.type === 'set' || original.type === 'service') return;
+            const copy = { ...original, id: newCartLineId(), item: { ...original.item } };
+            cart.splice(index + 1, 0, copy);
+            showNotification('Duplicated to a separate row. Adjust its quantity, price and discount independently.', 'success');
+            updateCartVisuals();
+            renderProductGrid();
+            updateQuotationPreview();
+        }
+
         function toggleCartSelection(itemId) {
             const sourceItem = products.find(p => p.id === itemId);
             const productObj = window.SeasonalPromos?.view(sourceItem) || sourceItem;
@@ -3129,7 +3155,7 @@
             } else {
                 let initialDiscount = 0; const hasPromo = productObj.promotion && productObj.promotion.toLowerCase() !== 'n/a' && productObj.promotion.trim() !== '';
                 if (hasPromo) { const matchPct = productObj.promotion.match(/(\d+(?:\.\d+)?)\s*%/); if (matchPct) initialDiscount = parseFloat(matchPct[1]); else if (getActualSalesPrice(productObj) > 0 && productObj.price > 0 && productObj.price < getActualSalesPrice(productObj)) initialDiscount = Math.round((1 - (productObj.price / getActualSalesPrice(productObj))) * 100); }
-                cart.push({ item: {...productObj}, quantity: 1, discount: initialDiscount, customPrice: null, rowHeight: 70, forcePreorder: false });
+                cart.push({ id: newCartLineId(), item: {...productObj}, quantity: 1, discount: initialDiscount, customPrice: null, rowHeight: 70, forcePreorder: false });
                 window.SeasonalPromos?.afterAddToCart(itemId);
                 recommendedFocusItemId = productObj.id;
                 showNotification("Added " + activeBrand + " " + productObj.code + " to Interest List.", "success");
@@ -3138,14 +3164,14 @@
         }
 
         function toggleForcePreorder(id) {
-            const cartItem = cart.find(c => c.id === id || (c.type !== 'set' && c.item.id === id));
+            const cartItem = findCartLine(id);
             if (cartItem) { cartItem.forcePreorder = !cartItem.forcePreorder; showNotification(`Pre-order ${cartItem.forcePreorder ? 'enabled' : 'disabled'}.`, "info"); updateCartVisuals(); updateQuotationPreview(); }
         }
 
-        function changeQty(id, delta) { const cartItem = cart.find(c => c.id === id || (c.type !== 'set' && c.item.id === id)); if (!cartItem) return; cartItem.quantity += delta; if (cartItem.quantity < 1) cartItem.quantity = 1; updateCartVisuals(); }
+        function changeQty(id, delta) { const cartItem = findCartLine(id); if (!cartItem) return; cartItem.quantity += delta; if (cartItem.quantity < 1) cartItem.quantity = 1; updateCartVisuals(); }
 
         function changeItemDiscount(id, value, inputEl) {
-            const cartItem = cart.find(c => c.id === id || (c.type !== 'set' && c.item.id === id)); if (!cartItem) return;
+            const cartItem = findCartLine(id); if (!cartItem) return;
             let parsedValue = parseFloat(value); if (isNaN(parsedValue)) parsedValue = 0; else { if (parsedValue < 0) parsedValue = 0; if (parsedValue > 100) parsedValue = 100; }
             cartItem.discount = parsedValue;
             const desktopInput = document.getElementById('disc-input-' + id); const mobileInput = document.getElementById('mobile-disc-input-' + id);
@@ -3154,7 +3180,7 @@
         }
 
         function changeItemCustomPrice(id, value, inputEl) {
-            const cartItem = cart.find(c => c.id === id || (c.type !== 'set' && c.item.id === id)); if (!cartItem) return;
+            const cartItem = findCartLine(id); if (!cartItem) return;
             if (value === '') cartItem.customPrice = null; else { let parsedValue = parseFloat(value); if (isNaN(parsedValue) || parsedValue < 0) parsedValue = 0; cartItem.customPrice = parsedValue; }
             const desktopInput = document.getElementById('custom-price-' + id); const mobileInput = document.getElementById('mobile-custom-price-' + id);
             if (desktopInput && desktopInput !== inputEl) desktopInput.value = value; if (mobileInput && mobileInput !== inputEl) mobileInput.value = value;
@@ -3246,7 +3272,7 @@
             updateQuotationPreview();
         }
 
-        function removeCartItem(id) { const index = cart.findIndex(c => c.id === id || (c.type !== 'set' && c.item.id === id)); if (index > -1) { cart.splice(index, 1); showNotification("Item removed.", "info"); } updateCartVisuals(); renderProductGrid(); }
+        function removeCartItem(id) { const index = findCartLineIndex(id); if (index > -1) { cart.splice(index, 1); showNotification("Item removed.", "info"); } updateCartVisuals(); renderProductGrid(); }
         function onCartCheckboxChange() {
             const checkedCount = document.querySelectorAll('.cart-item-checkbox:checked').length;
             const canMakeSet = checkedCount >= 2;
@@ -3270,7 +3296,7 @@
             const inputName = document.getElementById('set-name-input').value.trim(); const chosenName = inputName || "Custom Showroom Set";
             if (editingSetId) { const setIndex = cart.findIndex(c => c.type === 'set' && c.id === editingSetId); if (setIndex > -1) { cart[setIndex].setName = chosenName; showNotification(`Set renamed.`, "success"); } } 
             else {
-                const selectedItems = []; document.querySelectorAll('.cart-item-checkbox:checked').forEach(cb => { const id = cb.getAttribute('data-id'); const cartItem = cart.find(c => c.id === id || (c.type !== 'set' && c.item.id === id)); if (cartItem && !selectedItems.includes(cartItem)) selectedItems.push(cartItem); });
+                const selectedItems = []; document.querySelectorAll('.cart-item-checkbox:checked').forEach(cb => { const id = cb.getAttribute('data-id'); const cartItem = findCartLine(id); if (cartItem && !selectedItems.includes(cartItem)) selectedItems.push(cartItem); });
                 if (selectedItems.length < 2) { showNotification("Please select 2 or more items.", "error"); return; }
                 cart = cart.filter(c => !selectedItems.includes(c)); const flattenedSubItems = [];
                 selectedItems.forEach(item => { if (item.type === 'set') item.items.forEach(sub => flattenedSubItems.push({ item: sub.item, quantity: sub.quantity * item.quantity, discount: sub.discount })); else flattenedSubItems.push({ item: item.item, quantity: item.quantity, discount: item.discount }); });
@@ -3293,7 +3319,7 @@
         }
 
         function updateItemPriceDisplays(id) {
-            const cartItem = cart.find(c => c.id === id || (c.type !== 'set' && c.item.id === id)); if (!cartItem) return;
+            const cartItem = findCartLine(id); if (!cartItem) return;
             let baseActualPrice = 0; let calculatedBasePriceForSet = 0; let hasPromo = false;
             if (cartItem.type === 'set') {
                 cartItem.items.forEach(sub => { calculatedBasePriceForSet += getActualSalesPrice(sub.item) * sub.quantity; if (sub.item.promotion && sub.item.promotion.toLowerCase() !== 'n/a' && sub.item.promotion.trim() !== '') hasPromo = true; });
@@ -3342,7 +3368,7 @@
             if (cart.length === 0) { container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center py-20 text-luxury-muted"><i class="fa-solid fa-clipboard-list text-3xl text-luxury-gold/15 mb-3 animate-pulse"></i><p class="text-sm">No items selected.</p></div>`; document.getElementById('cart-bundle-btn')?.classList.add('hidden'); document.getElementById('create-set-btn')?.classList.add('hidden'); return; }
             let stockTracker = {};
             cart.forEach(cartItem => {
-                const row = document.createElement('div'); const uniqueId = cartItem.type === 'set' ? cartItem.id : cartItem.item.id;
+                const row = document.createElement('div'); const uniqueId = cartLineKey(cartItem);
                 if (cartItem.type === 'service') {
                     const service = cartItem.item || {};
                     const serviceName = String(service.itemName || 'Service Fee');
@@ -3487,6 +3513,7 @@
                             <div class="flex flex-col items-end space-y-1 shrink-0">
                                 <button onclick="openEditItemModal('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 transition-colors" title="Edit Item Details"><i class="fa-solid fa-pencil text-xs"></i></button>
                                 <button onclick="toggleForcePreorder('${uniqueId}')" class="${cartItem.forcePreorder ? 'text-amber-500' : 'text-slate-500 hover:text-amber-400'} p-1 transition-colors" title="${cartItem.forcePreorder ? 'Unmark Pre-order' : 'Force Pre-order'}"><i class="fa-solid fa-hourglass-half text-xs"></i></button>
+                                <button type="button" onclick="duplicateCartRow('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 shrink-0 transition-colors" title="Duplicate Row" aria-label="Duplicate this product into a separate row"><i class="fa-solid fa-copy text-xs"></i></button>
                                 <button onclick="removeCartItem('${uniqueId}')" class="text-slate-500 hover:text-red-400 p-1 shrink-0 transition-colors" title="Remove"><i class="fa-solid fa-trash-can text-xs"></i></button>
                             </div>
                         </div>
@@ -3525,7 +3552,7 @@
             if (cart.length === 0) { container.innerHTML = `<div class="flex flex-col items-center justify-center text-center py-16 text-luxury-muted"><i class="fa-solid fa-clipboard-list text-3xl text-luxury-gold/15 mb-2"></i><p class="text-sm">Empty Interest List</p></div>`; document.getElementById('mobile-cart-bundle-btn')?.classList.add('hidden'); document.getElementById('mobile-create-set-btn')?.classList.add('hidden'); return; }
             let stockTracker = {};
             cart.forEach(cartItem => {
-                const row = document.createElement('div'); const uniqueId = cartItem.type === 'set' ? cartItem.id : cartItem.item.id;
+                const row = document.createElement('div'); const uniqueId = cartLineKey(cartItem);
                 
                 if (cartItem.type === 'service') {
                     const service = cartItem.item || {};
@@ -3667,6 +3694,7 @@
                             <div class="flex items-center space-x-1 shrink-0">
                                 <button onclick="openEditItemModal('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 transition-colors"><i class="fa-solid fa-pencil text-xs"></i></button>
                                 <button onclick="toggleForcePreorder('${uniqueId}')" class="${cartItem.forcePreorder ? 'text-amber-500' : 'text-slate-500 hover:text-amber-400'} p-1 transition-colors"><i class="fa-solid fa-hourglass-half text-xs"></i></button>
+                                <button type="button" onclick="duplicateCartRow('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 transition-colors" title="Duplicate Row" aria-label="Duplicate this product into a separate row"><i class="fa-solid fa-copy text-xs"></i></button>
                                 <button onclick="removeCartItem('${uniqueId}')" class="text-slate-500 hover:text-red-400 p-1 transition-colors"><i class="fa-solid fa-trash-can text-xs"></i></button>
                             </div>
                         </div>
@@ -5135,7 +5163,7 @@
                 tableRowsHtml = `<tr><td colspan="${emptyCols}" style="border: 1px solid #cbd5e1; padding: 28px 16px; text-align: center; color: #94a3b8; font-style: italic; font-size: 11px;"><i class="fa-solid fa-basket-shopping" style="margin-right: 6px; color: #dfb26c;"></i>No items currently selected. Click "Select" on showroom items, or click "Save" above to retrieve a saved list.</td></tr>`;
             }
             cart.forEach((cartItem, idx) => {
-                const uniqueId = cartItem.type === 'set' ? cartItem.id : cartItem.item.id;
+                const uniqueId = cartLineKey(cartItem);
                 const noteValue = noteMap[uniqueId] || ""; const noteHtml = noteValue ? `<div style="font-weight: 700; color: #1e3a8a; font-size: 10px; margin-top: 4px; text-transform: uppercase;">${noteValue}</div>` : '';
                 const imgWidth = Math.max(20, colWidths.pic - 8); const imgHeight = Math.max(20, (cartItem.rowHeight || 70) - 16);
 
