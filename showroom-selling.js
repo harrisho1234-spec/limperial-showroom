@@ -120,7 +120,7 @@ function lastLine(){
   try{return [...cart].reverse().find(x=>x.type!=='service'&&Number(x.quantity)>=1)||null;}
   catch(_){return null}
 }
-function lineId(line){return line?.type==='set'?(line.id||line.setId):line?.item?.id}
+function lineId(line){return line?.id || (line?.type==='set'?line?.setId:line?.item?.id)}
 function quickQty(delta){
   const line=lastLine(),id=lineId(line);if(!line||!id)return;
   if(delta<0&&line.quantity<=1)return;
