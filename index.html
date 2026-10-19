@@ -6022,7 +6022,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261016-clean-stock-label1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261019-duplicate-rows1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
@@ -6073,7 +6073,7 @@
     <script src="showroom-phase1-core.js?v=20261008-recent3days1"></script>
     <script src="showroom-phase1.js?v=20261008-lightselect1"></script>
     <script src="showroom-search-core.js?v=20261008-sellanalytics1"></script>
-    <script src="showroom-selling.js?v=20261009-tabletopen1"></script>
+    <script src="showroom-selling.js?v=20261019-duplicate-rows1"></script>
     <script src="showroom-analytics.js?v=20261008-sellanalytics1"></script>
 </body>
 </html>
