@@ -45,13 +45,29 @@
  function close(){stop();find('showroom-scanner-modal')?.remove();}
  function apply(code){
   const val=String(code||'').trim();if(!val)return;
-  const field=find('search-input');if(!field){status('The Showroom product search is not available.');return;}
+  const field=find('search-input');
+  if(!field){status('Showroom product search is not available.');return;}
+  // Use the existing Showroom catalog and its normal product detail modal.
+  // Scanner-V4's separate sheet is only a reference when Showroom has no exact code.
+  const match=ownCodeMatches(val)[0];
   field.value=val;
   field.dispatchEvent(new Event('input',{bubbles:true}));
-  if(typeof window.handleSearchFilter==='function')window.handleSearchFilter();
-  else if(typeof window.executeSearchFilter==='function')window.executeSearchFilter();
-  stop();find('showroom-scanner-video').style.display='none';lookup(val);field.focus();
-  if(typeof window.showNotification==='function')window.showNotification('Scanned code: '+val,'info');
+  if(typeof window.executeSearchFilter==='function')window.executeSearchFilter();
+  if(match&&typeof window.openProductDetailModal==='function'){
+   clearTimeout(searchTimer);
+   find('showroom-dual-lookup')?.remove();
+   document.activeElement?.blur?.();
+   field.blur();
+   close();
+   window.openProductDetailModal(match.id);
+   return;
+  }
+  // Scanner-V4-only codes stay in the lookup dialog and cannot be added
+  // to a Showroom quotation without an official Showroom catalog entry.
+  stop();
+  const video=find('showroom-scanner-video');if(video)video.style.display='none';
+  lookup(val);
+  document.activeElement?.blur?.();
  }
  let searchTimer=null;
  function installUnifiedSearch(search){
@@ -64,7 +80,7 @@
     if(search.value.trim()!==query)return;
     const records=external.filter(r=>normalize(r.code)===normalize(query));
     const old=find('showroom-dual-lookup');
-    if(!records.length){old?.remove();return;}
+    if(!records.length||ownCodeMatches(query).length){old?.remove();return;}
     const node=old||document.createElement('div');node.id='showroom-dual-lookup';
     node.style.cssText='padding:8px 12px;font-size:12px;background:#1b2330;color:#f2e8d6;border:1px solid #9b8256;border-radius:10px;margin-top:4px';
     const matched=ownCodeMatches(query).length>0;
