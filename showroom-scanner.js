@@ -106,10 +106,12 @@
  }
  function setMode(next){
   multiMode=next;
-  scanned.clear();seenCodes.clear();lastRead='';newestScanId='';
+  // Switching modes must never discard products collected in this scan session.
+  lastRead='';lastReadAt=0;
   const quick=find('showroom-scan-quick'),multi=find('showroom-scan-multi');
   for(const [el,on] of [[quick,!next],[multi,next]])if(el){el.classList.toggle('scan-active',on);el.style.background=on?'#c5a56e':'';el.style.color=on?'#151923':'';}
-  const panel=find('showroom-scanner-results');if(panel)panel.innerHTML='';
+  const panel=find('showroom-scanner-results');
+  if(next)updateMultiList();else if(panel)panel.innerHTML=scanned.size?'<p style="font-size:12px;padding-top:8px;color:var(--scan-soft)">'+scanned.size+' scanned products saved. Return to Multi-Scan to review.</p>':'';
   status(next?'Scan products continuously; tap Add Selected when finished.':'Scan one product to open its details.');
  }
  function find(id){return document.getElementById(id);}
