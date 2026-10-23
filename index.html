@@ -1481,6 +1481,7 @@
             renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderLocationFilters(); setProductLayoutMode(productLayoutMode);
             const spinner = document.getElementById('loading-spinner');
             if (spinner) spinner.className = "hidden";
+            updateShowroomSyncHint();
             fetchSheetData();
             updateMobileFilterBadge();
             initSafeBackdropClose();
@@ -1490,11 +1491,23 @@
             fetchKeyMaterialData();
         }
 
+        const SHOWROOM_SYNC_LAST_KEY = 'limperial_showroom_last_success_sync';
+        function updateShowroomSyncHint() {
+            const stamp=localStorage.getItem(SHOWROOM_SYNC_LAST_KEY);
+            const pill=document.getElementById('sync-status');
+            if (!pill || !stamp) return;
+            const date=new Date(stamp);
+            if (!Number.isNaN(date.getTime())) pill.title='Last successful inventory sync: '+date.toLocaleString();
+        }
         async function fetchWithBackoff(url, options = {}, retries = 5, backoffMs = 1000) {
             const cacheBustUrl = url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now();
             for (let i = 0; i < retries; i++) {
                 try {
-                    const response = await fetch(cacheBustUrl, options);
+                    const controller=new AbortController();
+                    const timeout=setTimeout(()=>controller.abort(),6500);
+                    let response;
+                    try { response=await fetch(cacheBustUrl,{...options,signal:controller.signal}); }
+                    finally { clearTimeout(timeout); }
                     if (response.ok) return response;
                 } catch (err) {}
                 if (i < retries - 1) await new Promise(resolve => setTimeout(resolve, backoffMs * Math.pow(2, i)));
@@ -1516,7 +1529,8 @@
                             applyKeyMaterialToProducts();
                             createdSets = getLocalCreatedSets();
                             applyCreatedSetsToProducts();
-                            localStorage.setItem('limperial_inventory', JSON.stringify(products.filter(product => !product.isSet)));
+                            try { localStorage.setItem('limperial_inventory', JSON.stringify(products.filter(product => !product.isSet))); localStorage.setItem(SHOWROOM_SYNC_LAST_KEY,new Date().toISOString()); } catch(error) { console.warn('Catalog cache could not be saved',error); }
+                            updateShowroomSyncHint();
                             const spinner = document.getElementById('loading-spinner');
                             if (spinner) spinner.classList.add('hidden');
                             renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); handleSearchFilter();
