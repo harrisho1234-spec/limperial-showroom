@@ -3396,6 +3396,7 @@
             const mb = document.getElementById('mobile-cart-badge'); if (mb) mb.textContent = totalCount;
             renderDesktopCartItems(); renderMobileCartItems(); onCartCheckboxChange(); calculateAndDrawTotals();
             window.ShowroomSelling?.refreshCart();
+            window.dispatchEvent(new Event('showroom:cart-changed'));
             updateRecommendedSets();
             window.ShowroomPhase1?.scheduleDraft();
         }
@@ -6113,5 +6114,6 @@
     <script src="showroom-selling.js?v=20261019-duplicate-rows1"></script>
     <script src="showroom-analytics.js?v=20261008-sellanalytics1"></script>
     <script src="showroom-scanner.js?v=20261023-recovery-mobile13"></script>
+    <script src="customer-shopping-session.js?v=20261023-session1"></script>
 </body>
 </html>
