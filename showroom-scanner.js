@@ -53,6 +53,26 @@
   stop();find('showroom-scanner-video').style.display='none';lookup(val);field.focus();
   if(typeof window.showNotification==='function')window.showNotification('Scanned code: '+val,'info');
  }
+ let searchTimer=null;
+ function installUnifiedSearch(search){
+  search.addEventListener('input',()=>{
+   clearTimeout(searchTimer);
+   const query=search.value.trim();
+   if(query.length<3){find('showroom-dual-lookup')?.remove();return;}
+   searchTimer=setTimeout(async()=>{
+    await loadExternal();
+    if(search.value.trim()!==query)return;
+    const records=external.filter(r=>normalize(r.code)===normalize(query));
+    const old=find('showroom-dual-lookup');
+    if(!records.length){old?.remove();return;}
+    const node=old||document.createElement('div');node.id='showroom-dual-lookup';
+    node.style.cssText='padding:8px 12px;font-size:12px;background:#1b2330;color:#f2e8d6;border:1px solid #9b8256;border-radius:10px;margin-top:4px';
+    const matched=ownCodeMatches(query).length>0;
+    node.textContent=matched?'Scanner-V4: matching product code also found. Showing one Showroom product.':'Scanner-V4 only: '+records[0].name+' ('+records[0].code+'). Available in scanner reference, not yet in Showroom quotation catalog.';
+    if(!old)search.parentElement.insertAdjacentElement('afterend',node);
+   },300);
+  });
+ }
  function install(){
   if(find('showroom-scan-trigger')||!find('search-input'))return;
   const search=find('search-input'),wrap=search.parentElement;
@@ -61,6 +81,7 @@
   btn.className='ml-2 h-11 shrink-0 rounded-xl border border-luxury-gold/30 bg-luxury-dark px-3 text-sm text-luxury-text hover:border-luxury-gold';
   wrap.parentNode.insertBefore(btn,wrap.nextSibling);
   wrap.parentElement?.classList.add('flex','items-center');wrap.classList.add('flex-1');
+  installUnifiedSearch(search);
   btn.addEventListener('click',open);
   loadExternal();
  }
