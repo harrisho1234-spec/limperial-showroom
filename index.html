@@ -1347,7 +1347,30 @@
             pill.setAttribute('aria-label', active + ' active filters');
         }
 
-        window.onload = function() { bootstrapDashboardEngine(); };
+        let showroomBootStarted = false;
+        function dismissShowroomSplash() {
+            const overlay = document.getElementById('initial-loading-overlay');
+            if (overlay && !overlay.classList.contains('hidden')) {
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => overlay.classList.add('hidden'), 700);
+            }
+        }
+        function safeShowroomBoot() {
+            if (showroomBootStarted) return;
+            showroomBootStarted = true;
+            try { bootstrapDashboardEngine(); }
+            catch (error) {
+                console.error('Showroom startup error:', error);
+                const status = document.getElementById('status-text');
+                if (status) status.textContent = 'Startup issue — refresh to retry';
+                try { showNotification('The catalog could not initialize completely. Refresh to retry.', 'error'); } catch (_) {}
+            }
+            // Keep the existing catalog accessible even if either Google Sheet is slow.
+            dismissShowroomSplash();
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', safeShowroomBoot, {once:true});
+        else safeShowroomBoot();
+        window.addEventListener('load', safeShowroomBoot, {once:true});
 
         
         function applyKeyMaterialToProducts() {
