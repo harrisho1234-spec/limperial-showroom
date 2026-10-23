@@ -39,35 +39,64 @@
  }
  async function lookup(code){status('Checking both product catalogs…');await loadExternal();if(find('showroom-scanner-modal')){renderLookup(code);status('Lookup complete. Showroom products remain the only items available for quotations.');}}
 
+
+ let multiMode=false,scanned=new Map(),lastRead='',lastReadAt=0;
+ function inCart(id){try{return Array.isArray(cart)&&cart.some(c=>c.type!=='set'&&String(c.item?.id)===String(id));}catch(_){return false;}}
+ function quickAdd(product){
+  if(!product||typeof window.toggleCartSelection!=='function')return false;
+  if(!inCart(product.id))window.toggleCartSelection(product.id);
+  return true;
+ }
+ function scanStockText(product){
+  const location=product.location||product.locations||product.stockLocation||'';
+  const quantity=product.qty??product.quantity??product.stockQty??product.stock??'';
+  return 'Catalog stock: '+(String(quantity||'Not provided'))+(location?' · '+String(location):'')+' · Verify with official inventory before confirming availability';
+ }
+ function updateMultiList(){
+  const panel=find('showroom-scanner-results');if(!panel)return;
+  panel.innerHTML='<div style="padding-top:10px;border-top:1px solid #62543b"><b>Scanned products ('+scanned.size+')</b>'+
+   [...scanned.values()].map(x=>'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #353b44"><div><b>'+escapeHtml(x.code)+'</b><div>'+escapeHtml(x.name)+'</div><small style="color:#d3bd86">'+escapeHtml(scanStockText(x.product))+'</small></div><span style="white-space:nowrap">×'+x.quantity+'</span></div>').join('')+
+   '<div style="display:flex;gap:8px;margin-top:12px"><button id="showroom-scanner-add-selected" style="flex:1;background:#c5a56e;color:#161a21;padding:12px;border-radius:9px;font-weight:700">Add Selected to Cart</button><button id="showroom-scanner-clear-selected" style="padding:12px;border:1px solid #736549;border-radius:9px">Clear</button></div></div>';
+  find('showroom-scanner-add-selected').onclick=()=>{
+   let added=0;for(const x of scanned.values())if(quickAdd(x.product))added++;
+   status(added+' products in Interest List. Existing products are not removed.');
+  };
+  find('showroom-scanner-clear-selected').onclick=()=>{scanned.clear();updateMultiList();};
+ }
+ function setMode(next){
+  multiMode=next;
+  scanned.clear();
+  const quick=find('showroom-scan-quick'),multi=find('showroom-scan-multi');
+  for(const [el,on] of [[quick,!next],[multi,next]])if(el){el.style.background=on?'#c5a56e':'#28313b';el.style.color=on?'#151923':'#f3e9d7';}
+  const panel=find('showroom-scanner-results');if(panel)panel.innerHTML='';
+  status(next?'Scan products continuously; tap Add Selected when finished.':'Scan one product to open its details.');
+ }
  function find(id){return document.getElementById(id);}
  function status(message){const e=find('showroom-scanner-status');if(e)e.textContent=message;}
  function stop(){active=false;if(reader){try{reader.reset();}catch(_){ }reader=null;}const v=find('showroom-scanner-video');if(v?.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;}}
  function close(){stop();find('showroom-scanner-modal')?.remove();}
  function apply(code){
   const val=String(code||'').trim();if(!val)return;
-  const field=find('search-input');
-  if(!field){status('Showroom product search is not available.');return;}
-  // Use the existing Showroom catalog and its normal product detail modal.
-  // Scanner-V4's separate sheet is only a reference when Showroom has no exact code.
+  const now=Date.now();if(normalize(lastRead)===normalize(val)&&now-lastReadAt<1400)return;lastRead=val;lastReadAt=now;
   const match=ownCodeMatches(val)[0];
-  field.value=val;
-  field.dispatchEvent(new Event('input',{bubbles:true}));
+  if(multiMode){
+   if(match){
+    const key=String(match.id),entry=scanned.get(key);
+    scanned.set(key,{code:match.code,name:match.itemName||match.name||val,product:match,quantity:(entry?.quantity||0)+1});
+    updateMultiList();status('Added '+val+' to scan selection. Camera remains open.');
+   }else{status('Code '+val+' is not in Showroom catalog. Cannot add to quotation.');}
+   return;
+  }
+  const field=find('search-input');if(!field)return;
+  field.value=val;field.dispatchEvent(new Event('input',{bubbles:true}));
   if(typeof window.executeSearchFilter==='function')window.executeSearchFilter();
   if(match&&typeof window.openProductDetailModal==='function'){
-   clearTimeout(searchTimer);
-   find('showroom-dual-lookup')?.remove();
-   document.activeElement?.blur?.();
-   field.blur();
-   close();
+   clearTimeout(searchTimer);find('showroom-dual-lookup')?.remove();document.activeElement?.blur?.();field.blur();close();
    window.openProductDetailModal(match.id);
    return;
   }
-  // Scanner-V4-only codes stay in the lookup dialog and cannot be added
-  // to a Showroom quotation without an official Showroom catalog entry.
-  stop();
-  const video=find('showroom-scanner-video');if(video)video.style.display='none';
-  lookup(val);
-  document.activeElement?.blur?.();
+  stop();const video=find('showroom-scanner-video');if(video)video.style.display='none';
+  lookup(val);document.activeElement?.blur?.();
  }
  let searchTimer=null;
  function installUnifiedSearch(search){
@@ -110,9 +139,12 @@
  async function open(){
   close();
   const overlay=document.createElement('div');overlay.id='showroom-scanner-modal';overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.87);display:flex;justify-content:center;align-items:center;padding:16px';
-  overlay.innerHTML='<div style="max-width:520px;width:100%;background:#151a22;color:#f5f0e8;border:1px solid #9b8256;border-radius:20px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:19px;font-weight:700">Scan product code</h3><button id="showroom-scanner-close" style="padding:8px" aria-label="Close scanner">✕</button></div><video id="showroom-scanner-video" muted playsinline style="margin-top:12px;width:100%;aspect-ratio:4/3;object-fit:cover;background:#080b10;border-radius:12px"></video><div id="showroom-scanner-results" style="max-height:200px;overflow:auto"></div><p id="showroom-scanner-status" style="font-size:12px;margin:9px 0;color:#d9c49b">Starting camera…</p><form id="showroom-scanner-manual" style="display:flex;gap:7px"><input id="showroom-scanner-code" autocomplete="off" placeholder="Or enter / scan product code" style="min-width:0;flex:1;background:#252d39;border:1px solid #786844;border-radius:8px;color:white;padding:11px"><button type="submit" style="background:#a89264;color:#121417;border-radius:8px;padding:10px 14px">Find</button></form></div>';
+  overlay.innerHTML='<div style="max-width:520px;width:100%;background:#151a22;color:#f5f0e8;border:1px solid #9b8256;border-radius:20px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:19px;font-weight:700">Scan product code</h3><button id="showroom-scanner-close" style="padding:8px" aria-label="Close scanner">✕</button></div><div style="display:flex;gap:8px;margin-top:12px"><button id="showroom-scan-quick" style="flex:1;border-radius:9px;padding:10px;background:#c5a56e;color:#151923;font-weight:700">Quick Scan</button><button id="showroom-scan-multi" style="flex:1;border-radius:9px;padding:10px;background:#28313b;color:#f3e9d7;font-weight:700">Multi-Scan</button></div><video id="showroom-scanner-video" muted playsinline style="margin-top:12px;width:100%;aspect-ratio:4/3;object-fit:cover;background:#080b10;border-radius:12px"></video><div id="showroom-scanner-results" style="max-height:200px;overflow:auto"></div><p id="showroom-scanner-status" style="font-size:12px;margin:9px 0;color:#d9c49b">Starting camera…</p><form id="showroom-scanner-manual" style="display:flex;gap:7px"><input id="showroom-scanner-code" autocomplete="off" placeholder="Or enter / scan product code" style="min-width:0;flex:1;background:#252d39;border:1px solid #786844;border-radius:8px;color:white;padding:11px"><button type="submit" style="background:#a89264;color:#121417;border-radius:8px;padding:10px 14px">Find</button></form></div>';
   document.body.appendChild(overlay);
   find('showroom-scanner-close').onclick=close;
+  find('showroom-scan-quick').onclick=()=>setMode(false);
+  find('showroom-scan-multi').onclick=()=>setMode(true);
+  setMode(false);
   overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
   find('showroom-scanner-manual').onsubmit=e=>{e.preventDefault();apply(find('showroom-scanner-code').value);};
   try{
