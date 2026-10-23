@@ -40,7 +40,7 @@
  async function lookup(code){status('Checking both product catalogs…');await loadExternal();if(find('showroom-scanner-modal')){renderLookup(code);status('Lookup complete. Showroom products remain the only items available for quotations.');}}
 
 
- let multiMode=false,scanned=new Map(),lastRead='',lastReadAt=0;
+ let multiMode=false,scanned=new Map(),lastRead='',lastReadAt=0,seenCodes=new Set();
  function inCart(id){try{return Array.isArray(cart)&&cart.some(c=>c.type!=='set'&&String(c.item?.id)===String(id));}catch(_){return false;}}
  function quickAdd(product,quantity){
   if(!product||typeof window.toggleCartSelection!=='function')return false;
@@ -62,18 +62,23 @@
  }
  function updateMultiList(){
   const panel=find('showroom-scanner-results');if(!panel)return;
-  panel.innerHTML='<div style="padding-top:10px;border-top:1px solid #62543b"><b>Scanned products ('+scanned.size+')</b>'+
-   [...scanned.values()].map(x=>'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #353b44"><div><b>'+escapeHtml(x.code)+'</b><div>'+escapeHtml(x.name)+'</div><small style="color:#d3bd86">'+escapeHtml(scanStockText(x.product))+'</small></div><span style="white-space:nowrap">×'+x.quantity+'</span></div>').join('')+
-   '<div style="display:flex;gap:8px;margin-top:12px"><button id="showroom-scanner-add-selected" style="flex:1;background:#c5a56e;color:#161a21;padding:12px;border-radius:9px;font-weight:700">Add Selected to Cart</button><button id="showroom-scanner-clear-selected" style="padding:12px;border:1px solid #736549;border-radius:9px">Clear</button></div></div>';
+  panel.innerHTML='<div style="padding-top:8px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><b style="font-size:13px">Selected ('+scanned.size+')</b><button id="showroom-scanner-clear-selected" style="font-size:12px;color:#d3bd86">Clear</button></div>'+
+   '<div style="max-height:155px;overflow:auto">'+[...scanned.values()].map(x=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #343b44"><div style="flex:1;min-width:0"><b style="display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(x.code)+'</b><span style="display:block;font-size:11px;color:#bdbdc2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(x.name)+'</span></div><button data-minus="'+escapeHtml(x.product.id)+'" style="width:32px;height:32px;border:1px solid #675c4c;border-radius:7px">−</button><strong style="min-width:19px;text-align:center">'+x.quantity+'</strong><button data-plus="'+escapeHtml(x.product.id)+'" style="width:32px;height:32px;border:1px solid #675c4c;border-radius:7px">+</button></div>').join('')+'</div>'+
+   '<button id="showroom-scanner-add-selected" style="width:100%;margin-top:8px;background:#c5a56e;color:#161a21;padding:11px;border-radius:9px;font-weight:700">Add Selected to Cart</button></div>';
+  panel.querySelectorAll('[data-plus],[data-minus]').forEach(btn=>btn.onclick=()=>{
+   const id=btn.getAttribute('data-plus')||btn.getAttribute('data-minus'),entry=scanned.get(id);if(!entry)return;
+   entry.quantity+=btn.hasAttribute('data-plus')?1:-1;if(entry.quantity<1)scanned.delete(id);
+   updateMultiList();
+  });
   find('showroom-scanner-add-selected').onclick=()=>{
    let added=0;for(const x of scanned.values())if(quickAdd(x.product,x.quantity))added++;
-   status(added+' products in Interest List. Existing products are not removed.');
+   close();if(typeof window.showNotification==='function')window.showNotification(added+' products added to Interest List.','success');
   };
-  find('showroom-scanner-clear-selected').onclick=()=>{scanned.clear();updateMultiList();};
+  find('showroom-scanner-clear-selected').onclick=()=>{scanned.clear();seenCodes.clear();updateMultiList();};
  }
  function setMode(next){
   multiMode=next;
-  scanned.clear();
+  scanned.clear();seenCodes.clear();lastRead='';
   const quick=find('showroom-scan-quick'),multi=find('showroom-scan-multi');
   for(const [el,on] of [[quick,!next],[multi,next]])if(el){el.style.background=on?'#c5a56e':'#28313b';el.style.color=on?'#151923':'#f3e9d7';}
   const panel=find('showroom-scanner-results');if(panel)panel.innerHTML='';
@@ -89,9 +94,11 @@
   const match=ownCodeMatches(val)[0];
   if(multiMode){
    if(match){
-    const key=String(match.id),entry=scanned.get(key);
-    scanned.set(key,{code:match.code,name:match.itemName||match.name||val,product:match,quantity:(entry?.quantity||0)+1});
-    updateMultiList();status('Added '+val+' to scan selection. Camera remains open.');
+    const key=String(match.id);
+    if(seenCodes.has(key))return;
+    seenCodes.add(key);
+    scanned.set(key,{code:match.code,name:match.itemName||match.name||val,product:match,quantity:1});
+    updateMultiList();status('Product added. Use + / − to adjust quantity.');
    }else{status('Code '+val+' is not in Showroom catalog. Cannot add to quotation.');}
    return;
   }
