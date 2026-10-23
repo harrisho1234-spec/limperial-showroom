@@ -77,10 +77,12 @@
   if(find('showroom-scan-trigger')||!find('search-input'))return;
   const search=find('search-input'),wrap=search.parentElement;
   const btn=document.createElement('button');btn.id='showroom-scan-trigger';btn.type='button';btn.title='Scan barcode or QR code';btn.setAttribute('aria-label','Scan barcode or QR code');
-  btn.innerHTML='<i class="fa-solid fa-barcode"></i><span class="hidden sm:inline"> Scan</span>';
-  btn.className='ml-2 h-11 shrink-0 rounded-xl border border-luxury-gold/30 bg-luxury-dark px-3 text-sm text-luxury-text hover:border-luxury-gold';
-  wrap.parentNode.insertBefore(btn,wrap.nextSibling);
-  wrap.parentElement?.classList.add('flex','items-center');wrap.classList.add('flex-1');
+  btn.innerHTML='<i class="fa-solid fa-barcode"></i>';
+  btn.className='absolute right-10 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center rounded-lg text-luxury-muted hover:text-luxury-gold hover:bg-white/10 transition-colors';
+  btn.style.zIndex='2';
+  search.classList.remove('pr-10');
+  search.classList.add('pr-20');
+  wrap.appendChild(btn);
   installUnifiedSearch(search);
   btn.addEventListener('click',open);
   loadExternal();
