@@ -42,10 +42,18 @@
 
  let multiMode=false,scanned=new Map(),lastRead='',lastReadAt=0;
  function inCart(id){try{return Array.isArray(cart)&&cart.some(c=>c.type!=='set'&&String(c.item?.id)===String(id));}catch(_){return false;}}
- function quickAdd(product){
+ function quickAdd(product,quantity){
   if(!product||typeof window.toggleCartSelection!=='function')return false;
-  if(!inCart(product.id))window.toggleCartSelection(product.id);
-  return true;
+  const count=Math.max(1,Math.floor(Number(quantity)||1));
+  const existed=inCart(product.id);
+  if(!existed)window.toggleCartSelection(product.id);
+  try{
+   const line=cart.find(c=>c.type!=='set'&&String(c.item?.id)===String(product.id));
+   if(!line)return false;
+   line.quantity=Math.max(1,Number(line.quantity)||1)+(existed?count:count-1);
+   if(typeof window.updateCartVisuals==='function')window.updateCartVisuals();
+   return true;
+  }catch(_){return false;}
  }
  function scanStockText(product){
   const location=product.location||product.locations||product.stockLocation||'';
@@ -58,7 +66,7 @@
    [...scanned.values()].map(x=>'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #353b44"><div><b>'+escapeHtml(x.code)+'</b><div>'+escapeHtml(x.name)+'</div><small style="color:#d3bd86">'+escapeHtml(scanStockText(x.product))+'</small></div><span style="white-space:nowrap">×'+x.quantity+'</span></div>').join('')+
    '<div style="display:flex;gap:8px;margin-top:12px"><button id="showroom-scanner-add-selected" style="flex:1;background:#c5a56e;color:#161a21;padding:12px;border-radius:9px;font-weight:700">Add Selected to Cart</button><button id="showroom-scanner-clear-selected" style="padding:12px;border:1px solid #736549;border-radius:9px">Clear</button></div></div>';
   find('showroom-scanner-add-selected').onclick=()=>{
-   let added=0;for(const x of scanned.values())if(quickAdd(x.product))added++;
+   let added=0;for(const x of scanned.values())if(quickAdd(x.product,x.quantity))added++;
    status(added+' products in Interest List. Existing products are not removed.');
   };
   find('showroom-scanner-clear-selected').onclick=()=>{scanned.clear();updateMultiList();};
