@@ -55,6 +55,22 @@
  `;
  function ensureScannerStyles(){if(document.getElementById('showroom-scanner-theme-styles'))return;const e=document.createElement('style');e.id='showroom-scanner-theme-styles';e.textContent=scannerStyles;document.head.appendChild(e)}
  let multiMode=false,scanned=new Map(),lastRead='',lastReadAt=0,seenCodes=new Set();
+ const SCAN_DRAFT_KEY='limperial_scanner_selection_v1';
+ function saveScanDraft(){
+  try{const rows=[...scanned.values()].map(x=>({code:x.code,quantity:x.quantity}));if(rows.length)localStorage.setItem(SCAN_DRAFT_KEY,JSON.stringify({savedAt:Date.now(),rows}));else localStorage.removeItem(SCAN_DRAFT_KEY);}catch(_){}
+ }
+ function restoreScanDraft(){
+  if(scanned.size)return;
+  try{
+   const d=JSON.parse(localStorage.getItem(SCAN_DRAFT_KEY)||'null');
+   if(!d||!Array.isArray(d.rows))return;
+   if(Date.now()-d.savedAt>7*86400000){localStorage.removeItem(SCAN_DRAFT_KEY);return;}
+   for(const row of d.rows.slice(0,50)){const p=ownCodeMatches(row.code)[0];if(!p)continue;
+    const key=String(p.id);scanned.set(key,{code:p.code,name:p.itemName||p.name||p.code,product:p,quantity:Math.min(999,Math.max(1,Math.floor(Number(row.quantity)||1)))});seenCodes.add(key);
+   }
+  }catch(_){}
+ }
+
  function inCart(id){try{return Array.isArray(cart)&&cart.some(c=>c.type!=='set'&&String(c.item?.id)===String(id));}catch(_){return false;}}
  function quickAdd(product,quantity){
   if(!product||typeof window.toggleCartSelection!=='function')return false;
@@ -78,6 +94,7 @@
  function productPhoto(p){const raw=p.imgLink||p.imageUrl||p.photoUrl||p.image||p.photo||'';try{return typeof resolveGoogleDriveImg==='function'?resolveGoogleDriveImg(raw):raw;}catch(_){return raw;}}
  function updateMultiList(){
   const panel=find('showroom-scanner-results');if(!panel)return;
+  saveScanDraft();
   const entries=[...scanned.values()].reverse();
   const total=entries.reduce((n,x)=>n+x.quantity,0);
   panel.style.maxHeight='none';panel.style.overflow='visible';
@@ -100,7 +117,7 @@
   });
   find('showroom-scanner-add-selected').onclick=()=>{
    let added=0;for(const x of scanned.values())if(quickAdd(x.product,x.quantity))added++;
-   close();if(typeof window.showNotification==='function')window.showNotification(added+' products added to Interest List.','success');
+   scanned.clear();seenCodes.clear();saveScanDraft();close();if(typeof window.showNotification==='function')window.showNotification(added+' products added to Interest List.','success');
   };
   find('showroom-scanner-clear-selected').onclick=()=>{scanned.clear();seenCodes.clear();newestScanId='';updateMultiList();};
  }
@@ -111,7 +128,7 @@
   const quick=find('showroom-scan-quick'),multi=find('showroom-scan-multi');
   for(const [el,on] of [[quick,!next],[multi,next]])if(el){el.classList.toggle('scan-active',on);el.style.background=on?'#c5a56e':'';el.style.color=on?'#151923':'';}
   const panel=find('showroom-scanner-results');
-  if(next)updateMultiList();else if(panel)panel.innerHTML=scanned.size?'<p style="font-size:12px;padding-top:8px;color:var(--scan-soft)">'+scanned.size+' scanned products saved. Return to Multi-Scan to review.</p>':'';
+  if(next){restoreScanDraft();updateMultiList();}else if(panel)panel.innerHTML=scanned.size?'<p style="font-size:12px;padding-top:8px;color:var(--scan-soft)">'+scanned.size+' scanned products saved. Return to Multi-Scan to review.</p>':'';
   status(next?'Scan products continuously; tap Add Selected when finished.':'Scan one product to open its details.');
  }
  function find(id){return document.getElementById(id);}
@@ -176,6 +193,7 @@
   wrap.appendChild(btn);
   installUnifiedSearch(search);
   btn.addEventListener('click',open);
+  btn.addEventListener('contextmenu',e=>{e.preventDefault();open().then(()=>setMode(true));});
   loadExternal();
  }
  function loadLibrary(){
@@ -187,6 +205,7 @@
   const overlay=document.createElement('div');overlay.id='showroom-scanner-modal';overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.87);display:flex;justify-content:center;align-items:center;padding:16px';
   overlay.innerHTML='<div class="scanner-shell" style="max-width:520px;width:100%;background:#151a22;color:#f5f0e8;border:1px solid #9b8256;border-radius:20px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:19px;font-weight:700">Scan product code</h3><button id="showroom-scanner-close" style="padding:8px" aria-label="Close scanner">✕</button></div><div style="display:flex;gap:8px;margin-top:12px"><button id="showroom-scan-quick" style="flex:1;border-radius:9px;padding:10px;background:#c5a56e;color:#151923;font-weight:700">Quick Scan</button><button id="showroom-scan-multi" style="flex:1;border-radius:9px;padding:10px;background:#28313b;color:#f3e9d7;font-weight:700">Multi-Scan</button></div><video id="showroom-scanner-video" muted playsinline style="margin-top:12px;width:100%;aspect-ratio:4/3;object-fit:cover;background:#080b10;border-radius:12px"></video><div id="showroom-scanner-results" style="max-height:200px;overflow:auto"></div><p id="showroom-scanner-status" style="font-size:12px;margin:9px 0;color:#d9c49b">Starting camera…</p><form id="showroom-scanner-manual" style="display:flex;gap:7px"><input id="showroom-scanner-code" autocomplete="off" placeholder="Or enter / scan product code" style="min-width:0;flex:1;background:#252d39;border:1px solid #786844;border-radius:8px;color:white;padding:11px"><button type="submit" style="background:#a89264;color:#121417;border-radius:8px;padding:10px 14px">Find</button></form></div>';
   document.body.appendChild(overlay);
+  restoreScanDraft();
   find('showroom-scanner-close').onclick=close;
   find('showroom-scan-quick').onclick=()=>setMode(false);
   find('showroom-scan-multi').onclick=()=>setMode(true);
