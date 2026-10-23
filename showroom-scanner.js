@@ -75,19 +75,19 @@
   return 'Catalog stock: '+(String(quantity||'Not provided'))+(location?' · '+String(location):'')+' · Verify with official inventory before confirming availability';
  }
  let newestScanId='';
- function productPhoto(p){return p.imgLink||p.imageUrl||p.photoUrl||p.image||p.photo||'';}
+ function productPhoto(p){const raw=p.imgLink||p.imageUrl||p.photoUrl||p.image||p.photo||'';try{return typeof resolveGoogleDriveImg==='function'?resolveGoogleDriveImg(raw):raw;}catch(_){return raw;}}
  function updateMultiList(){
   const panel=find('showroom-scanner-results');if(!panel)return;
   const entries=[...scanned.values()].reverse();
   const total=entries.reduce((n,x)=>n+x.quantity,0);
   panel.style.maxHeight='none';panel.style.overflow='visible';
-  panel.innerHTML='<div style="padding-top:8px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:13px">Scanned ('+scanned.size+' products · '+total+' items)</b><button id="showroom-scanner-clear-selected" style="font-size:12px;color:#d3bd86">Clear all</button></div>'+
+  panel.innerHTML='<div style="padding-top:8px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:13px">Scanned ('+scanned.size+' products · '+total+' items)</b><button id="showroom-scanner-clear-selected" style="font-size:12px;color:var(--scan-soft,#d3bd86)">Clear all</button></div>'+
    '<div style="max-height:185px;overflow-y:auto;overscroll-behavior:contain;margin-top:5px">'+entries.map(x=>{
     const fresh=String(x.product.id)===newestScanId;
     const pic=productPhoto(x.product);
     return '<div class="scanner-item'+(fresh?' scanner-fresh':'')+'" style="display:flex;gap:8px;align-items:center;padding:7px;border-radius:10px;margin:4px 0;background:'+(fresh?'#303e35':'#1c242f')+';border:1px solid '+(fresh?'#7ba887':'#303b4a')+'">'+
-      (pic?'<img src="'+escapeHtml(pic)+'" alt="" loading="lazy" style="width:48px;height:48px;flex-shrink:0;object-fit:cover;border-radius:7px" onerror="this.style.display=\'none\'">':'<span style="width:48px;height:48px;display:grid;place-items:center;background:#303743;border-radius:7px">▧</span>')+
-      '<div style="min-width:0;flex:1"><b style="display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(x.code)+'</b><span style="font-size:11px;color:#ddd;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(x.name)+'</span>'+(fresh?'<small style="color:#a6e1b4">✓ Just scanned</small>':'')+'</div>'+
+      (pic?'<img src="'+escapeHtml(pic)+'" alt="" loading="lazy" style="width:48px;height:48px;flex-shrink:0;object-fit:cover;border-radius:7px" onerror="this.style.opacity=\'.25\';this.alt=\'No photo\'">':'<span style="width:48px;height:48px;display:grid;place-items:center;background:#303743;border-radius:7px">▧</span>')+
+      '<div style="min-width:0;flex:1"><b style="display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(x.code)+'</b><span class="scanner-item-name" style="font-size:11px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(x.name)+'</span>'+(fresh?'<small style="color:#a6e1b4">✓ Just scanned</small>':'')+'</div>'+
       '<div style="display:flex;align-items:center;gap:5px"><button data-minus="'+escapeHtml(x.product.id)+'" aria-label="Decrease quantity" style="width:28px;height:32px;border:1px solid #675c4c;border-radius:7px">−</button><strong style="min-width:17px;text-align:center">'+x.quantity+'</strong><button data-plus="'+escapeHtml(x.product.id)+'" aria-label="Increase quantity" style="width:28px;height:32px;border:1px solid #675c4c;border-radius:7px">+</button><button data-remove="'+escapeHtml(x.product.id)+'" aria-label="Remove item" style="width:25px;color:#c9a59c">×</button></div></div>';
    }).join('')+'</div>'+
    '<button id="showroom-scanner-add-selected" '+(entries.length?'':'disabled')+' style="width:100%;margin-top:8px;background:#c5a56e;color:#161a21;padding:11px;border-radius:9px;font-weight:700">Add Selected to Cart · '+total+' items</button></div>';
