@@ -40,6 +40,20 @@
  async function lookup(code){status('Checking both product catalogs…');await loadExternal();if(find('showroom-scanner-modal')){renderLookup(code);status('Lookup complete. Showroom products remain the only items available for quotations.');}}
 
 
+ const scannerStyles=`
+ #showroom-scanner-modal{--scan-bg:#fffdf8;--scan-text:#28241e;--scan-soft:#665a4a;--scan-card:#f7f2e8;--scan-border:#d8c7aa;--scan-input:#fff;--scan-muted:#f0e6d6;--scan-fresh:#e4f4e6;--scan-fresh-border:#72a682}
+ body.theme-dark #showroom-scanner-modal{--scan-bg:#151a22;--scan-text:#f5f0e8;--scan-soft:#d0c1a9;--scan-card:#1c242f;--scan-border:#66583e;--scan-input:#252d39;--scan-muted:#28313b;--scan-fresh:#303e35;--scan-fresh-border:#7ba887}
+ #showroom-scanner-modal .scanner-shell{background:var(--scan-bg)!important;color:var(--scan-text)!important;border-color:var(--scan-border)!important}
+ #showroom-scanner-modal .scanner-shell button:not(.scanner-gold){color:var(--scan-text)}
+ #showroom-scanner-modal #showroom-scan-quick:not(.scan-active),#showroom-scanner-modal #showroom-scan-multi:not(.scan-active){background:var(--scan-muted)!important;color:var(--scan-text)!important}
+ #showroom-scanner-modal #showroom-scanner-code{background:var(--scan-input)!important;color:var(--scan-text)!important;border-color:var(--scan-border)!important}
+ #showroom-scanner-modal #showroom-scanner-status{color:var(--scan-soft)!important}
+ #showroom-scanner-modal .scanner-item{background:var(--scan-card)!important;border-color:var(--scan-border)!important;color:var(--scan-text)!important}
+ #showroom-scanner-modal .scanner-item.scanner-fresh{background:var(--scan-fresh)!important;border-color:var(--scan-fresh-border)!important}
+ #showroom-scanner-modal .scanner-item .scanner-item-name{color:var(--scan-soft)!important}
+ #showroom-scanner-modal .scanner-item button{border-color:var(--scan-border)!important}
+ `;
+ function ensureScannerStyles(){if(document.getElementById('showroom-scanner-theme-styles'))return;const e=document.createElement('style');e.id='showroom-scanner-theme-styles';e.textContent=scannerStyles;document.head.appendChild(e)}
  let multiMode=false,scanned=new Map(),lastRead='',lastReadAt=0,seenCodes=new Set();
  function inCart(id){try{return Array.isArray(cart)&&cart.some(c=>c.type!=='set'&&String(c.item?.id)===String(id));}catch(_){return false;}}
  function quickAdd(product,quantity){
@@ -71,7 +85,7 @@
    '<div style="max-height:185px;overflow-y:auto;overscroll-behavior:contain;margin-top:5px">'+entries.map(x=>{
     const fresh=String(x.product.id)===newestScanId;
     const pic=productPhoto(x.product);
-    return '<div style="display:flex;gap:8px;align-items:center;padding:7px;border-radius:10px;margin:4px 0;background:'+(fresh?'#303e35':'#1c242f')+';border:1px solid '+(fresh?'#7ba887':'#303b4a')+'">'+
+    return '<div class="scanner-item'+(fresh?' scanner-fresh':'')+'" style="display:flex;gap:8px;align-items:center;padding:7px;border-radius:10px;margin:4px 0;background:'+(fresh?'#303e35':'#1c242f')+';border:1px solid '+(fresh?'#7ba887':'#303b4a')+'">'+
       (pic?'<img src="'+escapeHtml(pic)+'" alt="" loading="lazy" style="width:48px;height:48px;flex-shrink:0;object-fit:cover;border-radius:7px" onerror="this.style.display=\'none\'">':'<span style="width:48px;height:48px;display:grid;place-items:center;background:#303743;border-radius:7px">▧</span>')+
       '<div style="min-width:0;flex:1"><b style="display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(x.code)+'</b><span style="font-size:11px;color:#ddd;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(x.name)+'</span>'+(fresh?'<small style="color:#a6e1b4">✓ Just scanned</small>':'')+'</div>'+
       '<div style="display:flex;align-items:center;gap:5px"><button data-minus="'+escapeHtml(x.product.id)+'" aria-label="Decrease quantity" style="width:28px;height:32px;border:1px solid #675c4c;border-radius:7px">−</button><strong style="min-width:17px;text-align:center">'+x.quantity+'</strong><button data-plus="'+escapeHtml(x.product.id)+'" aria-label="Increase quantity" style="width:28px;height:32px;border:1px solid #675c4c;border-radius:7px">+</button><button data-remove="'+escapeHtml(x.product.id)+'" aria-label="Remove item" style="width:25px;color:#c9a59c">×</button></div></div>';
@@ -94,7 +108,7 @@
   multiMode=next;
   scanned.clear();seenCodes.clear();lastRead='';newestScanId='';
   const quick=find('showroom-scan-quick'),multi=find('showroom-scan-multi');
-  for(const [el,on] of [[quick,!next],[multi,next]])if(el){el.style.background=on?'#c5a56e':'#28313b';el.style.color=on?'#151923':'#f3e9d7';}
+  for(const [el,on] of [[quick,!next],[multi,next]])if(el){el.classList.toggle('scan-active',on);el.style.background=on?'#c5a56e':'';el.style.color=on?'#151923':'';}
   const panel=find('showroom-scanner-results');if(panel)panel.innerHTML='';
   status(next?'Scan products continuously; tap Add Selected when finished.':'Scan one product to open its details.');
  }
@@ -167,9 +181,9 @@
   return new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';script.onload=resolve;script.onerror=()=>reject(new Error('Scanner library could not load'));document.head.appendChild(script);});
  }
  async function open(){
-  close();
+  close();ensureScannerStyles();
   const overlay=document.createElement('div');overlay.id='showroom-scanner-modal';overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.87);display:flex;justify-content:center;align-items:center;padding:16px';
-  overlay.innerHTML='<div style="max-width:520px;width:100%;background:#151a22;color:#f5f0e8;border:1px solid #9b8256;border-radius:20px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:19px;font-weight:700">Scan product code</h3><button id="showroom-scanner-close" style="padding:8px" aria-label="Close scanner">✕</button></div><div style="display:flex;gap:8px;margin-top:12px"><button id="showroom-scan-quick" style="flex:1;border-radius:9px;padding:10px;background:#c5a56e;color:#151923;font-weight:700">Quick Scan</button><button id="showroom-scan-multi" style="flex:1;border-radius:9px;padding:10px;background:#28313b;color:#f3e9d7;font-weight:700">Multi-Scan</button></div><video id="showroom-scanner-video" muted playsinline style="margin-top:12px;width:100%;aspect-ratio:4/3;object-fit:cover;background:#080b10;border-radius:12px"></video><div id="showroom-scanner-results" style="max-height:200px;overflow:auto"></div><p id="showroom-scanner-status" style="font-size:12px;margin:9px 0;color:#d9c49b">Starting camera…</p><form id="showroom-scanner-manual" style="display:flex;gap:7px"><input id="showroom-scanner-code" autocomplete="off" placeholder="Or enter / scan product code" style="min-width:0;flex:1;background:#252d39;border:1px solid #786844;border-radius:8px;color:white;padding:11px"><button type="submit" style="background:#a89264;color:#121417;border-radius:8px;padding:10px 14px">Find</button></form></div>';
+  overlay.innerHTML='<div class="scanner-shell" style="max-width:520px;width:100%;background:#151a22;color:#f5f0e8;border:1px solid #9b8256;border-radius:20px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:19px;font-weight:700">Scan product code</h3><button id="showroom-scanner-close" style="padding:8px" aria-label="Close scanner">✕</button></div><div style="display:flex;gap:8px;margin-top:12px"><button id="showroom-scan-quick" style="flex:1;border-radius:9px;padding:10px;background:#c5a56e;color:#151923;font-weight:700">Quick Scan</button><button id="showroom-scan-multi" style="flex:1;border-radius:9px;padding:10px;background:#28313b;color:#f3e9d7;font-weight:700">Multi-Scan</button></div><video id="showroom-scanner-video" muted playsinline style="margin-top:12px;width:100%;aspect-ratio:4/3;object-fit:cover;background:#080b10;border-radius:12px"></video><div id="showroom-scanner-results" style="max-height:200px;overflow:auto"></div><p id="showroom-scanner-status" style="font-size:12px;margin:9px 0;color:#d9c49b">Starting camera…</p><form id="showroom-scanner-manual" style="display:flex;gap:7px"><input id="showroom-scanner-code" autocomplete="off" placeholder="Or enter / scan product code" style="min-width:0;flex:1;background:#252d39;border:1px solid #786844;border-radius:8px;color:white;padding:11px"><button type="submit" style="background:#a89264;color:#121417;border-radius:8px;padding:10px 14px">Find</button></form></div>';
   document.body.appendChild(overlay);
   find('showroom-scanner-close').onclick=close;
   find('showroom-scan-quick').onclick=()=>setMode(false);
