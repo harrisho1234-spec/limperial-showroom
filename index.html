@@ -4240,8 +4240,7 @@
             }
 
             try {
-                target.document.write('<!doctype html><title>Opening Sales Tracking…</title><body style="font-family:Arial,sans-serif;padding:32px;color:#333">Opening L\'Imperial Sales & Order Management…    <script src="showroom-scanner.js?v=20261023-search-icon3"></script>
-</body>');
+                target.document.write('<!doctype html><title>Opening Sales Tracking…</title><body style="font-family:Arial,sans-serif;padding:32px;color:#333">Opening L\'Imperial Sales & Order Management…</body>');
                 showNotification('Checking the saved quotation before sending it to Sales Tracking…', 'info');
                 const response = await jsonpRequest({ action: 'get', recordId: id });
                 if (!response || !response.record) throw new Error('This quotation is not available in the shared saved-list database yet.');
@@ -6099,5 +6098,6 @@
     <script src="showroom-search-core.js?v=20261008-sellanalytics1"></script>
     <script src="showroom-selling.js?v=20261019-duplicate-rows1"></script>
     <script src="showroom-analytics.js?v=20261008-sellanalytics1"></script>
+    <script src="showroom-scanner.js?v=20261023-startupfix4"></script>
 </body>
 </html>
