@@ -314,8 +314,8 @@
                                 <select id="brand-select" onchange="selectBrand(this.value)" class="mt-1 h-10 min-w-0 w-full rounded-xl border border-luxury-gold/20 bg-luxury-dark px-3 text-xs text-luxury-text outline-none transition-colors duration-200 focus:border-luxury-gold cursor-pointer"><option value="">All Brands</option></select>
                             </div>
                             <div class="min-w-0">
-                                <label for="key-material-select" class="flex h-5 items-center gap-1.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide text-luxury-muted"><i class="fa-solid fa-gem shrink-0 text-luxury-gold/60 text-[9px]"></i><span class="truncate">Key Material</span></label>
-                                <select id="key-material-select" onchange="selectKeyMaterial(this.value)" class="mt-1 h-10 min-w-0 w-full rounded-xl border border-luxury-gold/20 bg-luxury-dark px-3 text-xs text-luxury-text outline-none transition-colors duration-200 focus:border-luxury-gold cursor-pointer"><option value="">All Key Materials</option></select>
+                                <label for="key-material-select" class="flex h-5 items-center gap-1.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide text-luxury-muted"><i class="fa-solid fa-gem shrink-0 text-luxury-gold/60 text-[9px]"></i><span class="truncate">Others</span></label>
+                                <select id="key-material-select" onchange="selectKeyMaterial(this.value)" class="mt-1 h-10 min-w-0 w-full rounded-xl border border-luxury-gold/20 bg-luxury-dark px-3 text-xs text-luxury-text outline-none transition-colors duration-200 focus:border-luxury-gold cursor-pointer"><option value="">All Others</option></select>
                             </div>
                             <div class="min-w-0">
                                 <label for="location-select" class="flex h-5 items-center gap-1.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wide text-luxury-muted"><i class="fa-solid fa-map-location-dot shrink-0 text-luxury-gold/60 text-[9px]"></i><span class="truncate">Location</span></label>
@@ -2305,7 +2305,7 @@
             if (!select) return;
             const savedValue = currentKeyMaterialFilter;
             const values = [...new Set((products || []).map(p => String(p.keyMaterial || '').trim()).filter(v => v && v.toLowerCase() !== 'n/a'))].sort((a,b) => a.localeCompare(b));
-            select.innerHTML = '<option value="">All Key Materials</option>';
+            select.innerHTML = '<option value="">All Others</option>';
             values.forEach(value => {
                 const opt = document.createElement('option');
                 opt.value = value; opt.textContent = value;
