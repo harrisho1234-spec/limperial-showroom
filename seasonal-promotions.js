@@ -316,6 +316,8 @@
 
     control.classList.toggle('hidden',!allowed);
     control.classList.toggle('flex',allowed);
+    const signIn=ui('showroom-management-signin');
+    if(signIn){signIn.classList.toggle('hidden',allowed);signIn.classList.toggle('inline-flex',!allowed);}
 
     if(!allowed){
       const wasActive=!!showCostMode||!!managerVisible;
