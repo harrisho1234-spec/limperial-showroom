@@ -3286,7 +3286,7 @@
             const item=line.item||{},unit=Number(line.customPrice??item.price??0);
             const qty=Math.max(1,Number(line.quantity)||1),discount=Math.max(0,Math.min(100,Number(line.discount)||0));
             const original=unit*qty,final=original*(1-discount/100);
-            const keyArg=JSON.stringify(key), photo=String(item.imgLink||'');
+            const keyArg=JSON.stringify(key).replace(/"/g,'&quot;'), photo=String(item.imgLink||'');
             const image=photo.startsWith('data:image/jpeg;base64,')?'<img src="'+escapeHtml(photo)+'" class="w-20 h-20 rounded-lg object-cover shrink-0" alt="Product photo">':'';
             const code=item.code&&item.code!=='MANUAL'?escapeHtml(item.code):'';
             row.className='p-3.5 rounded-xl bg-luxury-accent/30 border border-luxury-gold/20 space-y-3 fade-in';
