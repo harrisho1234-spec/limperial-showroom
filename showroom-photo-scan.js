@@ -64,19 +64,27 @@ function unit(v){const a=Array.from(v);const mag=Math.hypot(...a)||1;return a.ma
 function cosine(a,b){let sum=0;for(let i=0;i<a.length;i++)sum+=a[i]*b[i];return sum;}
 async function model(){
  if(!modelPromise)modelPromise=(async()=>{
-  let firstError;
-  for(const url of [
-   'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6',
-   'https://esm.sh/@huggingface/transformers@3.7.6?bundle'
-  ]){
+  // Transformers.js v2 uses the stable CLIP feature-extraction API on browsers.
+  // Some mobile browsers throw a minified ReferenceError while initializing v3.
+  const sources=[
+   'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js',
+   'https://esm.sh/@xenova/transformers@2.17.2?bundle'
+  ];
+  const failures=[];
+  for(const url of sources){
    try{
-    const m=await import(url);
-    const pipe=await m.pipeline('image-feature-extraction',MODEL,{dtype:'q8',device:'wasm'});
-    return pipe;
-   }catch(e){firstError=e;console.warn('[Photo scanner] Model source failed:',url,e);}
+    const lib=await import(url);
+    const pipeline=lib.pipeline||lib.default?.pipeline;
+    if(typeof pipeline!=='function')throw new Error('No image feature extraction export');
+    const extractor=await pipeline('image-feature-extraction',MODEL,{quantized:true});
+    return extractor;
+   }catch(error){
+    failures.push((error?.message||String(error)));
+    console.warn('[Showroom visual scan] Model source failed',url,error);
+   }
   }
-  throw firstError||new Error('Could not load image recognition');
- })().catch(e=>{modelPromise=null;throw e;});
+  throw new Error('Local vision model failed to initialize: '+failures.join(' / '));
+ })().catch(error=>{modelPromise=null;throw error;});
  return modelPromise;
 }
 async function aiCompare(file,token,output){
@@ -128,7 +136,7 @@ async function compare(file){
  try{await aiCompare(file,token,output);}
  catch(e){
   if(token!==generation)return;
-  output.textContent='AI model unavailable ('+e.message+'). Using basic photo matching…';
+  output.textContent='AI recognition could not start ('+String(e?.message||e).slice(0,180)+'). Using basic matching instead.';
   const blob=URL.createObjectURL(file);let input;
   try{input=signature(await imageFrom(blob));}catch(err){output.textContent='Unable to read photo: '+err.message;return;}finally{URL.revokeObjectURL(blob);}
   const collection=catalog().map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,250);
