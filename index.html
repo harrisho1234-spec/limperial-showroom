@@ -3234,7 +3234,34 @@
             const put=(k,v)=>m.querySelector('[data-manual="'+k+'"]').value=v??'';
             put('name',line?.item?.itemName||'');put('code',line?.item?.code||'');put('qty',line?.quantity||1);
             put('price',line?(line.customPrice??line.item.price):'');put('description',line?.item?.description||'');
+            m.dataset.photo=line?.item?.imgLink||'';
+            const preview=m.querySelector('[data-manual-preview]');if(preview){preview.src=m.dataset.photo||'';preview.classList.toggle('hidden',!m.dataset.photo);}
+            const input=m.querySelector('[data-manual-photo]');if(input)input.value='';
             m.classList.remove('hidden');
+        }
+        async function selectManualPhoto(input){
+            const modal=document.getElementById('manual-interest-modal'),file=input.files?.[0];
+            if(!modal||!file)return;
+            if(!file.type.startsWith('image/')||file.size>12000000){showNotification('Choose an image smaller than 12 MB.','error');return;}
+            const url=URL.createObjectURL(file),image=new Image();
+            try{
+                await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url;});
+                const scale=Math.min(1,640/Math.max(image.naturalWidth,image.naturalHeight));
+                const canvas=document.createElement('canvas');
+                canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+                canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+                const data=canvas.toDataURL('image/jpeg',0.6);
+                if(data.length>120000)throw Error('Photo is too large after compression.');
+                modal.dataset.photo=data;
+                const preview=modal.querySelector('[data-manual-preview]');preview.src=data;preview.classList.remove('hidden');
+            }catch(e){showNotification(e.message||'Unable to read image.','error');}
+            finally{URL.revokeObjectURL(url);}
+        }
+        function removeManualPhoto(){
+            const modal=document.getElementById('manual-interest-modal');if(!modal)return;
+            modal.dataset.photo='';
+            const preview=modal.querySelector('[data-manual-preview]');preview.removeAttribute('src');preview.classList.add('hidden');
+            const input=modal.querySelector('[data-manual-photo]');if(input)input.value='';
         }
         function closeManualInterestItem(){document.getElementById('manual-interest-modal')?.classList.add('hidden');}
         function saveManualInterestItem(event){
@@ -3244,7 +3271,7 @@
             if(!name||!Number.isFinite(qty)||qty<1||qty>9999||!Number.isFinite(price)||price<0){showNotification('Enter a name, valid quantity and price.','error');return;}
             let line=cart.find(c=>cartLineKey(c)===m.dataset.key&&c.item?.manualItem);
             const id=line?.id||newCartLineId();
-            const item={id:'manual-'+id,code:get('code').slice(0,100)||'MANUAL',brand:'Manual Item',class:'Manual',itemName:name,description:get('description').slice(0,1000),manualItem:true,qty:0,price,salesPrice:price,actualSalesPrice:price,costing:0,margin:0,location:'Not in Catalog',imgLink:''};
+            const item={id:'manual-'+id,code:get('code').slice(0,100)||'MANUAL',brand:'Manual Item',class:'Manual',itemName:name,description:get('description').slice(0,1000),manualItem:true,qty:0,price,salesPrice:price,actualSalesPrice:price,costing:0,margin:0,location:'Not in Catalog',imgLink:m.dataset.photo||''};
             if(line){line.item=item;line.quantity=qty;line.customPrice=price;}
             else cart.push({id,type:'service',item,quantity:qty,discount:0,customPrice:price,rowHeight:90,forcePreorder:true});
             closeManualInterestItem();updateCartVisuals();renderProductGrid();updateQuotationPreview();
@@ -3252,9 +3279,9 @@
         }
         function renderManualInterestRow(row,line,key,container){
             const item=line.item||{},unit=line.customPrice??item.price??0;
-            row.className='p-3 rounded-xl border border-dashed border-luxury-gold/40 bg-luxury-accent/20 space-y-2';
-            row.innerHTML='<div class="flex justify-between gap-2"><label class="text-xs font-bold text-luxury-gold"><input type="checkbox" class="cart-item-checkbox mr-2" data-id="'+escapeHtml(key)+'" onchange="onCartCheckboxChange()">Manual Item · Not in Catalog</label><button type="button" class="text-xs text-red-400" onclick="removeCartItem(\''+escapeHtml(key)+'\')">Remove</button></div>'+
-              '<div class="text-sm text-luxury-text font-bold">'+escapeHtml(item.itemName||'Manual Item')+'</div><div class="text-xs text-luxury-muted">'+escapeHtml(item.code||'')+(item.description?' · '+escapeHtml(item.description):'')+'</div>'+
+            row.className='p-3 rounded-xl border border-luxury-gold/30 bg-luxury-accent/20 space-y-2';
+            row.innerHTML=(item.imgLink?.startsWith('data:image/jpeg;base64,')?'<img src="'+escapeHtml(item.imgLink)+'" alt="Item photo" class="h-20 w-20 object-cover rounded-lg mb-2">':'')+'<div class="flex justify-between gap-2"><label class="text-xs font-bold text-luxury-gold"><input type="checkbox" class="cart-item-checkbox mr-2" data-id="'+escapeHtml(key)+'" onchange="onCartCheckboxChange()">Select</label><button type="button" class="text-xs text-red-400" onclick="removeCartItem(\''+escapeHtml(key)+'\')">Remove</button></div>'+
+              '<div class="text-sm text-luxury-text font-bold">'+escapeHtml(item.itemName||'Manual Item')+'</div><div class="text-xs text-luxury-muted">'+(item.code&&item.code!=='MANUAL'?escapeHtml(item.code):'')+(item.description?' · '+escapeHtml(item.description):'')+'</div>'+
               '<div class="flex justify-between items-center text-xs"><span>Qty '+line.quantity+' · '+formatCurrency(unit)+'</span><button type="button" class="border border-luxury-gold/40 rounded-lg px-3 py-2 text-luxury-gold" onclick="openManualInterestItem(\''+escapeHtml(key)+'\')">Edit</button></div>';
             container.appendChild(row);
         }
@@ -6151,6 +6178,6 @@
     <script src="showroom-analytics.js?v=20261008-sellanalytics1"></script>
     <script src="showroom-scanner.js?v=20261023-recovery-mobile13"></script>
     <script src="customer-shopping-session.js?v=20261023-session-theme2"></script>
-<div id="manual-interest-modal" class="hidden fixed inset-0 z-[110] bg-black/75 p-3 overflow-auto" role="dialog" aria-modal="true"><form onsubmit="saveManualInterestItem(event)" class="max-w-lg mx-auto my-8 rounded-2xl bg-luxury-dark text-luxury-text border border-luxury-gold/40 p-5 space-y-3"><div class="flex justify-between"><h3 class="font-bold">Manual Item</h3><button type="button" onclick="closeManualInterestItem()">✕</button></div><p class="text-xs text-luxury-muted">Not in catalog · Estimated price · No stock changes</p><label class="block text-xs">Name *<input data-manual="name" required maxlength="160" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="block text-xs">Code<input data-manual="code" maxlength="100" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><div class="grid grid-cols-2 gap-2"><label class="text-xs">Quantity *<input data-manual="qty" required type="number" min="1" max="9999" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="text-xs">Estimated Price ($) *<input data-manual="price" required type="number" min="0" step=".01" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label></div><label class="block text-xs">Specifications / Notes<textarea data-manual="description" maxlength="1000" rows="3" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></textarea></label><button type="submit" class="w-full bg-luxury-gold text-[#171b22] rounded-lg p-3 font-bold">Save Manual Item</button></form></div>
+<div id="manual-interest-modal" class="hidden fixed inset-0 z-[110] bg-black/75 p-3 overflow-auto" role="dialog" aria-modal="true"><form onsubmit="saveManualInterestItem(event)" class="max-w-lg mx-auto my-8 rounded-2xl bg-luxury-dark text-luxury-text border border-luxury-gold/40 p-5 space-y-3"><div class="flex justify-between"><h3 class="font-bold">Manual Item</h3><button type="button" onclick="closeManualInterestItem()">✕</button></div><p class="text-xs text-luxury-muted">Not in catalog · Estimated price · No stock changes</p><label class="block text-xs">Name *<input data-manual="name" required maxlength="160" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="block text-xs">Code<input data-manual="code" maxlength="100" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><div class="grid grid-cols-2 gap-2"><label class="text-xs">Quantity *<input data-manual="qty" required type="number" min="1" max="9999" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="text-xs">Estimated Price ($) *<input data-manual="price" required type="number" min="0" step=".01" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label></div><label class="block text-xs">Specifications / Notes<textarea data-manual="description" maxlength="1000" rows="3" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></textarea></label><label class="block text-xs">Product Photo (optional)<input type="file" data-manual-photo accept="image/*" onchange="selectManualPhoto(this)" class="block w-full mt-1"></label><img data-manual-preview class="hidden w-24 h-24 rounded-lg object-cover" alt="Photo preview"><button type="button" onclick="removeManualPhoto()" class="text-xs underline">Remove photo</button><button type="submit" class="w-full bg-luxury-gold text-[#171b22] rounded-lg p-3 font-bold">Save Item</button></form></div>
 </body>
 </html>
