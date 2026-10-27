@@ -162,6 +162,25 @@ function visualScore(a,b){
  }
  return 1-(Math.sqrt(color/192)*.45+Math.sqrt(shape/64)*.55);
 }
+let photoIndexPromise=null;
+async function loadPhotoIndex(){
+ if(!photoIndexPromise)photoIndexPromise=fetch('./assets/photo-index.json',{cache:'no-cache'}).then(async response=>{
+  if(!response.ok)throw Error('index not published yet');
+  const index=await response.json();
+  if(index.version!==1||!Array.isArray(index.items)||!index.items.length)throw Error('index empty');
+  return index.items.filter(row=>typeof row.code==='string'&&Array.isArray(row.sig)&&row.sig.length===256);
+ }).catch(error=>{photoIndexPromise=null;throw error;});
+ return photoIndexPromise;
+}
+function compareIndex(input,index,products){
+ const byCode=new Map(products.map(p=>[String(p.code||'').trim().toLowerCase(),p]));
+ const results=[];
+ for(const entry of index){
+  const product=byCode.get(entry.code.toLowerCase());
+  if(product)results.push({product,url:photoUrl(product),score:visualScore(input,entry.sig)});
+ }
+ return results.sort((a,b)=>b.score-a.score);
+}
 async function compare(file){
  const output=$('showroom-photo-results');if(!file||!output)return;
  if(!file.type.startsWith('image/')){output.textContent='Choose an image file.';return;}
@@ -171,7 +190,18 @@ async function compare(file){
  try{input=visualSignature(await imageFrom(blob));}
  catch(error){output.textContent='Unable to read photo: '+(error?.message||error);return;}
  finally{URL.revokeObjectURL(blob);}
- const collection=catalog().map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,500);
+ const products=catalog();
+ try{
+  output.textContent='Searching the compact catalog index…';
+  const index=await loadPhotoIndex();
+  if(token!==generation)return;
+  const matches=compareIndex(input,index,products);
+  render(matches.slice(0,5),0,matches.length);
+  if(matches.length)return;
+ }catch(e){console.warn('[Showroom photo index]',e.message);}
+ // Index is not yet available: use a small temporary local fallback.
+ output.textContent='Catalog photo index not ready; checking a smaller photo sample…';
+ const collection=products.map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,30);
  const results=[];let unread=0,index=0;
  const worker=async()=>{
   while(index<collection.length&&token===generation){
