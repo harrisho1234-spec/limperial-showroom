@@ -418,7 +418,7 @@
                         </div>
                         <span id="desktop-cart-count" class="shrink-0 bg-luxury-gold text-[#0a0f19] text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                     </div>
-                    <div class="flex gap-2 mt-3">
+                    <div class="flex justify-end mt-2" data-preorder-visibility-container></div><div class="flex gap-2 mt-3">
                         <button type="button" onclick="openSavedListsModal('open')" class="flex-1 min-w-0 min-h-[36px] inline-flex items-center justify-center gap-2 px-3 py-2 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[11px] font-bold transition-all duration-200 shadow-sm" title="Open a previously saved quotation or customer list"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Open</button>
                         <button type="button" onclick="openSavedListsModal()" class="flex-1 min-w-0 min-h-[36px] inline-flex items-center justify-center gap-2 px-3 py-2 bg-luxury-dark hover:bg-luxury-accent text-luxury-gold border border-luxury-gold/25 rounded-lg text-[11px] font-bold transition-all duration-200 shadow-sm" title="Save the current quotation or customer list"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
                     </div>
@@ -536,6 +536,7 @@
             <button type="button" onclick="toggleMobileCart(false);document.getElementById('product-grid')?.scrollIntoView({behavior:'smooth',block:'start'})" class="ss-continue-shopping">
                 <i class="fa-solid fa-arrow-left"></i> Continue browsing products
             </button>
+            <div class="flex justify-end px-4 py-1" data-preorder-visibility-container></div>
             <div id="mobile-cart-items" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
             <div class="px-4 pb-3">
                 <button type="button" onclick="addServiceFee()" class="w-full py-2 bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/25 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"><i class="fa-solid fa-plus mr-1.5"></i>Service Fee</button><button type="button" onclick="openManualInterestItem()" class="w-full mt-2 py-2 bg-luxury-dark text-luxury-gold border border-luxury-gold/40 rounded-xl text-xs font-bold">+ Add Manual Item</button>
@@ -3201,6 +3202,17 @@
             updateCartVisuals(); renderProductGrid();
         }
 
+        let showCartPreorderLabels = (()=>{try{return localStorage.getItem('limperial-cart-preorder-labels')==='true';}catch{return false;}})();
+        function toggleCartPreorderLabels(){
+            showCartPreorderLabels=!showCartPreorderLabels;
+            try{localStorage.setItem('limperial-cart-preorder-labels',String(showCartPreorderLabels));}catch{}
+            updateCartVisuals();refreshCartPreorderVisibilityControls();
+        }
+        function refreshCartPreorderVisibilityControls(){
+            document.querySelectorAll('[data-preorder-visibility-container]').forEach(el=>{
+                el.innerHTML='<button type="button" onclick="toggleCartPreorderLabels()" class="text-[10px] px-2 py-1 rounded-md border border-luxury-gold/20 text-luxury-muted hover:text-luxury-gold" title="Interest List display only; no change to stock or quotation">'+(showCartPreorderLabels?'Hide pre-order labels':'Show pre-order labels')+'</button>';
+            });
+        }
         function toggleForcePreorder(id) {
             const cartItem = findCartLine(id);
             if (cartItem) { cartItem.forcePreorder = !cartItem.forcePreorder; updateCartVisuals(); updateQuotationPreview(); }
@@ -3576,14 +3588,14 @@
                                             const itemId = sub.item.id; if (stockTracker[itemId] === undefined) stockTracker[itemId] = Math.max(0, sub.item.qty);
                                             const needed = sub.quantity * cartItem.quantity; let preQty = 0;
                                             if (cartItem.forcePreorder) preQty = needed; else { if (needed > stockTracker[itemId]) { preQty = needed - stockTracker[itemId]; stockTracker[itemId] = 0; } else stockTracker[itemId] -= needed; }
-                                            let subPreorderHtml = preQty > 0 ? `<span class="text-amber-600 dark:text-amber-400 font-bold ml-1 flex items-center inline-flex gap-1"><i class="fa-solid fa-hourglass-half text-[8px]"></i> Pre-order ${preQty} Pcs</span>` : '';
+                                            let subPreorderHtml = showCartPreorderLabels && preQty > 0 ? `<span class="text-amber-600 dark:text-amber-400 font-bold ml-1 flex items-center inline-flex gap-1"><i class="fa-solid fa-hourglass-half text-[8px]"></i> Pre-order ${preQty} Pcs</span>` : '';
                                             return `<div class="line-clamp-1">• ${getDisplayBrand(sub.item.brand, showCostMode)} ${sub.item.code} (${sub.quantity} Pcs)${subPreorderHtml}</div>`;
                                         }).join('')}
                                     </div>${securedMarkupDetailsSet}
                                 </div>
                             </div>
                             <div class="flex flex-col items-end space-y-1 shrink-0">
-                                <button type="button" onclick="toggleForcePreorder('${uniqueId}')" aria-pressed="${cartItem.forcePreorder}" class="${cartItem.forcePreorder ? 'text-amber-600 border-amber-400/40' : 'text-luxury-muted border-luxury-gold/20'} border rounded-md px-2 py-1 text-[10px] font-semibold transition-colors" title="Switch between automatic stock-based status and forced pre-order">${cartItem.forcePreorder ? 'Pre-order' : 'Auto status'}</button>
+                                <button type="button" onclick="toggleForcePreorder('${uniqueId}')" aria-pressed="${cartItem.forcePreorder}" class="${cartItem.forcePreorder ? 'text-amber-600 border-amber-400/40' : 'text-luxury-muted border-luxury-gold/20'} border rounded-md px-2 py-1 text-[10px] font-semibold transition-colors" title="Switch between automatic stock-based status and forced pre-order">${cartItem.forcePreorder ? 'Force Pre-order' : 'Stock-based'}</button>
                                 <button onclick="unbundleSet('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 transition-colors" title="Unbundle Set"><i class="fa-solid fa-boxes-packing text-xs"></i></button>
                                 <button onclick="removeCartItem('${uniqueId}')" class="text-slate-500 hover:text-red-400 p-1 transition-colors" title="Delete Set"><i class="fa-solid fa-trash-can text-xs"></i></button>
                             </div>
@@ -3622,7 +3634,7 @@
                     const itemId = item.id; if (stockTracker[itemId] === undefined) stockTracker[itemId] = Math.max(0, item.qty);
                     const needed = cartItem.quantity; let preQty = 0;
                     if (cartItem.forcePreorder) preQty = needed; else { if (needed > stockTracker[itemId]) { preQty = needed - stockTracker[itemId]; stockTracker[itemId] = 0; } else stockTracker[itemId] -= needed; }
-                    let preorderHtml = preQty > 0 ? `<span class="text-[10px] text-amber-600 dark:text-amber-400 font-medium inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-[8px]"></i> Pre-order ${preQty} Pcs</span>` : '';
+                    let preorderHtml = showCartPreorderLabels && preQty > 0 ? `<span class="text-[10px] text-amber-600 dark:text-amber-400 font-medium inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-[8px]"></i> Pre-order ${preQty} Pcs</span>` : '';
                     
                     let securedMarkupDetailsItem = showCostMode ? `<div class="mt-1 flex gap-2 bg-luxury-dark/40 p-1 rounded border border-luxury-gold/5 text-[9px] w-fit font-mono"><div class="pr-2 border-r border-luxury-gold/10"><span class="text-luxury-muted uppercase tracking-widest block font-bold text-[7px]">Cost</span><span class="text-luxury-soft font-medium">${formatCurrency(getCosting(item))}</span></div><div class="pl-1"><span class="text-slate-500 uppercase tracking-widest block font-bold text-[7px]">Margin</span><span class="${(finalPrice - (getCosting(item) * cartItem.quantity)) >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium">${formatCurrency(finalPrice - (getCosting(item) * cartItem.quantity))}</span></div></div>` : '';
 
@@ -3640,7 +3652,7 @@
                             </div>
                             <div class="flex flex-col items-end space-y-1 shrink-0">
                                 <button onclick="openEditItemModal('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 transition-colors" title="Edit Item Details"><i class="fa-solid fa-pencil text-xs"></i></button>
-                                <button type="button" onclick="toggleForcePreorder('${uniqueId}')" aria-pressed="${cartItem.forcePreorder}" class="${cartItem.forcePreorder ? 'text-amber-600 border-amber-400/40' : 'text-luxury-muted border-luxury-gold/20'} border rounded-md px-2 py-1 text-[10px] font-semibold transition-colors" title="Switch between automatic stock-based status and forced pre-order">${cartItem.forcePreorder ? 'Pre-order' : 'Auto status'}</button>
+                                <button type="button" onclick="toggleForcePreorder('${uniqueId}')" aria-pressed="${cartItem.forcePreorder}" class="${cartItem.forcePreorder ? 'text-amber-600 border-amber-400/40' : 'text-luxury-muted border-luxury-gold/20'} border rounded-md px-2 py-1 text-[10px] font-semibold transition-colors" title="Switch between automatic stock-based status and forced pre-order">${cartItem.forcePreorder ? 'Force Pre-order' : 'Stock-based'}</button>
                                 <button type="button" onclick="duplicateCartRow('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 shrink-0 transition-colors" title="Duplicate Row" aria-label="Duplicate this product into a separate row"><i class="fa-solid fa-copy text-xs"></i></button>
                                 <button onclick="removeCartItem('${uniqueId}')" class="text-slate-500 hover:text-red-400 p-1 shrink-0 transition-colors" title="Remove"><i class="fa-solid fa-trash-can text-xs"></i></button>
                             </div>
@@ -3759,14 +3771,14 @@
                                             const itemId = sub.item.id; if (stockTracker[itemId] === undefined) stockTracker[itemId] = Math.max(0, sub.item.qty);
                                             const needed = sub.quantity * cartItem.quantity; let preQty = 0;
                                             if (cartItem.forcePreorder) preQty = needed; else { if (needed > stockTracker[itemId]) { preQty = needed - stockTracker[itemId]; stockTracker[itemId] = 0; } else stockTracker[itemId] -= needed; }
-                                            let subPreorderHtml = preQty > 0 ? `<span class="text-amber-600 dark:text-amber-400 font-bold ml-1 inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-[8px]"></i> Pre-order ${preQty} Pcs</span>` : '';
+                                            let subPreorderHtml = showCartPreorderLabels && preQty > 0 ? `<span class="text-amber-600 dark:text-amber-400 font-bold ml-1 inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-[8px]"></i> Pre-order ${preQty} Pcs</span>` : '';
                                             return `<div class="line-clamp-2">• ${getDisplayBrand(sub.item.brand, showCostMode)} ${sub.item.code} (${sub.quantity} Pcs)${subPreorderHtml}</div>`;
                                         }).join('')}
                                     </div>${securedMarkupDetailsSet}
                                 </div>
                             </div>
                             <div class="flex flex-col items-end space-y-1">
-                                <button type="button" onclick="toggleForcePreorder('${uniqueId}')" aria-pressed="${cartItem.forcePreorder}" class="${cartItem.forcePreorder ? 'text-amber-600 border-amber-400/40' : 'text-luxury-muted border-luxury-gold/20'} border rounded-md px-2 py-1 text-[10px] font-semibold" title="Auto stock status or forced pre-order">${cartItem.forcePreorder ? 'Pre-order' : 'Auto status'}</button>
+                                <button type="button" onclick="toggleForcePreorder('${uniqueId}')" aria-pressed="${cartItem.forcePreorder}" class="${cartItem.forcePreorder ? 'text-amber-600 border-amber-400/40' : 'text-luxury-muted border-luxury-gold/20'} border rounded-md px-2 py-1 text-[10px] font-semibold" title="Auto stock status or forced pre-order">${cartItem.forcePreorder ? 'Force Pre-order' : 'Stock-based'}</button>
                                 <button onclick="removeCartItem('${uniqueId}')" class="text-slate-500 hover:text-red-400 p-1 transition-colors"><i class="fa-solid fa-trash-can text-xs"></i></button>
                                 <button onclick="unbundleSet('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 transition-colors"><i class="fa-solid fa-boxes-packing text-xs"></i></button>
                             </div>
@@ -3805,7 +3817,7 @@
                     const itemId = item.id; if (stockTracker[itemId] === undefined) stockTracker[itemId] = Math.max(0, item.qty);
                     const needed = cartItem.quantity; let preQty = 0;
                     if (cartItem.forcePreorder) preQty = needed; else { if (needed > stockTracker[itemId]) { preQty = needed - stockTracker[itemId]; stockTracker[itemId] = 0; } else stockTracker[itemId] -= needed; }
-                    let preorderHtml = preQty > 0 ? `<span class="text-[9px] text-amber-600 dark:text-amber-400 font-medium inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-[8px]"></i> Pre-order ${preQty} Pcs</span>` : '';
+                    let preorderHtml = showCartPreorderLabels && preQty > 0 ? `<span class="text-[9px] text-amber-600 dark:text-amber-400 font-medium inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-[8px]"></i> Pre-order ${preQty} Pcs</span>` : '';
                     
                     let securedMarkupDetailsItem = showCostMode ? `<div class="mt-1 flex gap-2 bg-luxury-dark/40 p-1 rounded border border-luxury-gold/5 text-[9px] w-fit font-mono"><div class="pr-2 border-r border-luxury-gold/10"><span class="text-luxury-muted uppercase tracking-widest block font-bold text-[7px]">Cost</span><span class="text-luxury-soft font-medium">${formatCurrency(getCosting(item))}</span></div><div class="pl-1"><span class="text-slate-500 uppercase tracking-widest block font-bold text-[7px]">Margin</span><span class="${(finalPrice - (getCosting(item) * cartItem.quantity)) >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium">${formatCurrency(finalPrice - (getCosting(item) * cartItem.quantity))}</span></div></div>` : '';
 
@@ -3823,7 +3835,7 @@
                             </div>
                             <div class="flex items-center space-x-1 shrink-0">
                                 <button onclick="openEditItemModal('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 transition-colors"><i class="fa-solid fa-pencil text-xs"></i></button>
-                                <button type="button" onclick="toggleForcePreorder('${uniqueId}')" aria-pressed="${cartItem.forcePreorder}" class="${cartItem.forcePreorder ? 'text-amber-600 border-amber-400/40' : 'text-luxury-muted border-luxury-gold/20'} border rounded-md px-2 py-1 text-[10px] font-semibold" title="Auto stock status or forced pre-order">${cartItem.forcePreorder ? 'Pre-order' : 'Auto status'}</button>
+                                <button type="button" onclick="toggleForcePreorder('${uniqueId}')" aria-pressed="${cartItem.forcePreorder}" class="${cartItem.forcePreorder ? 'text-amber-600 border-amber-400/40' : 'text-luxury-muted border-luxury-gold/20'} border rounded-md px-2 py-1 text-[10px] font-semibold" title="Auto stock status or forced pre-order">${cartItem.forcePreorder ? 'Force Pre-order' : 'Stock-based'}</button>
                                 <button type="button" onclick="duplicateCartRow('${uniqueId}')" class="text-luxury-gold hover:text-luxury-goldHover p-1 transition-colors" title="Duplicate Row" aria-label="Duplicate this product into a separate row"><i class="fa-solid fa-copy text-xs"></i></button>
                                 <button onclick="removeCartItem('${uniqueId}')" class="text-slate-500 hover:text-red-400 p-1 transition-colors"><i class="fa-solid fa-trash-can text-xs"></i></button>
                             </div>
@@ -6210,5 +6222,6 @@
     <script src="showroom-scanner.js?v=20261023-recovery-mobile13"></script>
     <script src="customer-shopping-session.js?v=20261023-session-theme2"></script>
 <div id="manual-interest-modal" class="hidden fixed inset-0 z-[110] bg-black/75 p-3 overflow-auto" role="dialog" aria-modal="true"><form onsubmit="saveManualInterestItem(event)" class="max-w-lg mx-auto my-8 rounded-2xl bg-luxury-dark text-luxury-text border border-luxury-gold/40 p-5 space-y-3"><div class="flex justify-between"><h3 class="font-bold">Manual Item</h3><button type="button" onclick="closeManualInterestItem()">✕</button></div><p class="text-xs text-luxury-muted">Not in catalog · Estimated price · No stock changes</p><label class="block text-xs">Name *<input data-manual="name" required maxlength="160" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="block text-xs">Brand (optional)<input data-manual="brand" maxlength="100" placeholder="Enter brand" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="block text-xs">Code<input data-manual="code" maxlength="100" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><div class="grid grid-cols-2 gap-2"><label class="text-xs">Quantity *<input data-manual="qty" required type="number" min="1" max="9999" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="text-xs">Estimated Price ($) *<input data-manual="price" required type="number" min="0" step=".01" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label></div><label class="block text-xs">Availability / Order Status<select data-manual="fulfillment" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"><option value="standard">Standard item (no pre-order label)</option><option value="preorder">Pre-order (show on quotation)</option></select></label><label class="block text-xs">Specifications / Notes<textarea data-manual="description" maxlength="1000" rows="3" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></textarea></label><label class="block text-xs">Product Photo (optional)<input type="file" data-manual-photo accept="image/*" onchange="selectManualPhoto(this)" class="block w-full mt-1"></label><img data-manual-preview class="hidden w-24 h-24 rounded-lg object-cover" alt="Photo preview"><button type="button" onclick="removeManualPhoto()" class="text-xs underline">Remove photo</button><button type="submit" class="w-full bg-luxury-gold text-[#171b22] rounded-lg p-3 font-bold">Save Item</button></form></div>
+<script>document.addEventListener('DOMContentLoaded',refreshCartPreorderVisibilityControls);</script>
 </body>
 </html>
