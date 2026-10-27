@@ -157,6 +157,19 @@ function visualSignature(im){
  }
  return rgb;
 }
+function captureVariants(im){
+ const views=[visualSignature(im)];
+ const w=im.naturalWidth,h=im.naturalHeight;
+ // The product often occupies only part of a phone photo of a screen/showroom.
+ // Test centered crops while keeping comparison on the same signature model.
+ for(const factor of [.85,.68,.52]){
+  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*factor));c.height=Math.max(1,Math.round(h*factor));
+  c.getContext('2d').drawImage(im,(w-c.width)/2,(h-c.height)/2,c.width,c.height,0,0,c.width,c.height);
+  views.push(visualSignature(c));
+ }
+ return views;
+}
+function bestScore(views,sig){return Math.max(...views.map(v=>visualScore(v,sig)));}
 function visualScore(a,b){
  let color=0,shape=0;
  for(let i=0;i<a.length;i+=4){
@@ -180,7 +193,7 @@ function compareIndex(input,index,products){
  const results=[];
  for(const entry of index){
   const product=byCode.get(entry.code.toLowerCase());
-  if(product)results.push({product,url:photoUrl(product),score:visualScore(input,entry.sig)});
+  if(product)results.push({product,url:photoUrl(product),score:bestScore(input,entry.sig)});
  }
  return results.sort((a,b)=>b.score-a.score);
 }
@@ -190,7 +203,7 @@ async function compare(file){
  if(file.size>15000000){output.textContent='Choose a photo smaller than 15 MB.';return;}
  const token=++generation;output.textContent='Matching product appearance locally…';
  const blob=URL.createObjectURL(file);let input;
- try{input=visualSignature(await imageFrom(blob));}
+ try{input=captureVariants(await imageFrom(blob));}
  catch(error){output.textContent='Unable to read photo: '+(error?.message||error);return;}
  finally{URL.revokeObjectURL(blob);}
  const products=catalog();
@@ -199,8 +212,12 @@ async function compare(file){
   const index=await loadPhotoIndex();
   if(token!==generation)return;
   const matches=compareIndex(input,index,products);
-  render(matches,0,matches.length,true);
-  if(matches.length)return;
+  if(matches.length){
+   render(matches,0,matches.length,true);
+   const note=document.createElement('p');note.style.cssText='font-size:11px;color:var(--scan-soft);margin:8px 0';
+   note.textContent='Searched '+matches.length+' indexed catalog products. For best results, fill the photo with the product and avoid screen borders or background.';
+   output.prepend(note);return;
+  }
  }catch(e){console.warn('[Showroom photo index]',e.message);}
  // Index is not yet available: use a small temporary local fallback.
  output.textContent='Catalog photo index not ready; checking a smaller photo sample…';
@@ -212,7 +229,7 @@ async function compare(file){
    try{
     let sig=cache.get(entry.url);
     if(!sig||sig.length!==256){sig=visualSignature(await imageFrom(entry.url));cache.set(entry.url,sig);}
-    results.push({...entry,score:visualScore(input,sig)});
+    results.push({...entry,score:bestScore(input,sig)});
    }catch{unread++;}
    if(index%30===0&&token===generation)output.textContent='Matching '+index+' / '+collection.length+' photos…';
   }
