@@ -3634,7 +3634,7 @@
                                     <span class="text-[9px] uppercase tracking-wider text-luxury-muted block font-bold">${displayBrand}</span>
                                     <h5 class="text-xs font-medium text-luxury-text leading-snug line-clamp-2">${item.itemName}</h5>
                                     <span class="text-[10px] font-mono text-luxury-gold mt-0.5 block">${item.code}</span>
-                                    ${preorderHtml}${securedMarkupDetailsItem}
+                                    ${securedMarkupDetailsItem}
                                 </div>
                             </div>
                             <div class="flex flex-col items-end space-y-1 shrink-0">
@@ -3651,6 +3651,7 @@
                                     <span class="text-xs font-semibold text-luxury-text min-w-[16px] text-center">${cartItem.quantity}</span>
                                     <button onclick="changeQty('${uniqueId}', 1)" class="w-6 h-6 flex items-center justify-center text-luxury-gold hover:bg-luxury-gold/10 rounded font-bold text-xs">+</button>
                                 </div>
+                                <div class="flex-1 min-w-0 px-1">${preorderHtml}</div>
                                 <div class="text-right shrink-0">
                                     ${hasPromo || itemDiscount > 0 || cartItem.customPrice !== null ? `<span class="text-[10px] text-luxury-muted line-through block">${formatCurrency(getActualSalesPrice(item) * cartItem.quantity)}</span>` : ''}
                                     <span class="text-sm font-semibold block ${hasPromo || cartItem.customPrice !== null ? 'text-amber-500' : 'text-luxury-gold'}">${formatCurrency(finalPrice)}</span>
@@ -3816,7 +3817,7 @@
                                     <span class="text-[9px] uppercase tracking-wider text-luxury-muted block font-bold">${displayBrand}</span>
                                     <h5 class="text-xs font-medium text-luxury-text leading-snug line-clamp-2">${item.itemName}</h5>
                                     <span class="text-[9px] font-mono text-luxury-gold block">${item.code}</span>
-                                    ${preorderHtml}${securedMarkupDetailsItem}
+                                    ${securedMarkupDetailsItem}
                                 </div>
                             </div>
                             <div class="flex items-center space-x-1 shrink-0">
@@ -3833,6 +3834,7 @@
                                     <span class="text-xs font-semibold text-luxury-text min-w-[16px] text-center">${cartItem.quantity}</span>
                                     <button onclick="changeQty('${uniqueId}', 1)" class="w-6 h-6 flex items-center justify-center text-luxury-gold font-bold text-xs">+</button>
                                 </div>
+                                <div class="flex-1 min-w-0 px-1">${preorderHtml}</div>
                                 <div class="text-right shrink-0">
                                     ${hasPromo || itemDiscount > 0 || cartItem.customPrice !== null ? `<span class="text-[10px] text-luxury-muted line-through block">${formatCurrency(getActualSalesPrice(item) * cartItem.quantity)}</span>` : ''}
                                     <span class="text-sm font-semibold block ${hasPromo || cartItem.customPrice !== null ? 'text-amber-500' : 'text-luxury-gold'}">${formatCurrency(finalPrice)}</span>
