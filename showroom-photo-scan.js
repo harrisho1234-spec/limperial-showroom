@@ -52,32 +52,64 @@ function render(items,unread,total){
   if(typeof openProductDetailModal==='function')openProductDetailModal(product.id);
  });
 }
+let modelPromise=null;
+const EMBED_KEY='limperial_photo_clip_embeddings_v1';
+const MODEL='Xenova/clip-vit-base-patch32';
+let embedCache=new Map();
+try{const raw=JSON.parse(localStorage.getItem(EMBED_KEY)||'[]');if(Array.isArray(raw))embedCache=new Map(raw.slice(0,300));}catch{}
+function saveEmbeddings(){
+ try{localStorage.setItem(EMBED_KEY,JSON.stringify([...embedCache].slice(-300)));}catch{}
+}
+function unit(v){const a=Array.from(v);const mag=Math.hypot(...a)||1;return a.map(x=>x/mag);}
+function cosine(a,b){let sum=0;for(let i=0;i<a.length;i++)sum+=a[i]*b[i];return sum;}
+async function model(){
+ if(!modelPromise)modelPromise=import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1').then(m=>m.pipeline('image-feature-extraction',MODEL,{dtype:'q8',device:'wasm'})).catch(e=>{modelPromise=null;throw e;});
+ return modelPromise;
+}
+async function aiCompare(file,token,output){
+ output.textContent='Loading free recognition model (first scan downloads model files)…';
+ const extract=await model();if(token!==generation)return;
+ const blob=URL.createObjectURL(file);
+ let input;
+ try{const t=await extract(blob);input=unit(t.data);}finally{URL.revokeObjectURL(blob);}
+ const collection=catalog().map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,250);
+ const results=[];let unread=0,dirty=0;
+ for(let i=0;i<collection.length;i++){
+  if(token!==generation)return;
+  const entry=collection[i];let vec=embedCache.get(entry.url);
+  try{
+   if(!vec){
+    const t=await extract(entry.url);vec=unit(t.data);
+    embedCache.set(entry.url,vec);dirty++;
+   }
+   results.push({...entry,score:cosine(input,vec)});
+  }catch{unread++;}
+  if(i%5===0)output.textContent='AI matching '+(i+1)+' / '+collection.length+' catalog photos…';
+  if(dirty>=10){saveEmbeddings();dirty=0;}
+  if(i%10===0)await new Promise(resolve=>setTimeout(resolve,0));
+ }
+ if(dirty)saveEmbeddings();
+ results.sort((x,y)=>y.score-x.score);render(results.slice(0,5),unread,collection.length);
+}
 async function compare(file){
  const output=$('showroom-photo-results');if(!file||!output)return;
  if(!file.type.startsWith('image/')){output.textContent='Choose an image file.';return;}
  if(file.size>15000000){output.textContent='Choose a photo smaller than 15 MB.';return;}
- const token=++generation;output.textContent='Analyzing your photo locally…';
- let input;
- const blob=URL.createObjectURL(file);
- try{input=signature(await imageFrom(blob));}catch(e){output.textContent='Could not read photo: '+e.message;return;}finally{URL.revokeObjectURL(blob);}
- const collection=catalog().map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\//i.test(r.url)).slice(0,500);
- if(!collection.length){output.textContent='No catalog photos available for matching.';return;}
- let unread=0;const results=[];
- const workers=Array.from({length:5},async(_,index)=>{
-  for(let i=index;i<collection.length;i+=5){
+ const token=++generation;
+ try{await aiCompare(file,token,output);}
+ catch(e){
+  if(token!==generation)return;
+  output.textContent='AI model unavailable ('+e.message+'). Using basic photo matching…';
+  const blob=URL.createObjectURL(file);let input;
+  try{input=signature(await imageFrom(blob));}catch(err){output.textContent='Unable to read photo: '+err.message;return;}finally{URL.revokeObjectURL(blob);}
+  const collection=catalog().map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,250);
+  let unread=0;const results=[];
+  for(const entry of collection){
    if(token!==generation)return;
-   const entry=collection[i];
-   try{
-    let sig=cache.get(entry.url);
-    if(!sig){sig=signature(await imageFrom(entry.url));cache.set(entry.url,sig);}
-    results.push({...entry,score:similarity(input,sig)});
-   }catch{unread++;}
-   if(i%25===0&&token===generation)output.textContent='Comparing catalog photos… '+Math.min(results.length+unread,collection.length)+' / '+collection.length;
+   try{let sig=cache.get(entry.url);if(!sig){sig=signature(await imageFrom(entry.url));cache.set(entry.url,sig);}results.push({...entry,score:similarity(input,sig)});}catch{unread++;}
   }
- });
- await Promise.all(workers);if(token!==generation)return;
- results.sort((a,b)=>b.score-a.score);
- render(results.slice(0,5),unread,collection.length);
+  results.sort((a,b)=>b.score-a.score);render(results.slice(0,5),unread,collection.length);
+ }
 }
 function attach(modal){
  if(!modal||modal.querySelector('#showroom-scan-photo'))return;
