@@ -128,25 +128,66 @@ async function aiCompare(file,token,output){
   output.append(label);
  }
 }
+// Reliable browser-native matcher: avoids mobile model runtime crashes.
+// Uses image layout/color plus edge structure; never labels a result as an exact match.
+function visualSignature(im){
+ const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;
+ const ctx=canvas.getContext('2d',{willReadFrequently:true});
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,32,32);
+ const scale=Math.min(32/im.naturalWidth,32/im.naturalHeight);
+ const w=Math.max(1,Math.round(im.naturalWidth*scale)),h=Math.max(1,Math.round(im.naturalHeight*scale));
+ ctx.drawImage(im,Math.floor((32-w)/2),Math.floor((32-h)/2),w,h);
+ const px=ctx.getImageData(0,0,32,32).data;
+ const gray=new Float32Array(1024), rgb=[];
+ for(let y=0;y<32;y++)for(let x=0;x<32;x++){
+  const p=(y*32+x)*4,r=px[p]/255,g=px[p+1]/255,b=px[p+2]/255;
+  gray[y*32+x]=(r*.299+g*.587+b*.114);
+ }
+ for(let by=0;by<8;by++)for(let bx=0;bx<8;bx++){
+  let rs=0,gs=0,bs=0,edges=0;
+  for(let y=by*4;y<by*4+4;y++)for(let x=bx*4;x<bx*4+4;x++){
+   const p=(y*32+x)*4;rs+=px[p];gs+=px[p+1];bs+=px[p+2];
+   const c=gray[y*32+x],left=gray[y*32+Math.max(0,x-1)],up=gray[Math.max(0,y-1)*32+x];
+   edges+=Math.min(1,Math.abs(c-left)+Math.abs(c-up));
+  }
+  rgb.push(rs/4080,gs/4080,bs/4080,edges/16);
+ }
+ return rgb;
+}
+function visualScore(a,b){
+ let color=0,shape=0;
+ for(let i=0;i<a.length;i+=4){
+  for(let j=0;j<3;j++){const d=a[i+j]-b[i+j];color+=d*d;}
+  const d=a[i+3]-b[i+3];shape+=d*d;
+ }
+ return 1-(Math.sqrt(color/192)*.45+Math.sqrt(shape/64)*.55);
+}
 async function compare(file){
  const output=$('showroom-photo-results');if(!file||!output)return;
  if(!file.type.startsWith('image/')){output.textContent='Choose an image file.';return;}
  if(file.size>15000000){output.textContent='Choose a photo smaller than 15 MB.';return;}
- const token=++generation;
- try{await aiCompare(file,token,output);}
- catch(e){
-  if(token!==generation)return;
-  output.textContent='AI recognition could not start ('+String(e?.message||e).slice(0,180)+'). Using basic matching instead.';
-  const blob=URL.createObjectURL(file);let input;
-  try{input=signature(await imageFrom(blob));}catch(err){output.textContent='Unable to read photo: '+err.message;return;}finally{URL.revokeObjectURL(blob);}
-  const collection=catalog().map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,250);
-  let unread=0;const results=[];
-  for(const entry of collection){
-   if(token!==generation)return;
-   try{let sig=cache.get(entry.url);if(!sig){sig=signature(await imageFrom(entry.url));cache.set(entry.url,sig);}results.push({...entry,score:similarity(input,sig)});}catch{unread++;}
+ const token=++generation;output.textContent='Matching product appearance locally…';
+ const blob=URL.createObjectURL(file);let input;
+ try{input=visualSignature(await imageFrom(blob));}
+ catch(error){output.textContent='Unable to read photo: '+(error?.message||error);return;}
+ finally{URL.revokeObjectURL(blob);}
+ const collection=catalog().map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,500);
+ const results=[];let unread=0,index=0;
+ const worker=async()=>{
+  while(index<collection.length&&token===generation){
+   const entry=collection[index++];
+   try{
+    let sig=cache.get(entry.url);
+    if(!sig||sig.length!==256){sig=visualSignature(await imageFrom(entry.url));cache.set(entry.url,sig);}
+    results.push({...entry,score:visualScore(input,sig)});
+   }catch{unread++;}
+   if(index%30===0&&token===generation)output.textContent='Matching '+index+' / '+collection.length+' photos…';
   }
-  results.sort((a,b)=>b.score-a.score);render(results.slice(0,5),unread,collection.length);
- }
+ };
+ await Promise.all(Array.from({length:6},()=>worker()));
+ if(token!==generation)return;
+ results.sort((a,b)=>b.score-a.score);
+ render(results.slice(0,5),unread,collection.length);
 }
 function attach(modal){
  if(!modal||modal.querySelector('#showroom-scan-photo'))return;
@@ -156,7 +197,7 @@ function attach(modal){
  multi.parentElement.append(photo);
  const shell=modal.querySelector('.scanner-shell'),form=modal.querySelector('#showroom-scanner-manual');
  const box=document.createElement('section');box.id='showroom-photo-panel';box.hidden=true;
- box.innerHTML='<p style="font-size:12px;margin:10px 0">Photograph a product or choose a photo. The free matcher compares available catalog pictures locally; results are suggestions, not exact identification.</p>'+
+ box.innerHTML='<p style="font-size:12px;margin:10px 0">Photograph a product or choose a photo. Matches are calculated directly on this phone using shape and image patterns. Confirm the correct product before selecting.</p>'+
  '<div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">'+
  '<button id="showroom-photo-take" type="button" style="flex:1;min-width:125px;padding:12px;border-radius:9px;background:#c5a56e;color:#171b22;font-weight:bold">📷 Take Photo</button>'+
  '<button id="showroom-photo-upload" type="button" style="flex:1;min-width:125px;padding:12px;border-radius:9px;border:1px solid #a89264;color:var(--scan-text);font-weight:bold">Upload Photo</button></div>'+
