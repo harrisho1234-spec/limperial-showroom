@@ -436,7 +436,7 @@
                 
                 <div id="desktop-cart-items" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
                 <div class="px-4 pb-3">
-                    <button type="button" onclick="addServiceFee()" class="w-full py-2 bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/25 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"><i class="fa-solid fa-plus mr-1.5"></i>Service Fee</button>
+                    <button type="button" onclick="addServiceFee()" class="w-full py-2 bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/25 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"><i class="fa-solid fa-plus mr-1.5"></i>Service Fee</button><button type="button" onclick="openManualInterestItem()" class="w-full mt-2 py-2 bg-luxury-dark text-luxury-gold border border-luxury-gold/40 rounded-xl text-xs font-bold">+ Add Manual Item</button>
                 </div>
 
                 <div class="p-4 bg-luxury-accent/40 border-t border-luxury-gold/15 space-y-4 shrink-0 transition-colors duration-300">
@@ -3225,6 +3225,39 @@
             calculateAndDrawTotals(); updateItemPriceDisplays(id);
         }
 
+
+        function openManualInterestItem(key=''){
+            const line=cart.find(c=>cartLineKey(c)===String(key)&&c.item?.manualItem);
+            const m=document.getElementById('manual-interest-modal');
+            if(!m)return;
+            m.dataset.key=line?String(key):'';
+            const put=(k,v)=>m.querySelector('[data-manual="'+k+'"]').value=v??'';
+            put('name',line?.item?.itemName||'');put('code',line?.item?.code||'');put('qty',line?.quantity||1);
+            put('price',line?(line.customPrice??line.item.price):'');put('description',line?.item?.description||'');
+            m.classList.remove('hidden');
+        }
+        function closeManualInterestItem(){document.getElementById('manual-interest-modal')?.classList.add('hidden');}
+        function saveManualInterestItem(event){
+            event.preventDefault();
+            const m=document.getElementById('manual-interest-modal'),get=k=>m.querySelector('[data-manual="'+k+'"]').value.trim();
+            const name=get('name').slice(0,160),qty=Math.floor(Number(get('qty'))),price=Number(get('price'));
+            if(!name||!Number.isFinite(qty)||qty<1||qty>9999||!Number.isFinite(price)||price<0){showNotification('Enter a name, valid quantity and price.','error');return;}
+            let line=cart.find(c=>cartLineKey(c)===m.dataset.key&&c.item?.manualItem);
+            const id=line?.id||newCartLineId();
+            const item={id:'manual-'+id,code:get('code').slice(0,100)||'MANUAL',brand:'Manual Item',class:'Manual',itemName:name,description:get('description').slice(0,1000),manualItem:true,qty:0,price,salesPrice:price,actualSalesPrice:price,costing:0,margin:0,location:'Not in Catalog',imgLink:''};
+            if(line){line.item=item;line.quantity=qty;line.customPrice=price;}
+            else cart.push({id,type:'service',item,quantity:qty,discount:0,customPrice:price,rowHeight:90,forcePreorder:true});
+            closeManualInterestItem();updateCartVisuals();renderProductGrid();updateQuotationPreview();
+            showNotification('Manual item saved to Interest List.','success');
+        }
+        function renderManualInterestRow(row,line,key,container){
+            const item=line.item||{},unit=line.customPrice??item.price??0;
+            row.className='p-3 rounded-xl border border-dashed border-luxury-gold/40 bg-luxury-accent/20 space-y-2';
+            row.innerHTML='<div class="flex justify-between gap-2"><label class="text-xs font-bold text-luxury-gold"><input type="checkbox" class="cart-item-checkbox mr-2" data-id="'+escapeHtml(key)+'" onchange="onCartCheckboxChange()">Manual Item · Not in Catalog</label><button type="button" class="text-xs text-red-400" onclick="removeCartItem(\''+escapeHtml(key)+'\')">Remove</button></div>'+
+              '<div class="text-sm text-luxury-text font-bold">'+escapeHtml(item.itemName||'Manual Item')+'</div><div class="text-xs text-luxury-muted">'+escapeHtml(item.code||'')+(item.description?' · '+escapeHtml(item.description):'')+'</div>'+
+              '<div class="flex justify-between items-center text-xs"><span>Qty '+line.quantity+' · '+formatCurrency(unit)+'</span><button type="button" class="border border-luxury-gold/40 rounded-lg px-3 py-2 text-luxury-gold" onclick="openManualInterestItem(\''+escapeHtml(key)+'\')">Edit</button></div>';
+            container.appendChild(row);
+        }
         function addServiceFee() {
             const id = 'service_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
             const servicePrice = 0;
@@ -3408,6 +3441,7 @@
             let stockTracker = {};
             cart.forEach(cartItem => {
                 const row = document.createElement('div'); const uniqueId = cartLineKey(cartItem);
+                if(cartItem.type==='service' && cartItem.item?.manualItem){renderManualInterestRow(row,cartItem,uniqueId,container);return;}
                 if (cartItem.type === 'service') {
                     const service = cartItem.item || {};
                     const serviceName = String(service.itemName || 'Service Fee');
@@ -3593,6 +3627,7 @@
             cart.forEach(cartItem => {
                 const row = document.createElement('div'); const uniqueId = cartLineKey(cartItem);
                 
+                if(cartItem.type==='service' && cartItem.item?.manualItem){renderManualInterestRow(row,cartItem,uniqueId,container);return;}
                 if (cartItem.type === 'service') {
                     const service = cartItem.item || {};
                     const serviceName = String(service.itemName || 'Service Fee');
@@ -6116,5 +6151,6 @@
     <script src="showroom-analytics.js?v=20261008-sellanalytics1"></script>
     <script src="showroom-scanner.js?v=20261023-recovery-mobile13"></script>
     <script src="customer-shopping-session.js?v=20261023-session-theme2"></script>
+<div id="manual-interest-modal" class="hidden fixed inset-0 z-[110] bg-black/75 p-3 overflow-auto" role="dialog" aria-modal="true"><form onsubmit="saveManualInterestItem(event)" class="max-w-lg mx-auto my-8 rounded-2xl bg-luxury-dark text-luxury-text border border-luxury-gold/40 p-5 space-y-3"><div class="flex justify-between"><h3 class="font-bold">Manual Item</h3><button type="button" onclick="closeManualInterestItem()">✕</button></div><p class="text-xs text-luxury-muted">Not in catalog · Estimated price · No stock changes</p><label class="block text-xs">Name *<input data-manual="name" required maxlength="160" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="block text-xs">Code<input data-manual="code" maxlength="100" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><div class="grid grid-cols-2 gap-2"><label class="text-xs">Quantity *<input data-manual="qty" required type="number" min="1" max="9999" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="text-xs">Estimated Price ($) *<input data-manual="price" required type="number" min="0" step=".01" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label></div><label class="block text-xs">Specifications / Notes<textarea data-manual="description" maxlength="1000" rows="3" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></textarea></label><button type="submit" class="w-full bg-luxury-gold text-[#171b22] rounded-lg p-3 font-bold">Save Manual Item</button></form></div>
 </body>
 </html>
