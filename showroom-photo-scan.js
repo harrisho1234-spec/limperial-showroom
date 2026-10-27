@@ -63,7 +63,20 @@ function saveEmbeddings(){
 function unit(v){const a=Array.from(v);const mag=Math.hypot(...a)||1;return a.map(x=>x/mag);}
 function cosine(a,b){let sum=0;for(let i=0;i<a.length;i++)sum+=a[i]*b[i];return sum;}
 async function model(){
- if(!modelPromise)modelPromise=import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1').then(m=>m.pipeline('image-feature-extraction',MODEL,{dtype:'q8',device:'wasm'})).catch(e=>{modelPromise=null;throw e;});
+ if(!modelPromise)modelPromise=(async()=>{
+  let firstError;
+  for(const url of [
+   'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6',
+   'https://esm.sh/@huggingface/transformers@3.7.6?bundle'
+  ]){
+   try{
+    const m=await import(url);
+    const pipe=await m.pipeline('image-feature-extraction',MODEL,{dtype:'q8',device:'wasm'});
+    return pipe;
+   }catch(e){firstError=e;console.warn('[Photo scanner] Model source failed:',url,e);}
+  }
+  throw firstError||new Error('Could not load image recognition');
+ })().catch(e=>{modelPromise=null;throw e;});
  return modelPromise;
 }
 async function aiCompare(file,token,output){
