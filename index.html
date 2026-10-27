@@ -3303,6 +3303,7 @@
               '<div class="flex items-center justify-between gap-2"><div class="flex items-center space-x-1.5 bg-luxury-accent/50 rounded-lg p-1 border border-luxury-gold/15 w-fit">'+
               '<button type="button" class="w-6 h-6 flex items-center justify-center text-luxury-gold hover:bg-luxury-gold/10 rounded font-bold text-xs" onclick="adjustManualInterestQty('+arg+',-1)">-</button><span class="text-xs font-semibold text-luxury-text min-w-[16px] text-center">'+qty+'</span>'+
               '<button type="button" class="w-6 h-6 flex items-center justify-center text-luxury-gold hover:bg-luxury-gold/10 rounded font-bold text-xs" onclick="adjustManualInterestQty('+arg+',1)">+</button></div>'+
+              '<button type="button" onclick="toggleForcePreorder('+arg+')" class="text-[10px] px-2 py-1 rounded border '+(line.forcePreorder?'text-amber-600 border-amber-400/40':'text-luxury-muted border-luxury-gold/20')+'" title="Toggle manual item order status">'+(line.forcePreorder?'Pre-order '+qty+' Pcs':'Standard')+'</button>'+ 
               '<div class="text-right shrink-0">'+(discount>0?'<span class="text-[10px] text-luxury-muted line-through block">'+formatCurrency(original)+'</span>':'')+'<span class="text-sm font-semibold block text-luxury-gold">'+formatCurrency(final)+'</span></div></div>'+
               '<div class="flex items-center justify-end space-x-3">'+
               '<div class="flex items-center space-x-1.5"><span class="text-[9px] uppercase tracking-wider text-luxury-muted font-semibold">Override Price:</span>'+
