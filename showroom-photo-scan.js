@@ -38,14 +38,17 @@ function similarity(a,b){
  let diff=0;for(let i=0;i<a.length;i++){const d=a[i]-b[i];diff+=d*d;}
  return 1-Math.sqrt(diff/a.length);
 }
-function render(items,unread,total){
+let visibleMatches=10;
+function render(items,unread,total,reset=false){
+ if(reset)visibleMatches=10;
  const el=$('showroom-photo-results');if(!el)return;
  if(!items.length){el.textContent=total?'No readable image matches. Catalog photo hosting may block browser image analysis.':'No catalog products with photos were found.';return;}
  el.innerHTML='<div style="font-size:12px;margin:10px 0;color:#ae9875">Possible matches (appearance only). Verify the correct product. Compared '+(total-unread)+' of '+total+' photos.</div>'+
- items.map((r,i)=>'<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid #816f4a55">'+
+ items.slice(0,visibleMatches).map((r,i)=>'<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid #816f4a55">'+
  '<img crossorigin="anonymous" src="'+esc(r.url)+'" alt="" style="width:56px;height:56px;object-fit:contain;border-radius:7px;background:white" onerror="this.style.display=\'none\'">'+
  '<div style="flex:1;min-width:0;font-size:12px"><b>'+esc(r.product.itemName||r.product.code||'Product')+'</b><div>'+esc(r.product.code||'')+' · $'+Number(r.product.price||0).toLocaleString()+'</div><div>Stock: '+esc(r.product.qty??'Unknown')+'</div></div>'+
  '<button type="button" data-photo-index="'+i+'" style="border:1px solid #b38e50;border-radius:8px;padding:8px">View</button></div>').join('');
+ el.querySelector('#showroom-photo-load-more')?.addEventListener('click',()=>{visibleMatches+=10;render(items,unread,total);});
  el.querySelectorAll('[data-photo-index]').forEach(btn=>btn.onclick=()=>{
   const product=items[Number(btn.dataset.photoIndex)]?.product;if(!product)return;
   $('showroom-scanner-close')?.click();
@@ -196,7 +199,7 @@ async function compare(file){
   const index=await loadPhotoIndex();
   if(token!==generation)return;
   const matches=compareIndex(input,index,products);
-  render(matches.slice(0,5),0,matches.length);
+  render(matches,0,matches.length,true);
   if(matches.length)return;
  }catch(e){console.warn('[Showroom photo index]',e.message);}
  // Index is not yet available: use a small temporary local fallback.
@@ -217,7 +220,7 @@ async function compare(file){
  await Promise.all(Array.from({length:6},()=>worker()));
  if(token!==generation)return;
  results.sort((a,b)=>b.score-a.score);
- render(results.slice(0,5),unread,collection.length);
+ render(results,unread,collection.length,true);
 }
 function attach(modal){
  if(!modal||modal.querySelector('#showroom-scan-photo'))return;
