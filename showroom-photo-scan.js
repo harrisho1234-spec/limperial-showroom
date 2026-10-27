@@ -73,23 +73,39 @@ async function aiCompare(file,token,output){
  let input;
  try{const t=await extract(blob);input=unit(t.data);}finally{URL.revokeObjectURL(blob);}
  const collection=catalog().map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,250);
- const results=[];let unread=0,dirty=0;
- for(let i=0;i<collection.length;i++){
+ const results=[];let unread=0,dirty=0,computed=0;
+ const ready=collection.filter(entry=>embedCache.has(entry.url));
+ const missing=collection.filter(entry=>!embedCache.has(entry.url));
+ for(const entry of ready)results.push({...entry,score:cosine(input,embedCache.get(entry.url))});
+ results.sort((x,y)=>y.score-x.score);
+ if(ready.length&&token===generation)render(results.slice(0,5),0,ready.length);
+ // Limit expensive phone-side catalog encoding per scan; reuse saved results next time.
+ const batch=missing.slice(0,20);
+ for(let i=0;i<batch.length;i++){
   if(token!==generation)return;
-  const entry=collection[i];let vec=embedCache.get(entry.url);
+  const entry=batch[i];
   try{
-   if(!vec){
-    const t=await extract(entry.url);vec=unit(t.data);
-    embedCache.set(entry.url,vec);dirty++;
-   }
+   const t=await extract(entry.url),vec=unit(t.data);
+   embedCache.set(entry.url,vec);dirty++;computed++;
    results.push({...entry,score:cosine(input,vec)});
   }catch{unread++;}
-  if(i%5===0)output.textContent='AI matching '+(i+1)+' / '+collection.length+' catalog photos…';
-  if(dirty>=10){saveEmbeddings();dirty=0;}
-  if(i%10===0)await new Promise(resolve=>setTimeout(resolve,0));
+  if(i%3===0&&token===generation){
+   results.sort((x,y)=>y.score-x.score);
+   if(results.length)render(results.slice(0,5),unread,ready.length+i+1);
+  }
+  if(dirty>=5){saveEmbeddings();dirty=0;}
+  await new Promise(resolve=>setTimeout(resolve,0));
  }
  if(dirty)saveEmbeddings();
- results.sort((x,y)=>y.score-x.score);render(results.slice(0,5),unread,collection.length);
+ results.sort((x,y)=>y.score-x.score);
+ if(token!==generation)return;
+ render(results.slice(0,5),unread,ready.length+batch.length);
+ if(missing.length>batch.length){
+  const label=document.createElement('p');
+  label.style.cssText='font-size:11px;color:var(--scan-soft);margin-top:8px';
+  label.textContent='Fast scan: '+results.length+' indexed photos checked. Additional catalog photos will be indexed over future scans.';
+  output.append(label);
+ }
 }
 async function compare(file){
  const output=$('showroom-photo-results');if(!file||!output)return;
