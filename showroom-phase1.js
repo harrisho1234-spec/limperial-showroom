@@ -356,7 +356,26 @@
     recent=loadRecent(); // Prune expired views whenever Recent is opened.
     const ids=(which==='favorites'?[...favorites]:recent.map(entry=>entry.id)).filter(id=>!!displayProduct(id));
     const target=panel(which==='favorites'?'Favorite products':'Recently viewed','Open a product or add it to the interest list.');
-    if(!ids.length){target.innerHTML='<p class="sp1-hint">Nothing saved here yet. Open a product or tap its heart to get started.</p>';return;}
+    if(which==='favorites' && favorites.size){
+      const actions=document.createElement('div');
+      actions.className='flex justify-end mb-3';
+      const clear=document.createElement('button');
+      clear.type='button';
+      clear.className='sp1-secondary';
+      clear.textContent='Clear All Favorites';
+      clear.setAttribute('aria-label','Clear all saved favorite products');
+      clear.onclick=()=>{
+        if(!favorites.size)return;
+        if(!window.confirm('Remove all '+favorites.size+' saved favorites? Your Interest List and quotations will not be affected.'))return;
+        favorites.clear();
+        safeWrite(FAVORITES_KEY,[]);
+        updateToolbar();
+        try{renderProductGrid()}catch(_){}
+        openCollection('favorites');
+      };
+      actions.append(clear);target.append(actions);
+    }
+    if(!ids.length){const empty=document.createElement('p');empty.className='sp1-hint';empty.textContent='Nothing saved here yet. Open a product or tap its heart to get started.';target.append(empty);return;}
     ids.forEach(id=>{
       const item=displayProduct(id),row=document.createElement('div');row.className='sp1-row';
       row.append(imageNode(item.imgLink,item.itemName||''));
