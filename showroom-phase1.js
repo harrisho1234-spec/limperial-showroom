@@ -358,11 +358,11 @@
     const target=panel(which==='favorites'?'Favorite products':'Recently viewed','Open a product or add it to the interest list.');
     if(which==='favorites' && favorites.size){
       const actions=document.createElement('div');
-      actions.className='flex justify-end mb-3';
+      actions.className='sp1-favorites-actions';
       const clear=document.createElement('button');
       clear.type='button';
       clear.className='sp1-secondary';
-      clear.textContent='Clear All Favorites';
+      clear.textContent='Clear all';
       clear.setAttribute('aria-label','Clear all saved favorite products');
       clear.onclick=()=>{
         if(!favorites.size)return;
@@ -373,7 +373,10 @@
         try{renderProductGrid()}catch(_){}
         openCollection('favorites');
       };
-      actions.append(clear);target.append(actions);
+      actions.append(clear);
+      const header=modal?.querySelector('.sp1-panel-head');
+      const close=header?.querySelector('[data-sp1-close]');
+      if(header&&close)header.insertBefore(actions,close);else target.prepend(actions);
     }
     if(!ids.length){const empty=document.createElement('p');empty.className='sp1-hint';empty.textContent='Nothing saved here yet. Open a product or tap its heart to get started.';target.append(empty);return;}
     ids.forEach(id=>{
@@ -385,6 +388,18 @@
       info.append(strong,small);row.append(info);
       const view=document.createElement('button');view.className='sp1-secondary';view.type='button';view.textContent='View';view.onclick=()=>{dismissModal();openProductDetailModal(id);};
       const add=document.createElement('button');add.className='sp1-primary';add.type='button';add.textContent='Select';add.onclick=()=>{toggleCartSelection(id);dismissModal();};
+      if(which==='favorites'){
+        const remove=document.createElement('button');
+        remove.className='sp1-secondary sp1-remove-favorite';remove.type='button';
+        remove.textContent='✕';remove.title='Remove from Favorites';
+        remove.setAttribute('aria-label','Remove '+(item.itemName||item.code||'product')+' from Favorites');
+        remove.onclick=()=>{
+          favorites.delete(String(id));safeWrite(FAVORITES_KEY,[...favorites]);
+          updateToolbar();try{renderProductGrid()}catch(_){}
+          openCollection('favorites');
+        };
+        row.append(remove);
+      }
       row.append(view,add);target.append(row);
     });
   }
