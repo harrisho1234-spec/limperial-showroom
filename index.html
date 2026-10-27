@@ -3277,12 +3277,28 @@
             closeManualInterestItem();updateCartVisuals();renderProductGrid();updateQuotationPreview();
             showNotification('Manual item saved to Interest List.','success');
         }
+        function adjustManualInterestQty(id,delta){
+            const line=findCartLine(id);if(!line||!line.item?.manualItem)return;
+            line.quantity=Math.max(1,Math.min(9999,(Number(line.quantity)||1)+delta));
+            updateCartVisuals();updateQuotationPreview();
+        }
         function renderManualInterestRow(row,line,key,container){
-            const item=line.item||{},unit=line.customPrice??item.price??0;
-            row.className='p-3 rounded-xl border border-luxury-gold/30 bg-luxury-accent/20 space-y-2';
-            row.innerHTML=(item.imgLink?.startsWith('data:image/jpeg;base64,')?'<img src="'+escapeHtml(item.imgLink)+'" alt="Item photo" class="h-20 w-20 object-cover rounded-lg mb-2">':'')+'<div class="flex justify-between gap-2"><label class="text-xs font-bold text-luxury-gold"><input type="checkbox" class="cart-item-checkbox mr-2" data-id="'+escapeHtml(key)+'" onchange="onCartCheckboxChange()">Select</label><button type="button" class="text-xs text-red-400" onclick="removeCartItem(\''+escapeHtml(key)+'\')">Remove</button></div>'+
-              '<div class="text-sm text-luxury-text font-bold">'+escapeHtml(item.itemName||'Manual Item')+'</div><div class="text-xs text-luxury-muted">'+(item.code&&item.code!=='MANUAL'?escapeHtml(item.code):'')+(item.description?' · '+escapeHtml(item.description):'')+'</div>'+
-              '<div class="flex justify-between items-center text-xs"><span>Qty '+line.quantity+' · '+formatCurrency(unit)+'</span><button type="button" class="border border-luxury-gold/40 rounded-lg px-3 py-2 text-luxury-gold" onclick="openManualInterestItem(\''+escapeHtml(key)+'\')">Edit</button></div>';
+            const item=line.item||{},unit=Number(line.customPrice??item.price??0);
+            const qty=Math.max(1,Number(line.quantity)||1),discount=Math.max(0,Math.min(100,Number(line.discount)||0));
+            const original=unit*qty,final=original*(1-discount/100);
+            const keyArg=JSON.stringify(key), photo=String(item.imgLink||'');
+            const image=photo.startsWith('data:image/jpeg;base64,')?'<img src="'+escapeHtml(photo)+'" class="w-20 h-20 rounded-lg object-cover shrink-0" alt="Product photo">':'';
+            const code=item.code&&item.code!=='MANUAL'?escapeHtml(item.code):'';
+            row.className='p-3.5 rounded-xl bg-luxury-accent/30 border border-luxury-gold/20 space-y-3 fade-in';
+            row.innerHTML='<div class="flex items-start gap-3"><input type="checkbox" class="cart-item-checkbox mt-1" data-id="'+escapeHtml(key)+'" onchange="onCartCheckboxChange()">'+image+
+              '<div class="flex-1 min-w-0"><div class="text-sm font-bold text-luxury-text">'+escapeHtml(item.itemName||'Item')+'</div>'+
+              (code?'<div class="text-xs text-luxury-muted">'+code+'</div>':'')+
+              (item.description?'<div class="text-xs text-luxury-muted">'+escapeHtml(item.description)+'</div>':'')+'</div>'+
+              '<div class="flex flex-col gap-2"><button type="button" class="text-luxury-gold p-1" onclick="openManualInterestItem('+keyArg+')" title="Edit"><i class="fa-solid fa-pen"></i></button><button type="button" class="text-luxury-muted p-1" onclick="removeCartItem('+keyArg+')" title="Remove"><i class="fa-solid fa-trash-can"></i></button></div></div>'+
+              '<div class="pt-3 border-t border-luxury-gold/10 flex items-center justify-between gap-2"><div class="flex items-center rounded-lg border border-luxury-gold/20">'+
+              '<button type="button" class="px-3 py-2 text-luxury-gold" onclick="adjustManualInterestQty('+keyArg+',-1)">−</button><span class="px-2 text-sm">'+qty+'</span><button type="button" class="px-3 py-2 text-luxury-gold" onclick="adjustManualInterestQty('+keyArg+',1)">+</button></div>'+
+              '<div class="text-right">'+(discount>0?'<div class="line-through text-xs text-luxury-muted">'+formatCurrency(original)+'</div>':'')+'<div class="text-luxury-gold font-bold">'+formatCurrency(final)+'</div></div></div>'+
+              '<div class="flex flex-wrap justify-end items-center gap-2 text-[10px] uppercase text-luxury-muted font-bold"><label for="manual-price-'+escapeHtml(key)+'">Override price:</label><span>$</span><input id="manual-price-'+escapeHtml(key)+'" type="number" min="0" step="0.01" value="'+unit+'" onchange="changeServicePrice('+keyArg+',this.value);updateCartVisuals()" class="w-24 rounded-md bg-luxury-dark border border-luxury-gold/20 px-2 py-1.5 text-sm text-luxury-text text-right"><label for="manual-discount-'+escapeHtml(key)+'">Disc:</label><input id="manual-discount-'+escapeHtml(key)+'" type="number" min="0" max="100" step="0.01" value="'+discount+'" onchange="changeServiceDiscount('+keyArg+',this.value);updateCartVisuals()" class="w-16 rounded-md bg-luxury-dark border border-luxury-gold/20 px-2 py-1.5 text-sm text-luxury-text text-right"><span>%</span></div>';
             container.appendChild(row);
         }
         function addServiceFee() {
