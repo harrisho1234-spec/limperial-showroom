@@ -95,6 +95,7 @@ function attach(modal){
  const code=modal.querySelector('#showroom-scanner-results');
  const status=modal.querySelector('#showroom-scanner-status');
  const show=()=>{
+  modal.dataset.photoMode='1';
   if(box.hidden&&typeof window.ShowroomScannerStop==='function')window.ShowroomScannerStop();
   box.hidden=false;if(video)video.style.display='none';if(code)code.style.display='none';if(status)status.style.display='none';if(form)form.style.display='none';
   modal.querySelector('#showroom-scan-quick').textContent='Barcode / QR';
@@ -104,7 +105,7 @@ function attach(modal){
  $('showroom-photo-input').onchange=e=>compare(e.target.files?.[0]);
  for(const id of ['showroom-scan-quick','showroom-scan-multi']){
   modal.querySelector('#'+id)?.addEventListener('click',()=>{
-   generation++;box.hidden=true;if(video)video.style.display='';if(code)code.style.display='';if(status)status.style.display='';if(form)form.style.display='';
+   generation++;modal.dataset.photoMode='0';box.hidden=true;if(video)video.style.display='';if(code)code.style.display='';if(status)status.style.display='';if(form)form.style.display='';
    photo.style.background='#28313b';photo.style.color='#f3e9d7';
   });
  }
