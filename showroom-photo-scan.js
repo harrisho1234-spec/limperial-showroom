@@ -321,7 +321,7 @@ function attach(modal){
  const show=()=>{
   modal.dataset.photoMode='1';
   if(box.hidden&&typeof window.ShowroomScannerStop==='function')window.ShowroomScannerStop();
-  box.hidden=false;if(shell){shell.style.height='min(650px, calc(100dvh - 16px))';shell.style.overflowY='auto';}if(video)video.style.display='none';if(code)code.style.display='none';if(status)status.style.display='none';if(form)form.style.display='none';
+  box.hidden=false;if(shell){shell.style.height='min(650px, calc(var(--scanner-viewport-height, 100svh) - 16px))';shell.style.overflowY='auto';}if(video)video.style.display='none';if(code)code.style.display='none';if(status)status.style.display='none';if(form)form.style.display='none';
   modal.querySelector('#showroom-scan-quick').textContent='Barcode / QR';
   photo.style.background='#c5a56e';photo.style.color='#171b22';
  };

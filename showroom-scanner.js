@@ -1,7 +1,49 @@
 /* Scanner-V4 camera and barcode workflow, integrated with Showroom's existing product search. */
 (function(){
  'use strict';
- let reader=null,active=false;
+ let reader=null,active=false,releaseLayout=null;
+
+ // Native camera apps can briefly resize the web viewport on return. Keep the
+ // scanner's opening viewport until rotation, desktop resize or keyboard input.
+ function stabilizeLayout(overlay){
+  const mobile=()=>window.matchMedia('(max-width:1023px)').matches;
+  let width=window.innerWidth,height=window.innerHeight;
+  const x=window.scrollX,y=window.scrollY;
+  const saved=[];
+  function setStyle(el,key,value){saved.push([el,key,el.style.getPropertyValue(key),el.style.getPropertyPriority(key)]);el.style.setProperty(key,value);}
+  if(mobile()){
+   setStyle(document.documentElement,'overflow','hidden');
+   setStyle(document.body,'position','fixed');
+   setStyle(document.body,'top',-y+'px');
+   setStyle(document.body,'left',-x+'px');
+   setStyle(document.body,'width','100%');
+   setStyle(document.body,'overflow','hidden');
+  }
+  overlay.style.bottom='auto';
+  overlay.style.height='var(--scanner-viewport-height)';
+  overlay.style.background='transparent';
+  const update=()=>{
+   if(!overlay.isConnected)return;
+   if(!mobile()||window.innerWidth!==width){width=window.innerWidth;height=window.innerHeight;}
+   const editing=overlay.contains(document.activeElement)&&document.activeElement.matches('input:not([type="file"]),textarea');
+   const available=editing?Math.min(height,window.visualViewport?.height||window.innerHeight):height;
+   overlay.style.setProperty('--scanner-viewport-height',available+'px');
+  };
+  const focusChanged=()=>queueMicrotask(update);
+  window.addEventListener('resize',update);
+  window.visualViewport?.addEventListener('resize',update);
+  overlay.addEventListener('focusin',focusChanged);
+  overlay.addEventListener('focusout',focusChanged);
+  update();
+  return ()=>{
+   window.removeEventListener('resize',update);
+   window.visualViewport?.removeEventListener('resize',update);
+   overlay.removeEventListener('focusin',focusChanged);
+   overlay.removeEventListener('focusout',focusChanged);
+   for(const [el,key,value,priority] of saved){if(value)el.style.setProperty(key,value,priority);else el.style.removeProperty(key);}
+   if(saved.length)window.scrollTo({left:x,top:y,behavior:'instant'});
+  };
+ }
 
  const scannerSheet='https://docs.google.com/spreadsheets/d/1FkScQir2QCWaTrzMuJ_pUcdziM1uDCQ_MrW33nLoxlI/gviz/tq?tqx=out:csv&gid=657899447';
  let external=[],loaded=false,loading=null,loadError='';
@@ -41,9 +83,10 @@
 
 
  const scannerStyles=`
+ #showroom-scanner-modal::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:-1}
  #showroom-scanner-modal{--scan-bg:#fffdf8;--scan-text:#28241e;--scan-soft:#665a4a;--scan-card:#f7f2e8;--scan-border:#d8c7aa;--scan-input:#fff;--scan-muted:#f0e6d6;--scan-fresh:#e4f4e6;--scan-fresh-border:#72a682}
  body.theme-dark #showroom-scanner-modal{--scan-bg:#151a22;--scan-text:#f5f0e8;--scan-soft:#d0c1a9;--scan-card:#1c242f;--scan-border:#66583e;--scan-input:#252d39;--scan-muted:#28313b;--scan-fresh:#303e35;--scan-fresh-border:#7ba887}
- #showroom-scanner-modal .scanner-shell{background:var(--scan-bg)!important;color:var(--scan-text)!important;border-color:var(--scan-border)!important;max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain}\n @media(max-width:600px){#showroom-scanner-modal{padding:8px!important}#showroom-scanner-modal .scanner-shell{padding:14px!important;max-height:calc(100dvh - 16px)}#showroom-scanner-modal #showroom-scanner-video{max-height:34dvh;object-fit:cover}#showroom-scanner-modal .scanner-item button{min-width:32px;min-height:36px}}
+ #showroom-scanner-modal .scanner-shell{background:var(--scan-bg)!important;color:var(--scan-text)!important;border-color:var(--scan-border)!important;max-height:calc(var(--scanner-viewport-height, 100svh) - 32px);overflow-y:auto;overscroll-behavior:contain}\n @media(max-width:600px){#showroom-scanner-modal{padding:8px!important}#showroom-scanner-modal .scanner-shell{padding:14px!important;max-height:calc(var(--scanner-viewport-height, 100svh) - 16px)}#showroom-scanner-modal #showroom-scanner-video{max-height:calc(var(--scanner-viewport-height, 100svh) * .34);object-fit:cover}#showroom-scanner-modal .scanner-item button{min-width:32px;min-height:36px}}
  #showroom-scanner-modal .scanner-shell button:not(.scanner-gold){color:var(--scan-text)}
  #showroom-scanner-modal #showroom-scan-quick:not(.scan-active),#showroom-scanner-modal #showroom-scan-multi:not(.scan-active){background:var(--scan-muted)!important;color:var(--scan-text)!important}
  #showroom-scanner-modal #showroom-scanner-code{background:var(--scan-input)!important;color:var(--scan-text)!important;border-color:var(--scan-border)!important}
@@ -134,7 +177,7 @@
  function find(id){return document.getElementById(id);}
  function status(message){const e=find('showroom-scanner-status');if(e)e.textContent=message;}
  function stop(){active=false;if(reader){try{reader.reset();}catch(_){ }reader=null;}const v=find('showroom-scanner-video');if(v?.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;}}
- function close(){stop();find('showroom-scanner-modal')?.remove();}
+ function close(){stop();find('showroom-scanner-modal')?.remove();releaseLayout?.();releaseLayout=null;}
  function apply(code){
   const val=String(code||'').trim();if(!val)return;
   const now=Date.now();if(normalize(lastRead)===normalize(val)&&now-lastReadAt<1400)return;lastRead=val;lastReadAt=now;
@@ -211,6 +254,7 @@
   const overlay=document.createElement('div');overlay.id='showroom-scanner-modal';overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.87);display:flex;justify-content:center;align-items:center;padding:16px';
   overlay.innerHTML='<div class="scanner-shell" style="max-width:520px;width:100%;background:#151a22;color:#f5f0e8;border:1px solid #9b8256;border-radius:20px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:19px;font-weight:700">Scan product code</h3><button id="showroom-scanner-close" style="padding:8px" aria-label="Close scanner">✕</button></div><div style="display:flex;gap:8px;margin-top:12px"><button id="showroom-scan-quick" style="flex:1;border-radius:9px;padding:10px;background:#c5a56e;color:#151923;font-weight:700">Quick Scan</button><button id="showroom-scan-multi" style="flex:1;border-radius:9px;padding:10px;background:#28313b;color:#f3e9d7;font-weight:700">Multi-Scan</button></div><video id="showroom-scanner-video" muted playsinline style="margin-top:12px;width:100%;aspect-ratio:4/3;object-fit:cover;background:#080b10;border-radius:12px"></video><div id="showroom-scanner-results" style="max-height:200px;overflow:auto"></div><p id="showroom-scanner-status" style="font-size:12px;margin:9px 0;color:#d9c49b">Starting camera…</p><form id="showroom-scanner-manual" style="display:flex;gap:7px"><input id="showroom-scanner-code" autocomplete="off" placeholder="Or enter / scan product code" style="min-width:0;flex:1;background:#252d39;border:1px solid #786844;border-radius:8px;color:white;padding:11px"><button type="submit" style="background:#a89264;color:#121417;border-radius:8px;padding:10px 14px">Find</button></form></div>';
   document.body.appendChild(overlay);
+  releaseLayout=stabilizeLayout(overlay);
   window.ShowroomPhotoScan?.attach(overlay);
   restoreScanDraft();
   find('showroom-scanner-close').onclick=close;
