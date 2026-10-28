@@ -192,17 +192,13 @@
   search.style.paddingRight='110px';
   wrap.appendChild(btn);
   installUnifiedSearch(search);
-  let lastTouch=0;
-  const activate=e=>{
-    if(e.type==='click'&&Date.now()-lastTouch<550)return;
-    if(e.type==='pointerup'&&e.pointerType==='touch')lastTouch=Date.now();
+  // Use one native click path: synthesized touch clicks, keyboard and mouse all work.
+  // The old pointerup handler could suppress the following click on Android PWAs.
+  btn.addEventListener('click',e=>{
     e.preventDefault();e.stopPropagation();
     if(find('showroom-scanner-modal'))return;
-    open();
-  };
-  // Pointer up responds instantly on mobile; click remains for keyboard and older browsers.
-  btn.addEventListener('pointerup',e=>{if(e.pointerType==='touch')activate(e);});
-  btn.addEventListener('click',activate);
+    try{open();}catch(error){console.error('[Showroom scanner] Failed to open:',error);}
+  });
   btn.addEventListener('contextmenu',e=>{e.preventDefault();if(!find('showroom-scanner-modal'))open().then(()=>setMode(true));});
   loadExternal();
  }
