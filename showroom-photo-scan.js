@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-let generation=0,cache=new Map();
+let generation=0;
 function catalog(){try{return typeof products!=='undefined'&&Array.isArray(products)?products:[];}catch{return [];}}
 function photoUrl(p){
  const raw=p.imgLink||p.image_url||p.photo||'';
@@ -48,6 +48,7 @@ function render(items,unread,total,reset=false){
  '<img crossorigin="anonymous" src="'+esc(r.url)+'" alt="" style="width:56px;height:56px;object-fit:contain;border-radius:7px;background:white" onerror="this.style.display=\'none\'">'+
  '<div style="flex:1;min-width:0;font-size:12px"><b>'+esc(r.product.itemName||r.product.code||'Product')+'</b><div>'+esc(r.product.code||'')+' · $'+Number(r.product.price||0).toLocaleString()+'</div><div>Stock: '+esc(r.product.qty??'Unknown')+'</div></div>'+
  '<button type="button" data-photo-index="'+i+'" style="border:1px solid #b38e50;border-radius:8px;padding:8px">View</button></div>').join('');
+ if(items.length>visibleMatches)el.insertAdjacentHTML('beforeend','<button id="showroom-photo-load-more" type="button" style="padding:10px">Load More</button>');
  el.querySelector('#showroom-photo-load-more')?.addEventListener('click',()=>{visibleMatches+=10;render(items,unread,total);});
  el.querySelectorAll('[data-photo-index]').forEach(btn=>btn.onclick=()=>{
   const product=items[Number(btn.dataset.photoIndex)]?.product;if(!product)return;
@@ -134,11 +135,13 @@ async function aiCompare(file,token,output){
 // Reliable browser-native matcher: avoids mobile model runtime crashes.
 // Uses image layout/color plus edge structure; never labels a result as an exact match.
 function visualSignature(im){
+ const sourceWidth=im.naturalWidth??im.width,sourceHeight=im.naturalHeight??im.height;
+ if(!Number.isFinite(sourceWidth)||!Number.isFinite(sourceHeight)||sourceWidth<=0||sourceHeight<=0)throw Error('Invalid photo dimensions');
  const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;
  const ctx=canvas.getContext('2d',{willReadFrequently:true});
  ctx.fillStyle='#fff';ctx.fillRect(0,0,32,32);
- const scale=Math.min(32/im.naturalWidth,32/im.naturalHeight);
- const w=Math.max(1,Math.round(im.naturalWidth*scale)),h=Math.max(1,Math.round(im.naturalHeight*scale));
+ const scale=Math.min(32/sourceWidth,32/sourceHeight);
+ const w=Math.max(1,Math.round(sourceWidth*scale)),h=Math.max(1,Math.round(sourceHeight*scale));
  ctx.drawImage(im,Math.floor((32-w)/2),Math.floor((32-h)/2),w,h);
  const px=ctx.getImageData(0,0,32,32).data;
  const gray=new Float32Array(1024), rgb=[];
@@ -159,7 +162,7 @@ function visualSignature(im){
 }
 function captureVariants(im){
  const views=[visualSignature(im)];
- const w=im.naturalWidth,h=im.naturalHeight;
+ const w=im.naturalWidth??im.width,h=im.naturalHeight??im.height;
  // The product often occupies only part of a phone photo of a screen/showroom.
  // Test centered crops while keeping comparison on the same signature model.
  for(const factor of [.85,.68,.52]){
@@ -169,7 +172,11 @@ function captureVariants(im){
  }
  return views;
 }
-function bestScore(views,sig){return Math.max(...views.map(v=>visualScore(v,sig)));}
+function validSignature(sig){return Array.isArray(sig)&&sig.length===256&&sig.every(x=>Number.isFinite(x)&&x>=0&&x<=1);}
+function bestScore(views,sig){
+ if(!validSignature(sig)||!views.length||!views.every(validSignature))throw Error('Invalid image signature');
+ return Math.max(...views.map(v=>visualScore(v,sig)));
+}
 function visualScore(a,b){
  // Background-heavy photos made different scans rank the same bright chandeliers.
  // Emphasize foreground/colored regions and compare their position & silhouette.
@@ -195,11 +202,11 @@ function visualScore(a,b){
 }
 let photoIndexPromise=null;
 async function loadPhotoIndex(){
- if(!photoIndexPromise)photoIndexPromise=fetch('./assets/photo-index.json',{cache:'no-cache'}).then(async response=>{
+ if(!photoIndexPromise)photoIndexPromise=fetch('./assets/photo-index.json?v=20261028-canvas-fix1',{cache:'no-cache'}).then(async response=>{
   if(!response.ok)throw Error('index not published yet');
   const index=await response.json();
   if(index.version!==1||!Array.isArray(index.items)||!index.items.length)throw Error('index empty');
-  const valid=index.items.filter(row=>typeof row.code==='string'&&Array.isArray(row.sig)&&row.sig.length===256&&row.sig.every(Number.isFinite));
+  const valid=index.items.filter(row=>typeof row.code==='string'&&row.code.trim()&&validSignature(row.sig));
   if(valid.length<10)throw Error('Insufficient valid product image signatures');
   return valid;
  }).catch(error=>{photoIndexPromise=null;throw error;});
@@ -228,7 +235,7 @@ function compareIndex(input,index,products){
  const byCode=new Map(products.map(p=>[String(p.code||'').trim().toLowerCase(),p]));
  const results=[];
  for(const entry of index){
-  const product=byCode.get(entry.code.toLowerCase());
+  const product=byCode.get(entry.code.trim().toLowerCase());
   if(product)results.push({product,url:photoUrl(product),score:bestScore(input,entry.sig)});
  }
  return results.sort((a,b)=>b.score-a.score);
@@ -255,6 +262,7 @@ async function compare(file){
    return;
   }
   const matches=compareIndex(input,index,products);
+  if(!matches.length){output.textContent='No indexed photos match the current catalog. Use barcode/product-code search.';return;}
   // Show what was actually captured; do not imply weak visual similarities identify a SKU.
   const preview=document.createElement('img');
   preview.alt='Photo used for this search';
@@ -282,27 +290,15 @@ async function compare(file){
    note.textContent='Scan '+fingerprint+' · Searched '+matches.length+' indexed products. Appearance matches are suggestions; verify product code before selecting.';
    output.prepend(preview,note);return;
   }
- }catch(e){if(token!==generation)return;console.warn('[Showroom photo index]',e.message);}
- // Index is not yet available: use a small temporary local fallback.
- output.textContent='Catalog photo index not ready; checking a smaller photo sample…';
- const collection=products.map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,30);
- const results=[];let unread=0,index=0;
- const worker=async()=>{
-  while(index<collection.length&&token===generation){
-   const entry=collection[index++];
-   try{
-    let sig=cache.get(entry.url);
-    if(!sig||sig.length!==256){sig=visualSignature(await imageFrom(entry.url));cache.set(entry.url,sig);}
-    results.push({...entry,score:bestScore(input,sig)});
-   }catch{unread++;}
-   if(index%30===0&&token===generation)output.textContent='Matching '+index+' / '+collection.length+' photos…';
-  }
- };
- await Promise.all(Array.from({length:6},()=>worker()));
- if(token!==generation)return;
- results.sort((a,b)=>b.score-a.score);
- render(results,unread,collection.length,true);
+ }catch(e){
+  if(token!==generation)return;
+  console.warn('[Showroom photo index]',e.message);
+  output.textContent='Catalog photo search is unavailable. Connect to the internet and try again, or use barcode/product-code search.';
+  return;
+ }
+ output.textContent='No indexed photos match the current catalog. Use barcode/product-code search.';
 }
+
 function attach(modal){
  if(!modal||modal.querySelector('#showroom-scan-photo'))return;
  const multi=modal.querySelector('#showroom-scan-multi');if(!multi)return;

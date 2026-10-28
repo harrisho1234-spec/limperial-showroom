@@ -4,7 +4,9 @@ import fs from 'node:fs/promises';
 import sharp from 'sharp';
 import Papa from 'papaparse';
 const csvUrl='https://docs.google.com/spreadsheets/d/e/2PACX-1vQQ9iODZxEeRN48tF7tF6pTZvKTN5l0fA3_d34cQFqo1ckz1G5ojitqeoCtPunAAkkLLLsx0ivt7Zl1/pub?gid=828283876&single=true&output=csv';
-const text=await (await fetch(csvUrl)).text();
+const response=await fetch(csvUrl);
+if(!response.ok)throw Error('Catalog HTTP '+response.status);
+const text=await response.text();
 const rows=Papa.parse(text,{header:true,skipEmptyLines:true}).data;
 const keys=Object.keys(rows[0]||{});
 console.log('Catalog columns:',keys.join(', '));
@@ -16,6 +18,7 @@ function source(raw){
  return /^https?:\/\//.test(v)?v:'';
 }
 function signature(bytes){
+ if(bytes.length!==32*32*3)throw Error('Expected 32x32 RGB pixels');
  const rgb=new Float64Array(256),gray=new Float64Array(1024);
  for(let y=0;y<32;y++)for(let x=0;x<32;x++){
   const k=(y*32+x)*3;
@@ -40,13 +43,20 @@ async function make(row){
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8500);
   let buffer;try{const res=await fetch(url,{signal:controller.signal});if(!res.ok)throw Error('HTTP '+res.status);buffer=Buffer.from(await res.arrayBuffer());}finally{clearTimeout(timeout);}
   if(buffer.length>9000000)throw Error('oversize');
-  const {data}=await sharp(buffer).rotate().resize(32,32,{fit:'contain',background:'#ffffff'}).removeAlpha().raw().toBuffer({resolveWithObject:true});
+  const {data,info}=await sharp(buffer).rotate().toColourspace('srgb').flatten({background:'#ffffff'}).resize(32,32,{fit:'contain',background:'#ffffff'}).removeAlpha().raw().toBuffer({resolveWithObject:true});
+  if(info.channels!==3)throw Error('Expected RGB image');
   return {code,url,sig:signature(data)};
  }catch(e){console.warn('Skipped',code,String(e.message).slice(0,90));return null;}
 }
 const input=rows.slice(0,10000),items=[];let next=0;
 await Promise.all(Array.from({length:8},async()=>{while(next<input.length){const index=next++,item=await make(input[index]);if(item)items.push(item);}}));
+// Fail before replacing the published index if fetching/decoding failed broadly.
+if(items.length<10||items.length<rows.filter(r=>field(r,/^(productcode|itemcode|code|sku)$/)&&source(field(r,/(imglink|imagelink|imageurl|photo|picture)/))).length*.5)throw Error('Insufficient catalog image coverage; keeping previous index');
+const unique=new Set(items.map(row=>JSON.stringify(row.sig))).size;
+if(unique<items.length*.25||items.some(row=>row.sig.length!==256||!row.sig.every(x=>Number.isFinite(x)&&x>=0&&x<=1)))throw Error('Invalid or collapsed signatures; keeping previous index');
+items.sort((a,b)=>a.code.localeCompare(b.code)||a.url.localeCompare(b.url));
 await fs.mkdir('assets',{recursive:true});
 await fs.writeFile('assets/photo-index.json',JSON.stringify({version:1,source:'published-catalog',generatedAt:new Date().toISOString(),totalRows:rows.length,items}));
 console.log('Visual index:',items.length,'of',rows.length,'rows');
+console.log('Distinct signatures:',unique);
 if(!items.length)process.exitCode=1;

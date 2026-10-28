@@ -1,12 +1,12 @@
 // Limperial Luxury Showroom Service Worker - V25 Clean Slate
-const CACHE_NAME = 'limperial-v4-photo-reliability-20261028';
+const CACHE_NAME = 'limperial-v4-photo-canvas-fix1-20261028';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
   './customer-shopping-session.js?v=20261023-session1',
   './showroom-scanner.js?v=20261028-native-click2',
-  './showroom-photo-scan.js?v=20261028-reliability3',
+  './showroom-photo-scan.js?v=20261028-canvas-fix1',
   './showroom-selling.css?v=20261009-tabletopen1',
   './showroom-search-core.js?v=20261008-sellanalytics1',
   './showroom-selling.js?v=20261019-duplicate-rows1',
@@ -86,7 +86,8 @@ self.addEventListener('fetch', (event) => {
 
   const isDocument = request.mode === 'navigate' || request.destination === 'document';
   const isLocalScript = new URL(request.url).origin === self.location.origin && new URL(request.url).pathname.endsWith('.js');
-  if (isDocument || isLocalScript) {
+  const isPhotoIndex = new URL(request.url).origin === self.location.origin && new URL(request.url).pathname.endsWith('/assets/photo-index.json');
+  if (isDocument || isLocalScript || isPhotoIndex) {
     event.respondWith(
       fetch(request)
         .then((networkResponse) => {
