@@ -199,9 +199,30 @@ async function loadPhotoIndex(){
   if(!response.ok)throw Error('index not published yet');
   const index=await response.json();
   if(index.version!==1||!Array.isArray(index.items)||!index.items.length)throw Error('index empty');
-  return index.items.filter(row=>typeof row.code==='string'&&Array.isArray(row.sig)&&row.sig.length===256);
+  const valid=index.items.filter(row=>typeof row.code==='string'&&Array.isArray(row.sig)&&row.sig.length===256&&row.sig.every(Number.isFinite));
+  if(valid.length<10)throw Error('Insufficient valid product image signatures');
+  return valid;
  }).catch(error=>{photoIndexPromise=null;throw error;});
  return photoIndexPromise;
+}
+function indexQuality(index){
+ const samples=index.slice(0,Math.min(250,index.length));
+ const signatures=new Set(samples.map(row=>row.sig.map(x=>Math.round(x*50)).join(',')));
+ let spread=0;
+ for(let i=0;i<samples.length;i++){
+  const row=samples[i],reference=samples[(i+Math.floor(samples.length/2))%samples.length];
+  spread+=1-visualScore(row.sig,reference.sig);
+ }
+ return {unique:signatures.size,total:samples.length,spread:spread/Math.max(1,samples.length)};
+}
+function photoFingerprint(views){
+ const signature=views[0];
+ let h=2166136261;
+ for(let i=0;i<signature.length;i+=4){
+  const v=Math.round((signature[i]+signature[i+1]+signature[i+2])*85);
+  h=Math.imul(h^v,16777619);
+ }
+ return (h>>>0).toString(16).padStart(8,'0');
 }
 function compareIndex(input,index,products){
  const byCode=new Map(products.map(p=>[String(p.code||'').trim().toLowerCase(),p]));
@@ -227,11 +248,17 @@ async function compare(file){
   output.textContent='Searching the compact catalog index…';
   const index=await loadPhotoIndex();
   if(token!==generation)return;
+  const quality=indexQuality(index);
+  const fingerprint=photoFingerprint(input);
+  if(quality.unique<quality.total*.25 || quality.spread<.015){
+   output.textContent='Catalog photo index quality problem: many product signatures are too similar. Rebuild and verify the photo index. Scan reference: '+fingerprint;
+   return;
+  }
   const matches=compareIndex(input,index,products);
   if(matches.length){
    render(matches,0,matches.length,true);
    const note=document.createElement('p');note.style.cssText='font-size:11px;color:var(--scan-soft);margin:8px 0';
-   note.textContent='Searched '+matches.length+' indexed catalog products. For best results, fill the photo with the product and avoid screen borders or background.';
+   note.textContent='Scan '+fingerprint+' · Searched '+matches.length+' indexed products. Appearance matches are suggestions; verify product code before selecting.';
    output.prepend(note);return;
   }
  }catch(e){if(token!==generation)return;console.warn('[Showroom photo index]',e.message);}
