@@ -171,12 +171,27 @@ function captureVariants(im){
 }
 function bestScore(views,sig){return Math.max(...views.map(v=>visualScore(v,sig)));}
 function visualScore(a,b){
- let color=0,shape=0;
+ // Background-heavy photos made different scans rank the same bright chandeliers.
+ // Emphasize foreground/colored regions and compare their position & silhouette.
+ let weightedDistance=0,weightSum=0,foregroundA=0,foregroundB=0;
  for(let i=0;i<a.length;i+=4){
-  for(let j=0;j<3;j++){const d=a[i+j]-b[i+j];color+=d*d;}
-  const d=a[i+3]-b[i+3];shape+=d*d;
+  const ar=a[i],ag=a[i+1],ab=a[i+2],br=b[i],bg=b[i+1],bb=b[i+2];
+  const brightA=(ar+ag+ab)/3,brightB=(br+bg+bb)/3;
+  const saturA=Math.max(ar,ag,ab)-Math.min(ar,ag,ab);
+  const saturB=Math.max(br,bg,bb)-Math.min(br,bg,bb);
+  const edgeA=a[i+3],edgeB=b[i+3];
+  const interestA=Math.min(1,Math.max(0,(.89-brightA)*1.6)+saturA*1.1+edgeA*2);
+  const interestB=Math.min(1,Math.max(0,(.89-brightB)*1.6)+saturB*1.1+edgeB*2);
+  foregroundA+=interestA;foregroundB+=interestB;
+  const w=.12+Math.max(interestA,interestB)*2.8;
+  const dr=ar-br,dg=ag-bg,db=ab-bb,de=edgeA-edgeB;
+  const difference=(dr*dr+dg*dg+db*db)/3*.70+de*de*.30;
+  weightedDistance+=w*difference;
+  weightSum+=w;
  }
- return 1-(Math.sqrt(color/192)*.45+Math.sqrt(shape/64)*.55);
+ // Avoid treating mostly empty/white signatures as close visual matches.
+ const coveragePenalty=Math.abs(foregroundA-foregroundB)/64*.12;
+ return 1-Math.sqrt(weightedDistance/Math.max(weightSum,.001))-coveragePenalty;
 }
 let photoIndexPromise=null;
 async function loadPhotoIndex(){
