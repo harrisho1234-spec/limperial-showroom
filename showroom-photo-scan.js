@@ -255,11 +255,32 @@ async function compare(file){
    return;
   }
   const matches=compareIndex(input,index,products);
+  // Show what was actually captured; do not imply weak visual similarities identify a SKU.
+  const preview=document.createElement('img');
+  preview.alt='Photo used for this search';
+  preview.style.cssText='width:76px;height:76px;object-fit:contain;display:block;margin:8px 0;border:1px solid #b79e76;border-radius:8px';
+  const previewUrl=URL.createObjectURL(file);
+  preview.src=previewUrl;preview.onload=()=>URL.revokeObjectURL(previewUrl);
+  preview.onerror=()=>URL.revokeObjectURL(previewUrl);
+  const best=matches[0]?.score??-1;
+  const nextScore=matches[1]?.score??-1;
+  const ambiguous=best<0.76 || best-nextScore<0.012;
+  if(ambiguous){
+   output.replaceChildren();
+   const warning=document.createElement('p');
+   warning.style.cssText='font-size:12px;line-height:1.6;color:#ad7330;margin:9px 0';
+   warning.textContent='No reliable product match found. These photos look too similar to the matcher, so results may be incorrect. Try photographing the product by itself or use barcode/product-code search.';
+   output.append(preview,warning);
+   const label=document.createElement('p');label.style.cssText='font-size:11px;color:var(--scan-soft)';
+   label.textContent='Scan '+fingerprint+' · Best similarity: '+Math.round(best*100)+'% (not identification confidence)';
+   output.append(label);
+   return;
+  }
   if(matches.length){
    render(matches,0,matches.length,true);
    const note=document.createElement('p');note.style.cssText='font-size:11px;color:var(--scan-soft);margin:8px 0';
    note.textContent='Scan '+fingerprint+' · Searched '+matches.length+' indexed products. Appearance matches are suggestions; verify product code before selecting.';
-   output.prepend(note);return;
+   output.prepend(preview,note);return;
   }
  }catch(e){if(token!==generation)return;console.warn('[Showroom photo index]',e.message);}
  // Index is not yet available: use a small temporary local fallback.
