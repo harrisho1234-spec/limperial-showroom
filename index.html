@@ -5309,11 +5309,11 @@
             if (customerName || tel || address) { plainText += `-----------------------------------\n`; if (customerName) plainText += `Client: ${customerName}\n`; if (tel) plainText += `Tel: ${tel}\n`; if (address) plainText += `Address: ${address}\n`; }
             plainText += `-----------------------------------\nItems:\n`;
 
-            if (soApprover) plainText += 'Discount Approved By: ' + soApprover + '\\n';
             let tableRowsHtml = ''; let totalQtySum = 0; let totalItemsCount = 0; let totalSetsCount = 0; let totalAmtSum = 0; let totalDiscountSum = 0; let finalNetSum = 0; let totalCostSum = 0; let totalMarginSum = 0;
             const noteMap = {}; document.querySelectorAll('.quote-item-note-input').forEach(input => noteMap[input.getAttribute('data-item-id')] = input.value);
             const hasAnyDiscount = cart.some(c => (c.discount || 0) > 0) || discountPctValue > 0 || discountFlatValue > 0;
             const soApprover = documentType === 'sales_order' && hasAnyDiscount ? String(document.getElementById('so-discount-approved-by')?.value || '').trim() : '';
+            if (soApprover) plainText += 'Discount Approved By: ' + soApprover + '\n';
             const soApprovalBox = document.getElementById('so-discount-approval');
             if (soApprovalBox) soApprovalBox.classList.toggle('hidden', documentType !== 'sales_order' || !hasAnyDiscount);
             let docStockTracker = {}; let activeBatchPct = discountPctValue > 0 ? parseFloat(discountPctValue) || 0 : 0;
