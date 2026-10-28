@@ -807,6 +807,7 @@
                             </div>
                             <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Issue Date</label><input type="text" id="quote-date-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                         </div>
+                        <div id="so-discount-approval" class="hidden p-3 bg-luxury-accent/30 border border-luxury-gold/10 rounded-xl"><label for="so-discount-approved-by" class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Discount Approved By</label><input type="text" id="so-discount-approved-by" maxlength="120" placeholder="Approving manager / authorized person" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-2 text-xs text-luxury-text" oninput="updateQuotationPreview()"><p class="text-[10px] text-luxury-muted mt-1">For discounted Sales Orders. Enter the actual approver; this field does not authorize a discount.</p></div>
                         <div id="so-deposit-fields" class="hidden space-y-3 p-3 bg-luxury-accent/30 border border-luxury-gold/10 rounded-xl">
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
@@ -5308,9 +5309,13 @@
             if (customerName || tel || address) { plainText += `-----------------------------------\n`; if (customerName) plainText += `Client: ${customerName}\n`; if (tel) plainText += `Tel: ${tel}\n`; if (address) plainText += `Address: ${address}\n`; }
             plainText += `-----------------------------------\nItems:\n`;
 
+            if (soApprover) plainText += 'Discount Approved By: ' + soApprover + '\\n';
             let tableRowsHtml = ''; let totalQtySum = 0; let totalItemsCount = 0; let totalSetsCount = 0; let totalAmtSum = 0; let totalDiscountSum = 0; let finalNetSum = 0; let totalCostSum = 0; let totalMarginSum = 0;
             const noteMap = {}; document.querySelectorAll('.quote-item-note-input').forEach(input => noteMap[input.getAttribute('data-item-id')] = input.value);
             const hasAnyDiscount = cart.some(c => (c.discount || 0) > 0) || discountPctValue > 0 || discountFlatValue > 0;
+            const soApprover = documentType === 'sales_order' && hasAnyDiscount ? String(document.getElementById('so-discount-approved-by')?.value || '').trim() : '';
+            const soApprovalBox = document.getElementById('so-discount-approval');
+            if (soApprovalBox) soApprovalBox.classList.toggle('hidden', documentType !== 'sales_order' || !hasAnyDiscount);
             let docStockTracker = {}; let activeBatchPct = discountPctValue > 0 ? parseFloat(discountPctValue) || 0 : 0;
             
             const isInventory = documentType === 'inventory';
@@ -5749,6 +5754,7 @@
                             <div style="color: #ef4444; font-weight: 700; font-size: 13px; margin-bottom: 3px;">${documentType === 'quotation' ? 'N°' : 'SO N°'}: <span>${documentType === 'quotation' ? quoteNoDisplay : quoteNo}</span></div>
                             <div>Issue Date: <span style="font-weight: 600;">${formattedDate}</span></div>
                             <div>Sales: <span style="font-weight: 600;">${salesName}</span></div>
+                            ${soApprover ? '<div>Discount Approved By: <span style="font-weight: 600;">' + String(soApprover).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) + '</span></div>' : ''}
                         </div>
                     </div>
 
