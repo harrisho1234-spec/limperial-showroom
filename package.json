@@ -4,7 +4,8 @@
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "test:photo": "node scripts/audit-photo.cjs",
-    "build:photo-index": "node scripts/build-photo-index.mjs"
+    "build:photo-index": "node scripts/build-photo-index.mjs",
+    "test:photo-layout": "node scripts/test-photo-layout.cjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
