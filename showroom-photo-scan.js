@@ -201,13 +201,14 @@ async function compare(file){
  const output=$('showroom-photo-results');if(!file||!output)return;
  if(!file.type.startsWith('image/')){output.textContent='Choose an image file.';return;}
  if(file.size>15000000){output.textContent='Choose a photo smaller than 15 MB.';return;}
- const token=++generation;output.textContent='Matching product appearance locally…';
+ const token=++generation;visibleMatches=10;output.replaceChildren();output.textContent='Matching new photo…';
  const blob=URL.createObjectURL(file);let input;
  try{input=captureVariants(await imageFrom(blob));}
- catch(error){output.textContent='Unable to read photo: '+(error?.message||error);return;}
+ catch(error){if(token===generation)output.textContent='Unable to read photo: '+(error?.message||error);return;}
  finally{URL.revokeObjectURL(blob);}
  const products=catalog();
  try{
+  if(token!==generation)return;
   output.textContent='Searching the compact catalog index…';
   const index=await loadPhotoIndex();
   if(token!==generation)return;
@@ -218,7 +219,7 @@ async function compare(file){
    note.textContent='Searched '+matches.length+' indexed catalog products. For best results, fill the photo with the product and avoid screen borders or background.';
    output.prepend(note);return;
   }
- }catch(e){console.warn('[Showroom photo index]',e.message);}
+ }catch(e){if(token!==generation)return;console.warn('[Showroom photo index]',e.message);}
  // Index is not yet available: use a small temporary local fallback.
  output.textContent='Catalog photo index not ready; checking a smaller photo sample…';
  const collection=products.map(product=>({product,url:photoUrl(product)})).filter(r=>/^https?:|^data:image\\//i.test(r.url)).slice(0,30);
@@ -266,8 +267,13 @@ function attach(modal){
   photo.style.background='#c5a56e';photo.style.color='#171b22';
  };
  photo.onclick=show;
- $('showroom-photo-take').onclick=()=>$('showroom-photo-camera-input').click();
- $('showroom-photo-upload').onclick=()=>$('showroom-photo-input').click();
+ const beginNewPhoto=()=>{
+  generation++;visibleMatches=10;
+  const results=$('showroom-photo-results');
+  if(results){results.replaceChildren();results.textContent='Select a new photo to search…';results.scrollTop=0;}
+ };
+ $('showroom-photo-take').onclick=()=>{beginNewPhoto();$('showroom-photo-camera-input').click();};
+ $('showroom-photo-upload').onclick=()=>{beginNewPhoto();$('showroom-photo-input').click();};
  for(const id of ['showroom-photo-camera-input','showroom-photo-input'])$(id).onchange=e=>{const file=e.target.files?.[0];if(file)compare(file);e.target.value='';};
  for(const id of ['showroom-scan-quick','showroom-scan-multi']){
   modal.querySelector('#'+id)?.addEventListener('click',()=>{
