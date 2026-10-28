@@ -42,13 +42,16 @@ let visibleMatches=10;
 function render(items,unread,total,reset=false){
  if(reset)visibleMatches=10;
  const el=$('showroom-photo-results');if(!el)return;
+ const summary=reset?null:el.querySelector('[data-photo-summary]'),scrollTop=reset?0:el.scrollTop;
  if(!items.length){el.textContent=total?'No readable image matches. Catalog photo hosting may block browser image analysis.':'No catalog products with photos were found.';return;}
  el.innerHTML='<div style="font-size:12px;margin:10px 0;color:#ae9875">Possible matches (appearance only). Verify the correct product. Compared '+(total-unread)+' of '+total+' photos.</div>'+
  items.slice(0,visibleMatches).map((r,i)=>'<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid #816f4a55">'+
- '<img crossorigin="anonymous" src="'+esc(r.url)+'" alt="" style="width:56px;height:56px;object-fit:contain;border-radius:7px;background:white" onerror="this.style.display=\'none\'">'+
+ '<img src="'+esc(r.url)+'" alt="" width="56" height="56" loading="lazy" decoding="async" style="width:56px;height:56px;flex-shrink:0;object-fit:contain;border-radius:7px;background:white" onerror="this.style.visibility=\'hidden\'">'+
  '<div style="flex:1;min-width:0;font-size:12px"><b>'+esc(r.product.itemName||r.product.code||'Product')+'</b><div>'+esc(r.product.code||'')+' · $'+Number(r.product.price||0).toLocaleString()+'</div><div>Stock: '+esc(r.product.qty??'Unknown')+'</div></div>'+
  '<button type="button" data-photo-index="'+i+'" style="border:1px solid #b38e50;border-radius:8px;padding:8px">View</button></div>').join('');
  if(items.length>visibleMatches)el.insertAdjacentHTML('beforeend','<button id="showroom-photo-load-more" type="button" style="padding:10px">Load More</button>');
+ if(summary)el.prepend(summary);
+ el.scrollTop=scrollTop;
  el.querySelector('#showroom-photo-load-more')?.addEventListener('click',()=>{visibleMatches+=10;render(items,unread,total);});
  el.querySelectorAll('[data-photo-index]').forEach(btn=>btn.onclick=()=>{
   const product=items[Number(btn.dataset.photoIndex)]?.product;if(!product)return;
@@ -134,15 +137,15 @@ async function aiCompare(file,token,output){
 }
 // Reliable browser-native matcher: avoids mobile model runtime crashes.
 // Uses image layout/color plus edge structure; never labels a result as an exact match.
-function visualSignature(im){
- const sourceWidth=im.naturalWidth??im.width,sourceHeight=im.naturalHeight??im.height;
+function visualSignature(im,crop=null){
+ const sourceWidth=crop?.width??(im.naturalWidth??im.width),sourceHeight=crop?.height??(im.naturalHeight??im.height);
  if(!Number.isFinite(sourceWidth)||!Number.isFinite(sourceHeight)||sourceWidth<=0||sourceHeight<=0)throw Error('Invalid photo dimensions');
  const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;
  const ctx=canvas.getContext('2d',{willReadFrequently:true});
  ctx.fillStyle='#fff';ctx.fillRect(0,0,32,32);
  const scale=Math.min(32/sourceWidth,32/sourceHeight);
  const w=Math.max(1,Math.round(sourceWidth*scale)),h=Math.max(1,Math.round(sourceHeight*scale));
- ctx.drawImage(im,Math.floor((32-w)/2),Math.floor((32-h)/2),w,h);
+ ctx.drawImage(im,crop?.x??0,crop?.y??0,sourceWidth,sourceHeight,Math.floor((32-w)/2),Math.floor((32-h)/2),w,h);
  const px=ctx.getImageData(0,0,32,32).data;
  const gray=new Float32Array(1024), rgb=[];
  for(let y=0;y<32;y++)for(let x=0;x<32;x++){
@@ -166,11 +169,18 @@ function captureVariants(im){
  // The product often occupies only part of a phone photo of a screen/showroom.
  // Test centered crops while keeping comparison on the same signature model.
  for(const factor of [.85,.68,.52]){
-  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*factor));c.height=Math.max(1,Math.round(h*factor));
-  c.getContext('2d').drawImage(im,(w-c.width)/2,(h-c.height)/2,c.width,c.height,0,0,c.width,c.height);
-  views.push(visualSignature(c));
+  const width=Math.max(1,Math.round(w*factor)),height=Math.max(1,Math.round(h*factor));
+  // Sample directly into 32x32 pixels; never allocate a full-resolution crop.
+  views.push(visualSignature(im,{x:(w-width)/2,y:(h-height)/2,width,height}));
  }
  return views;
+}
+function photoThumbnail(im){
+ const canvas=document.createElement('canvas');canvas.width=160;canvas.height=160;
+ const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,160,160);
+ const w=im.naturalWidth??im.width,h=im.naturalHeight??im.height,scale=Math.min(160/w,160/h);
+ ctx.drawImage(im,(160-w*scale)/2,(160-h*scale)/2,w*scale,h*scale);
+ return canvas.toDataURL('image/jpeg',.8);
 }
 function validSignature(sig){return Array.isArray(sig)&&sig.length===256&&sig.every(x=>Number.isFinite(x)&&x>=0&&x<=1);}
 function bestScore(views,sig){
@@ -236,7 +246,7 @@ function compareIndex(input,index,products){
  const results=[];
  for(const entry of index){
   const product=byCode.get(entry.code.trim().toLowerCase());
-  if(product)results.push({product,url:photoUrl(product),score:bestScore(input,entry.sig)});
+  if(product)results.push({product,url:entry.url||photoUrl(product),score:bestScore(input,entry.sig)});
  }
  return results.sort((a,b)=>b.score-a.score);
 }
@@ -245,10 +255,14 @@ async function compare(file){
  if(!file.type.startsWith('image/')){output.textContent='Choose an image file.';return;}
  if(file.size>15000000){output.textContent='Choose a photo smaller than 15 MB.';return;}
  const token=++generation;visibleMatches=10;output.replaceChildren();output.textContent='Matching new photo…';
- const blob=URL.createObjectURL(file);let input;
- try{input=captureVariants(await imageFrom(blob));}
+ const blob=URL.createObjectURL(file);let input,thumbnail,decoded;
+ try{
+  decoded=await imageFrom(blob);
+  if(token!==generation)return;
+  input=captureVariants(decoded);thumbnail=photoThumbnail(decoded);
+ }
  catch(error){if(token===generation)output.textContent='Unable to read photo: '+(error?.message||error);return;}
- finally{URL.revokeObjectURL(blob);}
+ finally{if(decoded)decoded.src='';decoded=null;URL.revokeObjectURL(blob);}
  const products=catalog();
  try{
   if(token!==generation)return;
@@ -267,28 +281,25 @@ async function compare(file){
   const preview=document.createElement('img');
   preview.alt='Photo used for this search';
   preview.style.cssText='width:76px;height:76px;object-fit:contain;display:block;margin:8px 0;border:1px solid #b79e76;border-radius:8px';
-  const previewUrl=URL.createObjectURL(file);
-  preview.src=previewUrl;preview.onload=()=>URL.revokeObjectURL(previewUrl);
-  preview.onerror=()=>URL.revokeObjectURL(previewUrl);
+  preview.src=thumbnail;
   const best=matches[0]?.score??-1;
   const nextScore=matches[1]?.score??-1;
   const ambiguous=best<0.76 || best-nextScore<0.012;
+  render(matches,0,matches.length,true);
+  const summary=document.createElement('div');summary.dataset.photoSummary='';summary.append(preview);
   if(ambiguous){
-   output.replaceChildren();
    const warning=document.createElement('p');
    warning.style.cssText='font-size:12px;line-height:1.6;color:#ad7330;margin:9px 0';
-   warning.textContent='No reliable product match found. These photos look too similar to the matcher, so results may be incorrect. Try photographing the product by itself or use barcode/product-code search.';
-   output.append(preview,warning);
+   warning.textContent='No confident identification. The closest appearance matches are shown below and may be incorrect. Verify the product code, or try a closer photo of the product by itself.';
+   summary.append(warning);
    const label=document.createElement('p');label.style.cssText='font-size:11px;color:var(--scan-soft)';
    label.textContent='Scan '+fingerprint+' · Best similarity: '+Math.round(best*100)+'% (not identification confidence)';
-   output.append(label);
-   return;
+   summary.append(label);
   }
   if(matches.length){
-   render(matches,0,matches.length,true);
    const note=document.createElement('p');note.style.cssText='font-size:11px;color:var(--scan-soft);margin:8px 0';
    note.textContent='Scan '+fingerprint+' · Searched '+matches.length+' indexed products. Appearance matches are suggestions; verify product code before selecting.';
-   output.prepend(preview,note);return;
+   summary.append(note);output.prepend(summary);return;
   }
  }catch(e){
   if(token!==generation)return;

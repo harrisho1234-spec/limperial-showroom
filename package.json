@@ -6,7 +6,8 @@
     "test:photo": "node scripts/audit-photo.cjs",
     "build:photo-index": "node scripts/build-photo-index.mjs",
     "test:photo-layout": "node scripts/test-photo-layout.cjs",
-    "test:camera-return": "node scripts/test-camera-return.cjs"
+    "test:camera-return": "node scripts/test-camera-return.cjs",
+    "test:mobile-photo": "node scripts/test-mobile-photo.cjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
