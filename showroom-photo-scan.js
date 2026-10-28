@@ -313,7 +313,7 @@ function attach(modal){
  '<button id="showroom-photo-upload" type="button" style="flex:1;min-width:125px;padding:12px;border-radius:9px;border:1px solid #a89264;color:var(--scan-text);font-weight:bold">Upload Photo</button></div>'+
  '<input id="showroom-photo-camera-input" type="file" accept="image/*" capture="environment" style="display:none">'+
  '<input id="showroom-photo-input" type="file" accept="image/*" style="display:none">'+
- '<div id="showroom-photo-results" style="max-height:330px;overflow:auto;font-size:12px"></div>';
+ '<div id="showroom-photo-results" role="status" aria-live="polite" style="min-height:190px;max-height:330px;overflow:auto;font-size:12px;overflow-anchor:none"></div>';
  form?.after(box);
  const video=modal.querySelector('#showroom-scanner-video');
  const code=modal.querySelector('#showroom-scanner-results');
@@ -321,7 +321,7 @@ function attach(modal){
  const show=()=>{
   modal.dataset.photoMode='1';
   if(box.hidden&&typeof window.ShowroomScannerStop==='function')window.ShowroomScannerStop();
-  box.hidden=false;if(video)video.style.display='none';if(code)code.style.display='none';if(status)status.style.display='none';if(form)form.style.display='none';
+  box.hidden=false;if(shell){shell.style.height='min(650px, calc(100dvh - 16px))';shell.style.overflowY='auto';}if(video)video.style.display='none';if(code)code.style.display='none';if(status)status.style.display='none';if(form)form.style.display='none';
   modal.querySelector('#showroom-scan-quick').textContent='Barcode / QR';
   photo.style.background='#c5a56e';photo.style.color='#171b22';
  };
@@ -336,7 +336,7 @@ function attach(modal){
  for(const id of ['showroom-photo-camera-input','showroom-photo-input'])$(id).onchange=e=>{const file=e.target.files?.[0];if(file)compare(file);e.target.value='';};
  for(const id of ['showroom-scan-quick','showroom-scan-multi']){
   modal.querySelector('#'+id)?.addEventListener('click',()=>{
-   const wasPhoto=modal.dataset.photoMode==='1';generation++;modal.dataset.photoMode='0';box.hidden=true;if(video)video.style.display='';if(code)code.style.display='';if(status)status.style.display='';if(form)form.style.display='';
+   const wasPhoto=modal.dataset.photoMode==='1';generation++;modal.dataset.photoMode='0';box.hidden=true;if(shell)shell.style.height='';if(video)video.style.display='';if(code)code.style.display='';if(status)status.style.display='';if(form)form.style.display='';
    photo.style.background='#28313b';photo.style.color='#f3e9d7';
    if(wasPhoto) setTimeout(()=>window.openShowroomScanner?.(),0);
   });
