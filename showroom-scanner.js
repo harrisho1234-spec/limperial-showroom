@@ -186,14 +186,24 @@
   const search=find('search-input'),wrap=search.parentElement;
   const btn=document.createElement('button');btn.id='showroom-scan-trigger';btn.type='button';btn.title='Scan barcode or QR code';btn.setAttribute('aria-label','Scan barcode or QR code');
   btn.innerHTML='<i class="fa-solid fa-barcode" aria-hidden="true"></i><span>Scan</span>';
-  btn.className='absolute right-10 top-1/2 -translate-y-1/2 h-9 px-3 flex items-center justify-center gap-1.5 rounded-lg bg-[#c5a56e] text-[#171b22] text-xs font-bold shadow-sm border border-[#d8c193] hover:bg-[#e0bf82] active:scale-95 transition-all';
-  btn.style.zIndex='2';
+  btn.className='absolute right-2 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[82px] px-3 flex items-center justify-center gap-1.5 rounded-lg bg-[#c5a56e] text-[#171b22] text-xs font-bold shadow-sm border border-[#d8c193] hover:bg-[#e0bf82] transition-all';
+  btn.style.cssText='z-index:30;touch-action:manipulation;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent';
   search.classList.remove('pr-10','pr-20');
-  search.style.paddingRight='120px';
+  search.style.paddingRight='110px';
   wrap.appendChild(btn);
   installUnifiedSearch(search);
-  btn.addEventListener('click',open);
-  btn.addEventListener('contextmenu',e=>{e.preventDefault();open().then(()=>setMode(true));});
+  let lastTouch=0;
+  const activate=e=>{
+    if(e.type==='click'&&Date.now()-lastTouch<550)return;
+    if(e.type==='pointerup'&&e.pointerType==='touch')lastTouch=Date.now();
+    e.preventDefault();e.stopPropagation();
+    if(find('showroom-scanner-modal'))return;
+    open();
+  };
+  // Pointer up responds instantly on mobile; click remains for keyboard and older browsers.
+  btn.addEventListener('pointerup',e=>{if(e.pointerType==='touch')activate(e);});
+  btn.addEventListener('click',activate);
+  btn.addEventListener('contextmenu',e=>{e.preventDefault();if(!find('showroom-scanner-modal'))open().then(()=>setMode(true));});
   loadExternal();
  }
  function loadLibrary(){
