@@ -310,6 +310,68 @@ async function compare(file){
  output.textContent='No indexed photos match the current catalog. Use barcode/product-code search.';
 }
 
+// Let the user exclude screen borders, labels and other products before matching.
+// Retain only a bounded working image after the original camera file is decoded.
+async function preparePhoto(file){
+ const output=$('showroom-photo-results');if(!file||!output)return;
+ if(!file.type.startsWith('image/')){output.textContent='Choose an image file.';return;}
+ if(file.size>15000000){output.textContent='Choose a photo smaller than 15 MB.';return;}
+ const token=++generation;output.textContent='Opening photo…';
+ const url=URL.createObjectURL(file);let image;
+ const source=document.createElement('canvas');
+ try{
+  image=await imageFrom(url);
+  if(token!==generation||!output.isConnected)return;
+  const scale=Math.min(1,1024/Math.max(image.naturalWidth,image.naturalHeight));
+  source.width=Math.max(1,Math.round(image.naturalWidth*scale));
+  source.height=Math.max(1,Math.round(image.naturalHeight*scale));
+  source.getContext('2d').drawImage(image,0,0,source.width,source.height);
+ }catch(error){if(token===generation)output.textContent='Unable to read photo: '+error.message;return;}
+ finally{if(image)image.src='';image=null;URL.revokeObjectURL(url);}
+ if(token!==generation||!output.isConnected)return;
+ output.innerHTML='<p style="margin:0 0 8px">Drag a box around the product photo. Exclude screen borders, text and other products.</p><div data-crop-stage style="text-align:center;background:#242424;border-radius:8px;line-height:0"></div><p data-crop-label style="margin:6px 0" aria-live="polite">Whole photo selected</p><div style="display:flex;gap:8px"><button type="button" data-crop-reset style="padding:10px;border:1px solid #a89264;border-radius:8px">Whole photo</button><button type="button" data-crop-search style="flex:1;padding:10px;background:#c5a56e;color:#171b22;border-radius:8px;font-weight:bold">Search selected area</button></div>';
+ output.scrollTop=0;
+ const canvas=document.createElement('canvas');canvas.width=source.width;canvas.height=source.height;
+ canvas.style.cssText='display:inline-block;max-width:100%;max-height:210px;width:auto;height:auto;touch-action:none;cursor:crosshair';
+ canvas.setAttribute('aria-label','Photo crop: drag around the product, or use Whole photo');
+ output.querySelector('[data-crop-stage]').append(canvas);
+ const ctx=canvas.getContext('2d'),full={x:0,y:0,width:source.width,height:source.height};
+ let selection={...full},start=null,previous=null;
+ const draw=()=>{
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0);
+  const {x,y,width:w,height:h}=selection;
+  ctx.fillStyle='rgba(0,0,0,.6)';
+  ctx.fillRect(0,0,canvas.width,y);ctx.fillRect(0,y+h,canvas.width,canvas.height-y-h);
+  ctx.fillRect(0,y,x,h);ctx.fillRect(x+w,y,canvas.width-x-w,h);
+  ctx.strokeStyle='#ffcc60';ctx.lineWidth=Math.max(2,source.height/210*2);ctx.strokeRect(x,y,w,h);
+ };
+ const point=e=>{const r=canvas.getBoundingClientRect();return {x:Math.max(0,Math.min(source.width,(e.clientX-r.left)*source.width/r.width)),y:Math.max(0,Math.min(source.height,(e.clientY-r.top)*source.height/r.height))};};
+ canvas.onpointerdown=e=>{if(e.isPrimary===false)return;e.preventDefault();previous={...selection};start=point(e);canvas.setPointerCapture(e.pointerId);};
+ canvas.onpointermove=e=>{
+  if(!start)return;const end=point(e);
+  selection={x:Math.min(start.x,end.x),y:Math.min(start.y,end.y),width:Math.abs(start.x-end.x),height:Math.abs(start.y-end.y)};draw();
+ };
+ const finish=cancel=>{
+  if(!start)return;start=null;
+  if(cancel||selection.width<8||selection.height<8)selection=previous;
+  output.querySelector('[data-crop-label]').textContent=selection.width===full.width&&selection.height===full.height?'Whole photo selected':'Selected area ready. Drag again to adjust.';draw();
+ };
+ canvas.onpointerup=()=>finish(false);canvas.onpointercancel=()=>finish(true);
+ canvas.onlostpointercapture=()=>finish(false);
+ output.querySelector('[data-crop-reset]').onclick=()=>{selection={...full};draw();output.querySelector('[data-crop-label]').textContent='Whole photo selected';};
+ output.querySelector('[data-crop-search]').onclick=async e=>{
+  if(token!==generation||!output.isConnected)return;
+  e.currentTarget.disabled=true;
+  const crop=document.createElement('canvas');crop.width=Math.max(1,Math.round(selection.width));crop.height=Math.max(1,Math.round(selection.height));
+  crop.getContext('2d').drawImage(source,selection.x,selection.y,selection.width,selection.height,0,0,crop.width,crop.height);
+  const blob=await new Promise(resolve=>crop.toBlob(resolve,'image/png'));
+  if(token!==generation||!output.isConnected)return;
+  if(!blob){output.textContent='Could not prepare this photo. Please choose it again.';return;}
+  await compare(new File([blob],'selected-product.png',{type:'image/png'}));
+ };
+ draw();
+}
+
 function attach(modal){
  if(!modal||modal.querySelector('#showroom-scan-photo'))return;
  const multi=modal.querySelector('#showroom-scan-multi');if(!multi)return;
@@ -318,7 +380,7 @@ function attach(modal){
  multi.parentElement.append(photo);
  const shell=modal.querySelector('.scanner-shell'),form=modal.querySelector('#showroom-scanner-manual');
  const box=document.createElement('section');box.id='showroom-photo-panel';box.hidden=true;
- box.innerHTML='<p style="font-size:12px;margin:10px 0">Photograph a product or choose a photo. Matches are calculated directly on this phone using shape and image patterns. Confirm the correct product before selecting.</p>'+
+ box.innerHTML='<p style="font-size:12px;margin:10px 0">Choose a photo, then select the product area to search. Appearance matches are suggestions; confirm the product code.</p>'+
  '<div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">'+
  '<button id="showroom-photo-take" type="button" style="flex:1;min-width:125px;padding:12px;border-radius:9px;background:#c5a56e;color:#171b22;font-weight:bold">📷 Take Photo</button>'+
  '<button id="showroom-photo-upload" type="button" style="flex:1;min-width:125px;padding:12px;border-radius:9px;border:1px solid #a89264;color:var(--scan-text);font-weight:bold">Upload Photo</button></div>'+
@@ -344,7 +406,7 @@ function attach(modal){
  };
  $('showroom-photo-take').onclick=()=>{beginNewPhoto();$('showroom-photo-camera-input').click();};
  $('showroom-photo-upload').onclick=()=>{beginNewPhoto();$('showroom-photo-input').click();};
- for(const id of ['showroom-photo-camera-input','showroom-photo-input'])$(id).onchange=e=>{const file=e.target.files?.[0];if(file)compare(file);e.target.value='';};
+ for(const id of ['showroom-photo-camera-input','showroom-photo-input'])$(id).onchange=e=>{const file=e.target.files?.[0];if(file)preparePhoto(file);e.target.value='';};
  for(const id of ['showroom-scan-quick','showroom-scan-multi']){
   modal.querySelector('#'+id)?.addEventListener('click',()=>{
    const wasPhoto=modal.dataset.photoMode==='1';generation++;modal.dataset.photoMode='0';box.hidden=true;if(shell)shell.style.height='';if(video)video.style.display='';if(code)code.style.display='';if(status)status.style.display='';if(form)form.style.display='';

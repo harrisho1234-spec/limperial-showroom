@@ -8,7 +8,8 @@
     "test:photo-layout": "node scripts/test-photo-layout.cjs",
     "test:camera-return": "node scripts/test-camera-return.cjs",
     "test:mobile-photo": "node scripts/test-mobile-photo.cjs",
-    "test:camera-session": "node scripts/test-camera-session.cjs"
+    "test:camera-session": "node scripts/test-camera-session.cjs",
+    "test:photo-crop": "node scripts/test-photo-crop.cjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

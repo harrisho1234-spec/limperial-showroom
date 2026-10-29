@@ -24,3 +24,13 @@ Each open now owns a session token, reader and video element. Stop invalidates p
 Validation: the new delayed-camera regression fails on f2130f4 (old enumeration starts the new reader), and passes all three delayed enumeration/completion/error cases after the fix. Existing camera-return viewport test, eight layout/theme cases, and 12 MP photo-memory/results test pass. These use Chrome with controlled camera responses, not a physical Android camera.
 
 Remaining: obtain the original failed photo and expected product code to evaluate ranking. The 32x32 color/edge matcher is not robust recognition of real scenes, printed catalogs, or photographed screens. The previous eight image fixtures do not establish accuracy on those inputs. This fix is not confirmation that the user's twitching is resolved.
+
+## Follow-up: user-selected product region (2026-10-29)
+
+User confirms twitching has stopped. Expected product: WAL0380 / TB-2169-1, present in the index. On the supplied camera-interface screenshot, the unchanged matcher ranks it 50th. A manually extracted product-photo region ranks it 6th. This screenshot includes camera controls and guide lines; it is not the original saved camera file.
+
+Added a touch/mouse region selector before photo matching. The user can drag around the product photo, reset to the whole image, and search the selected area. The original is reduced to a maximum 1024-pixel side and released; crop overlays are never included in the searched image. Existing comparison/ranking is unchanged. The editor uses up to three bounded canvases (approximately 12 MB maximum pixel buffers), separate from browser image-decoder overhead.
+
+Verification: real touch events in mobile Chrome emulation select clean source pixels and whole-photo reset restores the full bounded image. End-to-end upload of the user's screenshot, region selection and actual ranking puts WAL0380 8th in the first ten results; shell bounds remain unchanged. Slight rank differences from direct extraction reflect browser sampling and the 1024-pixel working copy. Eight existing layout/theme cases and all three camera-session race tests pass. User image files remain local, not committed to the repository.
+
+Limitations: this is a crop-assisted improvement, not a reliable recognition fix. A gold chair still ranks ahead of the correct lamp in this example. Color/edge signatures are not sufficient for robust identification under perspective, screen glare, lighting changes and surrounding content. An improved representation and a broader real-camera evaluation set are still needed before claiming reliable photo recognition.
