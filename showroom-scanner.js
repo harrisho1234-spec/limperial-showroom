@@ -1,7 +1,7 @@
 /* Scanner-V4 camera and barcode workflow, integrated with Showroom's existing product search. */
 (function(){
  'use strict';
- let reader=null,active=false,releaseLayout=null;
+ let reader=null,active=false,releaseLayout=null,cameraSession=0;
 
  // Native camera apps can briefly resize the web viewport on return. Keep the
  // scanner's opening viewport until rotation, desktop resize or keyboard input.
@@ -176,7 +176,7 @@
  }
  function find(id){return document.getElementById(id);}
  function status(message){const e=find('showroom-scanner-status');if(e)e.textContent=message;}
- function stop(){active=false;if(reader){try{reader.reset();}catch(_){ }reader=null;}const v=find('showroom-scanner-video');if(v?.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;}}
+ function stop(){cameraSession++;active=false;if(reader){try{reader.reset();}catch(_){ }reader=null;}const v=find('showroom-scanner-video');if(v?.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;}}
  function close(){stop();find('showroom-scanner-modal')?.remove();releaseLayout?.();releaseLayout=null;}
  function apply(code){
   const val=String(code||'').trim();if(!val)return;
@@ -251,6 +251,7 @@
  }
  async function open(){
   close();ensureScannerStyles();
+  const session=cameraSession;
   const overlay=document.createElement('div');overlay.id='showroom-scanner-modal';overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.87);display:flex;justify-content:center;align-items:center;padding:16px';
   overlay.innerHTML='<div class="scanner-shell" style="max-width:520px;width:100%;background:#151a22;color:#f5f0e8;border:1px solid #9b8256;border-radius:20px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:19px;font-weight:700">Scan product code</h3><button id="showroom-scanner-close" style="padding:8px" aria-label="Close scanner">✕</button></div><div style="display:flex;gap:8px;margin-top:12px"><button id="showroom-scan-quick" style="flex:1;border-radius:9px;padding:10px;background:#c5a56e;color:#151923;font-weight:700">Quick Scan</button><button id="showroom-scan-multi" style="flex:1;border-radius:9px;padding:10px;background:#28313b;color:#f3e9d7;font-weight:700">Multi-Scan</button></div><video id="showroom-scanner-video" muted playsinline style="margin-top:12px;width:100%;aspect-ratio:4/3;object-fit:cover;background:#080b10;border-radius:12px"></video><div id="showroom-scanner-results" style="max-height:200px;overflow:auto"></div><p id="showroom-scanner-status" style="font-size:12px;margin:9px 0;color:#d9c49b">Starting camera…</p><form id="showroom-scanner-manual" style="display:flex;gap:7px"><input id="showroom-scanner-code" autocomplete="off" placeholder="Or enter / scan product code" style="min-width:0;flex:1;background:#252d39;border:1px solid #786844;border-radius:8px;color:white;padding:11px"><button type="submit" style="background:#a89264;color:#121417;border-radius:8px;padding:10px 14px">Find</button></form></div>';
   document.body.appendChild(overlay);
@@ -263,15 +264,31 @@
   setMode(false);
   overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
   find('showroom-scanner-manual').onsubmit=e=>{e.preventDefault();apply(find('showroom-scanner-code').value);};
+  let sessionReader=null;
+  const video=overlay.querySelector('#showroom-scanner-video');
+  const current=()=>session===cameraSession&&overlay.isConnected&&overlay.dataset.photoMode!=='1';
+  const discard=()=>{
+   try{sessionReader?.reset();}catch(_){}
+   // Release only this request's video, never a newly opened scanner's stream.
+   if(video.srcObject){video.srcObject.getTracks().forEach(t=>t.stop());video.srcObject=null;}
+  };
   try{
-   await loadLibrary();if(!find('showroom-scanner-modal')||overlay.dataset.photoMode==='1')return;
-   reader=new ZXing.BrowserMultiFormatReader();active=true;
-   const devices=await reader.listVideoInputDevices();
-   if(overlay.dataset.photoMode==='1'){stop();return;}
+   await loadLibrary();if(!current())return;
+   sessionReader=new ZXing.BrowserMultiFormatReader();reader=sessionReader;active=true;
+   const devices=await sessionReader.listVideoInputDevices();
+   if(!current()){discard();return;}
    const rear=devices.find(d=>/back|rear|environment/i.test(d.label));
    status('Point the camera at a barcode or QR code.');
-   await reader.decodeFromVideoDevice(rear?.deviceId||undefined,find('showroom-scanner-video'),(result,error)=>{if(!active)return;if(result?.text)apply(result.text);});
-  }catch(e){status('Camera unavailable: '+e.message+'. You can still enter or use a USB/Bluetooth scanner below.');stop();}
+   await sessionReader.decodeFromVideoDevice(rear?.deviceId||undefined,video,(result,error)=>{
+    if(!current()){discard();return;}
+    if(active&&result?.text)apply(result.text);
+   });
+   // Native camera permission may finish after Stop or Photo was tapped.
+   if(!current())discard();
+  }catch(e){
+   if(current()){status('Camera unavailable: '+e.message+'. You can still enter or use a USB/Bluetooth scanner below.');stop();}
+   else discard();
+  }
  }
  window.ShowroomScannerStop=stop;
  window.openShowroomScanner=open;

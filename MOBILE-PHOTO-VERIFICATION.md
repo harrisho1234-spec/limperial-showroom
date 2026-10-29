@@ -12,3 +12,15 @@ Verification: the 12MP browser regression reproduces zero visible candidates bef
 Reproduce with `npm run test:mobile-photo`, `npm run test:photo`, `npm run test:photo-layout`, and `npm run test:camera-return`. Use Playwright Chromium or set `PHOTO_BROWSER_PATH` to an installed Chrome executable. Set `PHOTO_BASE_REF=17e051f` for the memory/candidate before-and-after comparison.
 
 Limitations: the memory pressure explanation for device stutter is a hypothesis supported by the excessive allocations, not a confirmed device-level diagnosis. No actual S24 Ultra rendering trace or original camera photo was provided. Matching still uses low-resolution appearance signatures; displaying candidates does not prove that the correct product will appear for every viewpoint, background or screen photograph.
+
+## Follow-up: camera request ownership (2026-10-29)
+
+The S24 Ultra user still reports twitching and inconsistent matching. Physical-device reproduction remains unavailable.
+
+Confirmed a separate asynchronous camera bug: after a close/reopen, the old device-enumeration request used the newer global reader and started it. Late decode completion also could reactivate the barcode camera after entering photo mode, and old failures could stop the current reader.
+
+Each open now owns a session token, reader and video element. Stop invalidates pending requests. Every asynchronous boundary and callback checks ownership; stale requests release only their own stream. No visual-ranking algorithm change is claimed in this follow-up.
+
+Validation: the new delayed-camera regression fails on f2130f4 (old enumeration starts the new reader), and passes all three delayed enumeration/completion/error cases after the fix. Existing camera-return viewport test, eight layout/theme cases, and 12 MP photo-memory/results test pass. These use Chrome with controlled camera responses, not a physical Android camera.
+
+Remaining: obtain the original failed photo and expected product code to evaluate ranking. The 32x32 color/edge matcher is not robust recognition of real scenes, printed catalogs, or photographed screens. The previous eight image fixtures do not establish accuracy on those inputs. This fix is not confirmation that the user's twitching is resolved.
