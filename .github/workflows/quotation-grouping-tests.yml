@@ -1,0 +1,22 @@
+name: Quotation grouping checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'tests/quotation-grouping.test.cjs'
+      - 'tests/quotation-discount-format.test.cjs'
+      - '.github/workflows/quotation-grouping-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  grouping-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check quotation grouping and discount formatting
+        run: node --test tests/quotation-grouping.test.cjs tests/quotation-discount-format.test.cjs
