@@ -5617,13 +5617,23 @@
             if(!row||!['quotation','sales_order'].includes(documentType))return;
             if(!row.documentSections||typeof row.documentSections!=='object')row.documentSections={};
             row.documentSections[documentType]=String(value||'').trim().slice(0,100);
+            const applyButton=Array.from(document.querySelectorAll('.quote-section-discount-apply'))
+                .find(el=>el.dataset.itemId===String(lineKey));
+            if(applyButton)applyButton.textContent=documentSectionName(row)?'Apply to Section':'Apply to Item';
             updateQuotationPreview();
             window.ShowroomPhase1?.scheduleDraft?.();
         }
         function moveDocumentItem(lineKey,direction) {
             if(!['quotation','sales_order'].includes(documentType))return;
-            const index=findCartLineIndex(lineKey),next=index+Number(direction);
-            if(index<0||next<0||next>=cart.length)return;
+            const index=findCartLineIndex(lineKey);
+            if(index<0)return;
+            const group=planDocumentGroups(cart,documentGroupingMode(),discountPctValue)
+                .find(g=>g.items.includes(cart[index]));
+            if(!group)return;
+            const groupPosition=group.items.indexOf(cart[index]);
+            const nextItem=group.items[groupPosition+Number(direction)];
+            if(!nextItem)return;
+            const next=cart.indexOf(nextItem);
             [cart[index],cart[next]]=[cart[next],cart[index]];
             // Note inputs are preserved by renderQuoteItemsNotesForm, which
             // caches by stable cart line ID before rebuilding the editor.
@@ -5686,8 +5696,13 @@
                   '</p>'
                 : '';
 
-            cart.forEach((c, idx) => {
+            const editorGroups=planDocumentGroups(cart,groupingMode,discountPctValue);
+            const editorRows=editorGroups.flatMap(group=>group.items);
+            editorRows.forEach((c, idx) => {
                 const itemId = c.id || (c.item ? c.item.id : idx);
+                const itemGroup=editorGroups.find(group=>group.items.includes(c));
+                const positionInGroup=itemGroup?.items.indexOf(c) ?? idx;
+                const lastPosition=(itemGroup?.items.length??editorRows.length)-1;
                 const itemName = c.type === 'set' ? `${c.setName}` : (c.item?.itemName || '');
                 const itemCode = c.type === 'set' ? 'SET' : (c.item?.code || '');
                 const safeItemId = escapeHtml(itemId);
@@ -5707,15 +5722,15 @@
                       <div class="flex items-center justify-between gap-2">
                         <label class="text-[10px] uppercase font-bold tracking-wide text-luxury-muted">${groupingMode==='floor'?'Floor / Room / Section':'Item Position'}</label>
                         <span class="flex items-center gap-1">
-                          <button type="button" ${idx===0?'disabled':''} onclick="moveDocumentItem('${safeItemId}',-1)" aria-label="Move item up" title="Move up" class="px-2 py-1 rounded border border-luxury-gold/20 text-xs text-luxury-gold disabled:opacity-30">↑ Up</button>
-                          <button type="button" ${idx===cart.length-1?'disabled':''} onclick="moveDocumentItem('${safeItemId}',1)" aria-label="Move item down" title="Move down" class="px-2 py-1 rounded border border-luxury-gold/20 text-xs text-luxury-gold disabled:opacity-30">↓ Down</button>
+                          <button type="button" ${positionInGroup===0?'disabled':''} onclick="moveDocumentItem('${safeItemId}',-1)" aria-label="Move item up" title="Move up" class="px-2 py-1 rounded border border-luxury-gold/20 text-xs text-luxury-gold disabled:opacity-30">↑ Up</button>
+                          <button type="button" ${positionInGroup===lastPosition?'disabled':''} onclick="moveDocumentItem('${safeItemId}',1)" aria-label="Move item down" title="Move down" class="px-2 py-1 rounded border border-luxury-gold/20 text-xs text-luxury-gold disabled:opacity-30">↓ Down</button>
                         </span>
                       </div>
-                      ${groupingMode==='floor'? `<input type="text" list="doc-section-suggestions" maxlength="100" data-item-id="${safeItemId}" class="quote-section-name-input w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-2.5 py-2 text-xs text-luxury-text" value="${escapeHtml(documentSectionName(c))}" placeholder="e.g. Ground Floor / Living Room" oninput="updateDocumentSection(this.dataset.itemId,this.value)">` : ''}
+                      ${groupingMode==='floor'? `<input type="text" list="doc-section-suggestions" maxlength="100" data-item-id="${safeItemId}" class="quote-section-name-input w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-2.5 py-2 text-xs text-luxury-text" value="${escapeHtml(documentSectionName(c))}" placeholder="e.g. Ground Floor / Living Room" oninput="updateDocumentSection(this.dataset.itemId,this.value)" onchange="renderQuoteItemsNotesForm()">` : ''}
                       <div class="flex flex-wrap items-center gap-2">
                         <label class="text-[10px] font-semibold text-luxury-muted">Discount %</label>
                         <input type="number" min="0" max="100" step="0.1" data-item-id="${safeItemId}" class="quote-section-discount-input w-20 bg-luxury-dark border border-luxury-gold/20 rounded px-2 py-1.5 text-xs text-luxury-text" value="${formatDocumentDiscountPct(Math.max(0,Math.min(100,Number(c.discount)||0)))}">
-                        <button type="button" onclick="applyDocumentSectionDiscount('${safeItemId}')" class="px-3 py-1.5 bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold rounded-lg text-[10px] font-bold">${groupingMode==='floor'&&documentSectionName(c)?'Apply to Section':'Apply to Item'}</button>
+                        <button type="button" onclick="applyDocumentSectionDiscount('${safeItemId}')" data-item-id="${safeItemId}" class="quote-section-discount-apply px-3 py-1.5 bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold rounded-lg text-[10px] font-bold">${groupingMode==='floor'&&documentSectionName(c)?'Apply to Section':'Apply to Item'}</button>
                       </div>
                     </div>` : '';
                 notesForm.insertAdjacentHTML('beforeend', `<div class="space-y-1 bg-luxury-dark/40 p-2.5 rounded-lg border border-luxury-gold/5"><div class="flex justify-between text-[11px] font-semibold"><span class="text-luxury-gold">${safeItemCode}</span><span class="text-luxury-muted truncate max-w-[150px]">${safeItemName}</span></div><input type="text" data-item-id="${safeItemId}" class="quote-item-note-input w-full bg-luxury-dark border border-luxury-gold/10 rounded px-2.5 py-1 text-xs text-luxury-text focus:border-luxury-gold outline-none" placeholder="Item note (optional)" value="${safeNote}" oninput="updateQuotationPreview()">${codeField}${sectionUi}</div>`);
