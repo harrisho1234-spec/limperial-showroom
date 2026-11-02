@@ -47,7 +47,7 @@ test('floor / room grouping combines named locations while preserving mixed disc
     ]);
     assert.equal(JSON.stringify(input), original, 'grouping must not modify any source item');
     assert.equal(f.documentDiscountPct(input[0], 0), 50);
-    assert.equal(f.documentDiscountPct(input[2], 0), 10);
+    assert.ok(Math.abs(f.documentDiscountPct(input[2], 0) - 10) < 1e-9, 'floating-point math is unchanged');
     assert.deepEqual(asNames(f.planDocumentGroups([{ id:'blank', discount:20 }], 'floor', 0)), [['', ['blank']]]);
 });
 test('discount grouping uses existing effective discounts without applying new ones', () => {
