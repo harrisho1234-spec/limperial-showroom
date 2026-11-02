@@ -834,7 +834,7 @@
                         <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Telephone Contact</label><input type="text" id="quote-tel-input" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-3 py-1.5 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></div>
                         <div><label class="block text-[10px] uppercase tracking-wider text-luxury-muted font-bold mb-1">Delivery Address</label><textarea id="quote-address-input" rows="2" placeholder="Address Details" class="w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg p-2 text-xs text-luxury-text focus:border-luxury-gold outline-none" oninput="updateQuotationPreview()"></textarea></div>
                         <h4 class="text-xs font-bold text-luxury-gold uppercase tracking-widest border-b border-luxury-gold/20 pb-2 pt-2">Item Notes &amp; Document Product Codes</h4>
-                        <div id="quote-items-notes-form" class="space-y-3 max-h-[200px] overflow-y-auto pr-1"></div>
+                        <div id="quote-items-notes-form" class="space-y-3 max-h-[48vh] overflow-y-auto pr-1"></div>
                     </div>
                     <div class="grid grid-cols-3 gap-3 pt-4 border-t border-luxury-gold/15">
                         <button onclick="copyQuoteToClipboard()" class="py-2.5 bg-slate-900 hover:bg-luxury-gold text-luxury-gold hover:text-slate-950 border-2 border-luxury-gold rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-md flex items-center justify-center gap-1.5 cursor-pointer"><i class="fa-solid fa-copy"></i>Copy Plain Text</button>
@@ -5704,7 +5704,7 @@
             const flushDocSection=()=>{
                 if(!currentDocSection)return;
                 tableRowsHtml+=documentSectionSubTotalRow(currentDocSection,sectionGross,sectionNet,sectionColumns);
-                plainText+='   '+currentDocSection+' Subtotal: '+formatCurrency(sectionNet)+'\\n';
+                plainText+='   '+currentDocSection+' Subtotal: '+formatCurrency(sectionNet)+'\n';
                 sectionGross=0;sectionNet=0;
             };
 
@@ -5731,7 +5731,7 @@
                         const uniform=individual.every(v=>Math.abs(v-individual[0])<0.00001);
                         const discountLabel=uniform&&individual[0]>0?' · '+individual[0]+'% discount':'';
                         tableRowsHtml+='<tr style="background:#ecf3fb;break-after:avoid;"><td colspan="'+sectionColumns+'" style="border:1px solid #b6c9e3;padding:10px 12px;color:#0f2d4a;font-size:11px;font-weight:700;">'+escapeHtml(section)+escapeHtml(discountLabel)+'</td></tr>';
-                        plainText+='\\n=== '+section+(discountLabel||'')+' ===\\n';
+                        plainText+='\n=== '+section+(discountLabel||'')+' ===\n';
                     }
                 }
                 if(section) {
