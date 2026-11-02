@@ -5514,6 +5514,12 @@
             const batch=Math.max(0,Math.min(100,Number(batchPct)||0));
             return 100*(1-(1-line/100)*(1-batch/100));
         }
+        // Round only the displayed percentage. Keep the original discount value
+        // for pricing and totals so document formatting never changes the math.
+        function formatDocumentDiscountPct(value) {
+            const pct = Number(value);
+            return Number.isFinite(pct) ? String(Number(pct.toFixed(2))) : '0';
+        }
         function documentLineValues(row,batchPct=0) {
             let unit;
             if(row.type==='set') {
@@ -5616,7 +5622,7 @@
                       <input type="text" list="doc-section-suggestions" maxlength="100" data-item-id="${safeItemId}" class="quote-section-name-input w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-2.5 py-2 text-xs text-luxury-text" value="${escapeHtml(documentSectionName(c))}" placeholder="e.g. Ground Floor / Living Room" oninput="updateDocumentSection(this.dataset.itemId,this.value)">
                       <div class="flex flex-wrap items-center gap-2">
                         <label class="text-[10px] font-semibold text-luxury-muted">Discount %</label>
-                        <input type="number" min="0" max="100" step="0.1" data-item-id="${safeItemId}" class="quote-section-discount-input w-20 bg-luxury-dark border border-luxury-gold/20 rounded px-2 py-1.5 text-xs text-luxury-text" value="${Math.max(0,Math.min(100,Number(c.discount)||0))}">
+                        <input type="number" min="0" max="100" step="0.1" data-item-id="${safeItemId}" class="quote-section-discount-input w-20 bg-luxury-dark border border-luxury-gold/20 rounded px-2 py-1.5 text-xs text-luxury-text" value="${formatDocumentDiscountPct(Math.max(0,Math.min(100,Number(c.discount)||0)))}">
                         <button type="button" onclick="applyDocumentSectionDiscount('${safeItemId}')" class="px-3 py-1.5 bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold rounded-lg text-[10px] font-bold">Apply to Section</button>
                       </div>
                     </div>` : '';
@@ -5738,7 +5744,7 @@
                         const allSectionRows=cart.filter(c=>documentSectionName(c)===section);
                         const individual=allSectionRows.map(c=>Math.max(0,Math.min(100,Number(c.discount)||0)));
                         const uniform=individual.every(v=>Math.abs(v-individual[0])<0.00001);
-                        const discountLabel=uniform&&individual[0]>0?' · '+individual[0]+'% discount':'';
+                        const discountLabel=uniform&&individual[0]>0?' · '+formatDocumentDiscountPct(individual[0])+'% discount':'';
                         tableRowsHtml+='<tr style="background:#ecf3fb;break-after:avoid;"><td colspan="'+sectionColumns+'" style="border:1px solid #b6c9e3;padding:10px 12px;color:#0f2d4a;font-size:11px;font-weight:700;">'+escapeHtml(section)+escapeHtml(discountLabel)+'</td></tr>';
                         plainText+='\n=== '+section+(discountLabel||'')+' ===\n';
                     }
@@ -5774,7 +5780,7 @@
                     if (!isInventory && !isDeliveryOrder) {
                         plainText += `   ${cartItem.quantity} Sets x ${formatCurrency(setBasePrice)}     ${formatCurrency(setTotalOriginalPrice)}\n`;
                         if (showPreOrderOnDoc && setPreorderArr.length > 0) plainText += `   * Pre-order Required: ${setPreorderArr.join(', ')}\n`;
-                        if (setDiscount > 0) { plainText += `   (Disc: -${setDiscount}%)        -${formatCurrency(discountValueAmount)}\n`; plainText += `   Line Net:            ${formatCurrency(lineFinalPrice)}\n`; } plainText += `\n`;
+                        if (setDiscount > 0) { plainText += `   (Disc: -${formatDocumentDiscountPct(setDiscount)}%)        -${formatCurrency(discountValueAmount)}\n`; plainText += `   Line Net:            ${formatCurrency(lineFinalPrice)}\n`; } plainText += `\n`;
                     } else {
                         plainText += `   QTY: ${cartItem.quantity} Sets\n`;
                         if (showPreOrderOnDoc && setPreorderArr.length > 0) plainText += `   * Pre-order Required: ${setPreorderArr.join(', ')}\n`;
@@ -5808,7 +5814,7 @@
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(setBasePrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 600; color: #1e293b; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(setTotalOriginalPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 ${showCostMode ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(setTotalCost)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(lineTotalCost)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 600; color: ${lineMargin >= 0 ? '#10b981' : '#f43f5e'}; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(lineMargin)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
-                                ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-weight: 600; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;"><div>-${setDiscount}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(discountValueAmount)})</div><div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
+                                ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-weight: 600; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;"><div>-${formatDocumentDiscountPct(setDiscount)}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(discountValueAmount)})</div><div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 700; color: #0f2d4a; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(lineFinalPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                             </tr>`;
                     }
@@ -5844,7 +5850,7 @@
                         preorderHtml = `<div style="font-weight: 600; color: #b45309; font-size: 10px; margin-top: 4px; text-transform: uppercase; display: block;">Pre-order: ${preQty} Pc${preQty > 1 ? 's' : ''}</div>`;
                     }
                     if (preorderText) plainText += preorderText;
-                    if (!isInventory && !isDeliveryOrder && itemDiscount > 0) { plainText += `   (Disc: -${itemDiscount}%)        -${formatCurrency(discountValueAmount)}\n   Line Net:            ${formatCurrency(lineFinalPrice)}\n`; } plainText += `\n`;
+                    if (!isInventory && !isDeliveryOrder && itemDiscount > 0) { plainText += `   (Disc: -${formatDocumentDiscountPct(itemDiscount)}%)        -${formatCurrency(discountValueAmount)}\n   Line Net:            ${formatCurrency(lineFinalPrice)}\n`; } plainText += `\n`;
 
                     const directImg = resolveGoogleDriveImg(item.imgLink);
                     const imgColHtml = directImg ? `<img src="${directImg}" style="max-width: ${imgWidth}px; max-height: ${imgHeight}px; width: 100%; height: 100%; object-fit: contain; display: block; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; background: #ffffff;">` : `<div style="max-width: ${imgWidth}px; max-height: ${imgHeight}px; width: 100%; height: 100%; border: 1px solid #e2e8f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: #f8fafc; margin: 0 auto;"><span style="color: #dfb26c; font-size: 14px;">👑</span></div>`;
@@ -5872,7 +5878,7 @@
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(itemActualPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 600; color: #1e293b; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(originalPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 ${showCostMode ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(getCosting(item))}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(lineTotalCost)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 600; color: ${lineMargin >= 0 ? '#10b981' : '#f43f5e'}; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(lineMargin)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
-                                ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-weight: 600; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;"><div>-${itemDiscount}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(discountValueAmount)})</div><div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
+                                ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-weight: 600; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;"><div>-${formatDocumentDiscountPct(itemDiscount)}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(discountValueAmount)})</div><div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 700; color: #0f2d4a; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(lineFinalPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                             </tr>`;
                     }
@@ -5887,8 +5893,8 @@
                 plainText += `-----------------------------------\nSub Total:             ${formatCurrency(totalAmtSum)}\n`;
                 if (totalDiscountSum > 0) {
                     let discLabelText = 'Total Discounts:';
-                    if (discountPctValue > 0 && discountFlatValue > 0) discLabelText = `Total Discounts (-${discountPctValue}% & -${formatCurrency(discountFlatValue)}):`;
-                    else if (discountPctValue > 0) discLabelText = `Total Discounts (-${discountPctValue}%):`;
+                    if (discountPctValue > 0 && discountFlatValue > 0) discLabelText = `Total Discounts (-${formatDocumentDiscountPct(discountPctValue)}% & -${formatCurrency(discountFlatValue)}):`;
+                    else if (discountPctValue > 0) discLabelText = `Total Discounts (-${formatDocumentDiscountPct(discountPctValue)}%):`;
                     plainText += `${discLabelText} -${formatCurrency(totalDiscountSum)}\n`;
                 }
                 plainText += `Grand Total:           ${formatCurrency(finalOverallPayout)}\n`;
@@ -5914,7 +5920,7 @@
                         <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-family: monospace;"></td>
                         <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-family: monospace; color: #1e293b; font-size: 10px;">${formatCurrency(totalAmtSum)}</td>
                         ${showCostMode ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px;"></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-family: monospace; color: #1e293b; font-size: 10px;">${formatCurrency(totalCostSum)}</td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-family: monospace; color: ${totalMarginSum >= 0 ? '#10b981' : '#f43f5e'}; font-size: 10px;">${formatCurrency(totalMarginSum)}</td>` : ''}
-                        ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-family: monospace; font-size: 11px; font-weight: 600;">${(discountPctValue > 0 && discountFlatValue > 0) ? `<div>-${discountPctValue}% & -${formatCurrency(discountFlatValue)}</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : (discountPctValue > 0 ? `<div>-${discountPctValue}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : (discountFlatValue > 0 ? `<div>Flat Disc</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : `<div style="font-size: 10px; font-weight: 600;">(-${formatCurrency(totalDiscountSum)})</div>`))}</td>` : ''}
+                        ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-family: monospace; font-size: 11px; font-weight: 600;">${(discountPctValue > 0 && discountFlatValue > 0) ? `<div>-${formatDocumentDiscountPct(discountPctValue)}% & -${formatCurrency(discountFlatValue)}</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : (discountPctValue > 0 ? `<div>-${formatDocumentDiscountPct(discountPctValue)}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : (discountFlatValue > 0 ? `<div>Flat Disc</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : `<div style="font-size: 10px; font-weight: 600;">(-${formatCurrency(totalDiscountSum)})</div>`))}</td>` : ''}
                         <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #0f2d4a; font-family: monospace; font-size: 11px;">${formatCurrency(finalOverallPayout)}</td>
                     </tr>`;
 
@@ -5934,12 +5940,12 @@
                         depositAmountInput.value = Math.round(depositValueAmount * 100) / 100;
                     }
 
-                    plainText += `Deposit Paid (${depositPct}%):      ${formatCurrency(depositValueAmount)}\n`;
+                    plainText += `Deposit Paid (${formatDocumentDiscountPct(depositPct)}%):      ${formatCurrency(depositValueAmount)}\n`;
                     plainText += `Remaining Balance:     ${formatCurrency(remainingBalanceAmount)}\n`;
 
                     subtotalRowHtml += `
                         <tr style="background-color: #fcf8f2; font-weight: 700;">
-                            <td colspan="${colsToSpan}" style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; color: #b45309; font-size: 10px;">Deposit Paid (${depositPct}%):</td>
+                            <td colspan="${colsToSpan}" style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; color: #b45309; font-size: 10px;">Deposit Paid (${formatDocumentDiscountPct(depositPct)}%):</td>
                             <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #b45309; font-family: monospace; font-size: 11px;">${formatCurrency(depositValueAmount)}</td>
                         </tr>
                         <tr style="background-color: #f0fdf4; font-weight: 700; border-top: 1px solid #cbd5e1;">
