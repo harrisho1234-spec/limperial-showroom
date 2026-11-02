@@ -5617,9 +5617,9 @@
             if(!row||!['quotation','sales_order'].includes(documentType))return;
             if(!row.documentSections||typeof row.documentSections!=='object')row.documentSections={};
             row.documentSections[documentType]=String(value||'').trim().slice(0,100);
-            const applyButton=Array.from(document.querySelectorAll('.quote-section-discount-apply'))
+            const bulkButton=Array.from(document.querySelectorAll('.quote-section-discount-bulk'))
                 .find(el=>el.dataset.itemId===String(lineKey));
-            if(applyButton)applyButton.textContent=documentSectionName(row)?'Apply to Section':'Apply to Item';
+            if(bulkButton)bulkButton.classList.toggle('hidden',!documentSectionName(row));
             updateQuotationPreview();
             window.ShowroomPhase1?.scheduleDraft?.();
         }
@@ -5642,31 +5642,54 @@
             updateQuotationPreview();
             window.ShowroomPhase1?.scheduleDraft?.();
         }
-        function applyDocumentSectionDiscount(lineKey) {
-            if(!['quotation','sales_order'].includes(documentType))return;
-            const row=findCartLine(lineKey);
-            if(!row)return;
-            const input=Array.from(document.querySelectorAll('.quote-section-discount-input'))
+        // Item discount changes are independent of document grouping.
+        function documentItemDiscountInput(lineKey) {
+            return Array.from(document.querySelectorAll('.quote-section-discount-input'))
                 .find(el=>el.dataset.itemId===String(lineKey));
-            const raw=String(input?.value??'').trim();
-            if(!raw||!Number.isFinite(Number(raw))||Number(raw)<0||Number(raw)>100)
-                return showNotification('Enter a section discount from 0% to 100%.','error');
-            const pct=Number(raw),section=documentSectionName(row);
-            // Apply section-wide discounts only when explicitly using Floor mode.
-            const matches=documentGroupingMode()==='floor'&&section
-                ?cart.filter(c=>documentSectionName(c).toLowerCase()===section.toLowerCase())
-                :[row];
+        }
+        function applyDocumentItemDiscount(lineKey,inputEl=null) {
+            if(!['quotation','sales_order'].includes(documentType))return false;
+            const row=findCartLine(lineKey),input=inputEl||documentItemDiscountInput(lineKey);
+            if(!row||!input)return false;
+            const raw=String(input.value??'').trim(),pct=Number(raw);
+            if(!raw||!Number.isFinite(pct)||pct<0||pct>100)return false;
+            if(Number(row.discount)!==pct) {
+                changeItemDiscount(lineKey,pct,input);
+                updateQuotationPreview();
+                window.ShowroomPhase1?.scheduleDraft?.();
+            }
+            return true;
+        }
+        function finishDocumentItemDiscount(lineKey,inputEl=null,announce=false) {
+            const input=inputEl||documentItemDiscountInput(lineKey),row=findCartLine(lineKey);
+            if(!row||!input)return;
+            if(!applyDocumentItemDiscount(lineKey,input)) {
+                input.value=formatDocumentDiscountPct(Number(row.discount)||0);
+                showNotification('Enter an item discount from 0% to 100%.','error');
+                return;
+            }
+            if(documentGroupingMode()==='discount')renderQuoteItemsNotesForm();
+            if(announce)showNotification('Discount updated for this item only.','success');
+        }
+        function applyDocumentSectionDiscount(lineKey) {
+            if(!['quotation','sales_order'].includes(documentType)||documentGroupingMode()!=='floor')return;
+            const row=findCartLine(lineKey),section=row?documentSectionName(row):'';
+            if(!section)return;
+            const input=documentItemDiscountInput(lineKey);
+            const raw=String(input?.value??'').trim(),pct=Number(raw);
+            if(!raw||!Number.isFinite(pct)||pct<0||pct>100)
+                return showNotification('Enter a discount from 0% to 100%.','error');
+            const matches=cart.filter(c=>documentSectionName(c).toLowerCase()===section.toLowerCase());
             if(!matches.length)return;
-            // The percentage REPLACES each affected row's individual discount.
-            // Never silently stack two 50% discounts to make 100%.
+            // A section-wide replacement requires separate user confirmation.
+            if(!window.confirm('Apply '+formatDocumentDiscountPct(pct)+'% to all '+matches.length+
+                ' item(s) in "'+section+'"? This will REPLACE their individual discounts.'))return;
             matches.forEach(c=>{c.discount=pct;});
             updateCartVisuals();
             renderQuoteItemsNotesForm();
             updateQuotationPreview();
             window.ShowroomPhase1?.scheduleDraft?.();
-            showNotification(documentGroupingMode()==='floor'&&section
-                ?pct+'% applied to '+matches.length+' item(s) in '+section+'.'
-                :pct+'% applied to this item.', 'success');
+            showNotification(formatDocumentDiscountPct(pct)+'% applied to '+matches.length+' item(s) in '+section+'.','success');
         }
         function documentSectionSubTotalRow(title,gross,net,cols) {
             const saving=Math.max(0,gross-net);
@@ -5689,7 +5712,7 @@
                 ? '<datalist id="doc-section-suggestions"><option value="Ground Floor"><option value="First Floor"><option value="Second Floor"><option value="Third Floor"><option value="Living Room"><option value="Dining Room"><option value="Master Bedroom"><option value="Bedroom"><option value="Lobby"><option value="Office"><option value="Outdoor"><option value="Ground Floor / Living Room"><option value="First Floor / Bedroom"></datalist>'+
                   '<p class="text-[10px] text-luxury-muted mb-2">'+
                   (groupingMode==='floor'
-                    ?'Assign floor/room names independently of discounts. Apply to Section replaces discounts only when clicked.'
+                    ?'Assign floor/room names independently of discounts. Item Discount % updates only that product. Apply to Entire Section requires confirmation.'
                     :groupingMode==='discount'
                         ?'Groups use each item\'s existing discount. Apply to Item changes only this row.'
                         :'Use Up/Down for manual order. Apply to Item changes only this row.')+
@@ -5728,9 +5751,10 @@
                       </div>
                       ${groupingMode==='floor'? `<input type="text" list="doc-section-suggestions" maxlength="100" data-item-id="${safeItemId}" class="quote-section-name-input w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-2.5 py-2 text-xs text-luxury-text" value="${escapeHtml(documentSectionName(c))}" placeholder="e.g. Ground Floor / Living Room" oninput="updateDocumentSection(this.dataset.itemId,this.value)" onchange="renderQuoteItemsNotesForm()">` : ''}
                       <div class="flex flex-wrap items-center gap-2">
-                        <label class="text-[10px] font-semibold text-luxury-muted">Discount %</label>
-                        <input type="number" min="0" max="100" step="0.1" data-item-id="${safeItemId}" class="quote-section-discount-input w-20 bg-luxury-dark border border-luxury-gold/20 rounded px-2 py-1.5 text-xs text-luxury-text" value="${formatDocumentDiscountPct(Math.max(0,Math.min(100,Number(c.discount)||0)))}">
-                        <button type="button" onclick="applyDocumentSectionDiscount('${safeItemId}')" data-item-id="${safeItemId}" class="quote-section-discount-apply px-3 py-1.5 bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold rounded-lg text-[10px] font-bold">${groupingMode==='floor'&&documentSectionName(c)?'Apply to Section':'Apply to Item'}</button>
+                        <label class="text-[10px] font-semibold text-luxury-muted">Item Discount %</label>
+                        <input type="number" min="0" max="100" step="0.01" data-item-id="${safeItemId}" class="quote-section-discount-input w-20 bg-luxury-dark border border-luxury-gold/20 rounded px-2 py-1.5 text-xs text-luxury-text" value="${formatDocumentDiscountPct(Math.max(0,Math.min(100,Number(c.discount)||0)))}" oninput="applyDocumentItemDiscount(this.dataset.itemId,this)" onchange="finishDocumentItemDiscount(this.dataset.itemId,this)">
+                        <button type="button" onclick="finishDocumentItemDiscount('${safeItemId}',null,true)" class="px-3 py-1.5 bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold rounded-lg text-[10px] font-bold">Apply to Item</button>
+                        <button type="button" onclick="applyDocumentSectionDiscount('${safeItemId}')" data-item-id="${safeItemId}" class="quote-section-discount-bulk ${groupingMode==='floor'&&documentSectionName(c)?'':'hidden'} px-2.5 py-1.5 border border-rose-400/30 text-rose-500 rounded-lg text-[10px] font-semibold" title="Replace discounts on every item in the same floor / room / section">Apply to Entire Section...</button>
                       </div>
                     </div>` : '';
                 notesForm.insertAdjacentHTML('beforeend', `<div class="space-y-1 bg-luxury-dark/40 p-2.5 rounded-lg border border-luxury-gold/5"><div class="flex justify-between text-[11px] font-semibold"><span class="text-luxury-gold">${safeItemCode}</span><span class="text-luxury-muted truncate max-w-[150px]">${safeItemName}</span></div><input type="text" data-item-id="${safeItemId}" class="quote-item-note-input w-full bg-luxury-dark border border-luxury-gold/10 rounded px-2.5 py-1 text-xs text-luxury-text focus:border-luxury-gold outline-none" placeholder="Item note (optional)" value="${safeNote}" oninput="updateQuotationPreview()">${codeField}${sectionUi}</div>`);
