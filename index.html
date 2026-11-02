@@ -3274,7 +3274,7 @@
             const brand=dlg.querySelector('#cart-replace-brand')?.value||'';
             const category=dlg.querySelector('#cart-replace-category')?.value||'';
             const types=[...new Set(replaceCartCatalogItems().filter(p=>
-                (!brand||p.brand===brand)&&(!category||getDisplayCategory(p)===category)
+                (!brand||String(p.brand||'').trim()===brand)&&(!category||getDisplayCategory(p)===category)
             ).map(getDisplaySubcategory).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
             el.innerHTML=replaceCartSelectOptions(types,'All Types');
             el.value=types.includes(old)?old:'';
@@ -3283,7 +3283,7 @@
         function replaceCartMatchProducts({term='',brand='',category='',subcategory='',stock='',sort='suggested',currentItem=null}={}) {
             const words=String(term).trim().toLowerCase().split(/\s+/).filter(Boolean);
             const list=replaceCartCatalogItems().filter(p=>
-                (!brand||p.brand===brand) &&
+                (!brand||String(p.brand||'').trim()===brand) &&
                 (!category||getDisplayCategory(p)===category) &&
                 (!subcategory||getDisplaySubcategory(p)===subcategory) &&
                 (stock!=='available'||Number(p.qty||0)>0) &&
