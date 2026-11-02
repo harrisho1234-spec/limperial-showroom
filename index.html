@@ -3369,6 +3369,13 @@
             const scrollDesktop = desktop?.scrollTop || 0, scrollMobile = mobile?.scrollTop || 0;
             const next = catalogCartEntry(replacement,old.id||newCartLineId(),old.quantity);
             next.rowHeight = old.rowHeight || 70;
+            // A replacement stays in the same room/floor grouping. For a
+            // grouped item, keep its explicitly applied section discount;
+            // ungrouped replacements use the new product promotion.
+            if(old.documentSections&&typeof old.documentSections==='object'){
+                next.documentSections={...old.documentSections};
+                if(Object.values(next.documentSections).some(Boolean))next.discount=Number(old.discount)||0;
+            }
             cart.splice(index,1,next);
             closeReplaceCartItem();
             window.SeasonalPromos?.afterAddToCart(catalogItem.id);
@@ -3385,7 +3392,9 @@
             if (index < 0) return;
             const original = cart[index];
             if (!original.item || original.type === 'set' || original.type === 'service') return;
-            const copy = { ...original, id: newCartLineId(), item: { ...original.item } };
+            const copy = { ...original, id: newCartLineId(), item: { ...original.item },
+                documentSections:original.documentSections?{...original.documentSections}:undefined,
+                documentCodes:original.documentCodes?{...original.documentCodes}:undefined };
             cart.splice(index + 1, 0, copy);
             showNotification('Duplicated to a separate row. Adjust its quantity, price and discount independently.', 'success');
             updateCartVisuals();
