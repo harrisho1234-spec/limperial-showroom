@@ -2176,6 +2176,9 @@
                 if (numHelp) numHelp.classList.add('hidden');
             }
 
+            // The optional displayed product code is separate for quotations
+            // and sales orders, so switching tabs must refresh the item editor.
+            if (type !== previousType) renderQuoteItemsNotesForm();
             const restored = restoreDocumentFormState(type);
 
             // The number belongs to the selected document type. When that type has
@@ -5579,6 +5582,10 @@
                     }
                 } else {
                     const item = cartItem.item; const displayBrand = getDisplayBrand(item.brand, showCostMode);
+                    const editableDocumentCode = !isInventory && !isDeliveryOrder && ['quotation','sales_order'].includes(documentType)
+                        ? getDocumentItemCode(cartItem) : '';
+                    const documentCodeHtml = editableDocumentCode
+                        ? `<div style="font-weight: 600; color: #64748b; font-size: 10px; margin-top: 3px;">Product Code: ${escapeHtml(editableDocumentCode)}</div>` : '';
                     const itemDiscount = activeBatchPct > 0 ? activeBatchPct + (cartItem.discount || 0) : (cartItem.discount || 0);
                     const itemActualPrice = cartItem.customPrice !== null ? cartItem.customPrice : getActualSalesPrice(item);
                     const originalPrice = itemActualPrice * cartItem.quantity; const lineFinalPrice = originalPrice * (1 - itemDiscount / 100);
@@ -5588,6 +5595,7 @@
                     totalQtySum += cartItem.quantity; totalItemsCount += cartItem.quantity; totalAmtSum += originalPrice; totalDiscountSum += discountValueAmount; finalNetSum += lineFinalPrice; totalCostSum += lineTotalCost; totalMarginSum += lineMargin;
 
                     plainText += `${idx+1}. ${noteValue ? `[${noteValue}] ` : ''}${item.itemName}\n`;
+                    if (editableDocumentCode) plainText += `   Product Code: ${editableDocumentCode}\n`;
                     if (!isInventory && !isDeliveryOrder) {
                         plainText += `   ${cartItem.quantity} Pcs x ${formatCurrency(itemActualPrice)}     ${formatCurrency(originalPrice)}\n`;
                     } else {
@@ -5626,7 +5634,7 @@
                         tableRowsHtml += `
                             <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: middle; height: ${cartItem.rowHeight || 70}px;">
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: center; font-weight: 600; color: #475569; font-size: 11px; position: relative;">${idx + 1}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
-                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-size: 11px; line-height: 1.4; word-break: break-word; overflow: hidden; position: relative;"><div style="font-weight: 700; color: #0f2d4a; font-size: 12px; margin-bottom: 2px;">${item.itemName}</div><div style="color: #475569; font-size: 10px; font-family: monospace;">Specs: ${item.description || 'N/A'}</div><div style="font-weight: 600; color: #3b82f6; font-size: 10px; margin-top: 2px;">Brand: ${displayBrand}</div>${noteHtml}${preorderHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-size: 11px; line-height: 1.4; word-break: break-word; overflow: hidden; position: relative;"><div style="font-weight: 700; color: #0f2d4a; font-size: 12px; margin-bottom: 2px;">${item.itemName}</div><div style="color: #475569; font-size: 10px; font-family: monospace;">Specs: ${item.description || 'N/A'}</div><div style="font-weight: 600; color: #3b82f6; font-size: 10px; margin-top: 2px;">Brand: ${displayBrand}</div>${documentCodeHtml}${noteHtml}${preorderHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 4px; text-align: center; position: relative; height: ${cartItem.rowHeight || 70}px; vertical-align: middle;">${imgColHtml}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: center; font-weight: 600; color: #1e293b; font-size: 11px; white-space: nowrap; position: relative;">${cartItem.quantity} Pcs<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(itemActualPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
