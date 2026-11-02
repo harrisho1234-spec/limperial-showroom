@@ -5695,6 +5695,19 @@
             const soApprovalBox = document.getElementById('so-discount-approval');
             if (soApprovalBox) soApprovalBox.classList.toggle('hidden', documentType !== 'sales_order' || !hasAnyDiscount);
             let docStockTracker = {}; let activeBatchPct = discountPctValue > 0 ? parseFloat(discountPctValue) || 0 : 0;
+            // Keep section labels in the printed/pictured document and plain
+            // text, with subtotal after each contiguous named section.
+            const hasDocumentSections=['quotation','sales_order'].includes(documentType)
+                &&cart.some(c=>documentSectionName(c));
+            const sectionColumns=7+(showCostMode?3:0)+(hasAnyDiscount?1:0);
+            let currentDocSection='',sectionGross=0,sectionNet=0;
+            const flushDocSection=()=>{
+                if(!currentDocSection)return;
+                tableRowsHtml+=documentSectionSubTotalRow(currentDocSection,sectionGross,sectionNet,sectionColumns);
+                plainText+='   '+currentDocSection+' Subtotal: '+formatCurrency(sectionNet)+'\\n';
+                sectionGross=0;sectionNet=0;
+            };
+
             
             const isInventory = documentType === 'inventory';
             const isDeliveryOrder = documentType === 'delivery_order';
@@ -5708,11 +5721,28 @@
             }
             cart.forEach((cartItem, idx) => {
                 const uniqueId = cartLineKey(cartItem);
+                const section=hasDocumentSections?documentSectionName(cartItem):'';
+                if(hasDocumentSections&&section!==currentDocSection){
+                    flushDocSection();
+                    currentDocSection=section;
+                    if(section){
+                        const allSectionRows=cart.filter(c=>documentSectionName(c)===section);
+                        const individual=allSectionRows.map(c=>Math.max(0,Math.min(100,Number(c.discount)||0)));
+                        const uniform=individual.every(v=>Math.abs(v-individual[0])<0.00001);
+                        const discountLabel=uniform&&individual[0]>0?' · '+individual[0]+'% discount':'';
+                        tableRowsHtml+='<tr style="background:#ecf3fb;break-after:avoid;"><td colspan="'+sectionColumns+'" style="border:1px solid #b6c9e3;padding:10px 12px;color:#0f2d4a;font-size:11px;font-weight:700;">'+escapeHtml(section)+escapeHtml(discountLabel)+'</td></tr>';
+                        plainText+='\\n=== '+section+(discountLabel||'')+' ===\\n';
+                    }
+                }
+                if(section) {
+                    const line=documentLineValues(cartItem,activeBatchPct);
+                    sectionGross+=line.gross;sectionNet+=line.net;
+                }
                 const noteValue = noteMap[uniqueId] || ""; const noteHtml = noteValue ? `<div style="font-weight: 700; color: #1e3a8a; font-size: 10px; margin-top: 4px; text-transform: uppercase;">${noteValue}</div>` : '';
                 const imgWidth = Math.max(20, colWidths.pic - 8); const imgHeight = Math.max(20, (cartItem.rowHeight || 70) - 16);
 
                 if (cartItem.type === 'set') {
-                    const setDiscount = activeBatchPct > 0 ? activeBatchPct + (cartItem.discount || 0) : (cartItem.discount || 0);
+                    const setDiscount = documentDiscountPct(cartItem,activeBatchPct);
                     let calculatedBasePrice = 0; let setTotalCost = 0;
                     cartItem.items.forEach(sub => { calculatedBasePrice += getActualSalesPrice(sub.item) * sub.quantity; setTotalCost += getCosting(sub.item) * sub.quantity; });
                     const setBasePrice = getSetBasePrice(cartItem, calculatedBasePrice);
@@ -5779,7 +5809,7 @@
                         ? getDocumentItemCode(cartItem) : '';
                     const documentCodeHtml = editableDocumentCode
                         ? `<div style="font-weight: 600; color: #64748b; font-size: 10px; margin-top: 3px;">Product Code: ${escapeHtml(editableDocumentCode)}</div>` : '';
-                    const itemDiscount = activeBatchPct > 0 ? activeBatchPct + (cartItem.discount || 0) : (cartItem.discount || 0);
+                    const itemDiscount = documentDiscountPct(cartItem,activeBatchPct);
                     const itemActualPrice = cartItem.customPrice !== null ? cartItem.customPrice : getActualSalesPrice(item);
                     const originalPrice = itemActualPrice * cartItem.quantity; const lineFinalPrice = originalPrice * (1 - itemDiscount / 100);
                     const discountValueAmount = originalPrice * (itemDiscount / 100);
@@ -5839,9 +5869,10 @@
                     }
                 }
             });
+            if(hasDocumentSections)flushDocSection();
 
             let finalOverallPayout = finalNetSum; let batchDiscountApplied = 0;
-            if (discountFlatValue > 0) { batchDiscountApplied = discountFlatValue; finalOverallPayout = Math.max(0, finalNetSum - batchDiscountApplied); totalDiscountSum += batchDiscountApplied; if (showCostMode) totalMarginSum -= batchDiscountApplied; }
+            if (discountFlatValue > 0) { batchDiscountApplied = Math.min(Math.max(0,discountFlatValue),Math.max(0,finalNetSum)); finalOverallPayout = Math.max(0, finalNetSum - batchDiscountApplied); totalDiscountSum += batchDiscountApplied; if (showCostMode) totalMarginSum -= batchDiscountApplied; }
 
             if (!isInventory && !isDeliveryOrder) {
                 plainText += `-----------------------------------\nSub Total:             ${formatCurrency(totalAmtSum)}\n`;
