@@ -5492,6 +5492,80 @@
             window.ShowroomPhase1?.scheduleDraft?.();
         }
 
+
+        // Document presentation groups use stable cart-row IDs. Discounts are
+        // applied to the EXISTING per-row discount, not added again at the
+        // document level; existing saved quotation/cart math remains in sync.
+        function documentSectionName(row,type=documentType) {
+            if (!['quotation','sales_order'].includes(type)) return '';
+            return String(row?.documentSections?.[type]||'').trim().slice(0,100);
+        }
+        function documentDiscountPct(row,batchPct=0) {
+            const line=Math.max(0,Math.min(100,Number(row?.discount)||0));
+            const batch=Math.max(0,Math.min(100,Number(batchPct)||0));
+            return 100*(1-(1-line/100)*(1-batch/100));
+        }
+        function documentLineValues(row,batchPct=0) {
+            let unit;
+            if(row.type==='set') {
+                const base=(row.items||[]).reduce((sum,sub)=>sum+getActualSalesPrice(sub.item)*sub.quantity,0);
+                unit=getSetBasePrice(row,base);
+            } else unit=row.customPrice!==null&&row.customPrice!==undefined?Number(row.customPrice):getActualSalesPrice(row.item);
+            const gross=Math.max(0,Number(unit)||0)*Math.max(1,Number(row.quantity)||1);
+            const discount=documentDiscountPct(row,batchPct);
+            return {gross,net:gross*(1-discount/100),discount};
+        }
+        function updateDocumentSection(lineKey,value) {
+            const row=findCartLine(lineKey);
+            if(!row||!['quotation','sales_order'].includes(documentType))return;
+            if(!row.documentSections||typeof row.documentSections!=='object')row.documentSections={};
+            row.documentSections[documentType]=String(value||'').trim().slice(0,100);
+            updateQuotationPreview();
+            window.ShowroomPhase1?.scheduleDraft?.();
+        }
+        function moveDocumentItem(lineKey,direction) {
+            if(!['quotation','sales_order'].includes(documentType))return;
+            const index=findCartLineIndex(lineKey),next=index+Number(direction);
+            if(index<0||next<0||next>=cart.length)return;
+            [cart[index],cart[next]]=[cart[next],cart[index]];
+            // Note inputs are preserved by renderQuoteItemsNotesForm, which
+            // caches by stable cart line ID before rebuilding the editor.
+            renderQuoteItemsNotesForm();
+            updateCartVisuals();
+            updateQuotationPreview();
+            window.ShowroomPhase1?.scheduleDraft?.();
+        }
+        function applyDocumentSectionDiscount(lineKey) {
+            if(!['quotation','sales_order'].includes(documentType))return;
+            const row=findCartLine(lineKey);
+            if(!row)return;
+            const input=Array.from(document.querySelectorAll('.quote-section-discount-input'))
+                .find(el=>el.dataset.itemId===String(lineKey));
+            const raw=String(input?.value??'').trim();
+            if(!raw||!Number.isFinite(Number(raw))||Number(raw)<0||Number(raw)>100)
+                return showNotification('Enter a section discount from 0% to 100%.','error');
+            const pct=Number(raw),section=documentSectionName(row);
+            const matches=section?cart.filter(c=>documentSectionName(c)===section):[row];
+            if(!matches.length)return;
+            // The percentage REPLACES each affected row's individual discount.
+            // Never silently stack two 50% discounts to make 100%.
+            matches.forEach(c=>{c.discount=pct;});
+            updateCartVisuals();
+            renderQuoteItemsNotesForm();
+            updateQuotationPreview();
+            window.ShowroomPhase1?.scheduleDraft?.();
+            showNotification(section
+                ?pct+'% applied to '+matches.length+' item(s) in '+section+'.'
+                :pct+'% applied to this row. Add a section name to update multiple rows.', 'success');
+        }
+        function documentSectionSubTotalRow(title,gross,net,cols) {
+            const saving=Math.max(0,gross-net);
+            return '<tr style="background:#f8fafc;break-inside:avoid;">'+
+                '<td colspan="'+(cols-1)+'" style="border:1px solid #cbd5e1;padding:7px 10px;text-align:right;color:#334155;font-size:10px;font-weight:600;">'+
+                escapeHtml(title)+' · Subtotal '+formatCurrency(gross)+(saving>0?' · Discount -'+formatCurrency(saving):'')+
+                '</td><td style="border:1px solid #cbd5e1;padding:7px 6px;text-align:right;color:#0f2d4a;font-size:11px;font-weight:700;">'+formatCurrency(net)+'</td></tr>';
+        }
+
         function renderQuoteItemsNotesForm() {
             const notesForm = document.getElementById('quote-items-notes-form');
             if (!notesForm) return;
@@ -5500,7 +5574,10 @@
             notesForm.querySelectorAll('.quote-item-note-input').forEach(input => {
                 noteMap[input.getAttribute('data-item-id')] = input.value || '';
             });
-            notesForm.innerHTML = '';
+            notesForm.innerHTML = ['quotation','sales_order'].includes(documentType)
+                ? '<datalist id="doc-section-suggestions"><option value="Ground Floor"><option value="First Floor"><option value="Second Floor"><option value="Third Floor"><option value="Living Room"><option value="Dining Room"><option value="Master Bedroom"><option value="Bedroom"><option value="Lobby"><option value="Office"><option value="Outdoor"><option value="Ground Floor / Living Room"><option value="First Floor / Bedroom"></datalist>'+
+                  '<p class="text-[10px] text-luxury-muted mb-2">Move rows up/down. Give items the same section name to group them; apply a percentage to replace their individual discounts. Whole-list batch discounts, if set, apply additionally.</p>'
+                : '';
 
             cart.forEach((c, idx) => {
                 const itemId = c.id || (c.item ? c.item.id : idx);
@@ -5518,7 +5595,23 @@
                         <button type="button" class="px-2 py-1 border border-luxury-gold/20 rounded text-[10px] text-luxury-gold" onclick="hideDocumentItemCode('${safeItemId}')">Hide</button>
                         <button type="button" class="px-2 py-1 border border-luxury-gold/20 rounded text-[10px] text-luxury-gold" onclick="restoreDocumentItemCode('${safeItemId}')">Restore</button>
                     </div></div>` : '';
-                notesForm.insertAdjacentHTML('beforeend', `<div class="space-y-1 bg-luxury-dark/40 p-2.5 rounded-lg border border-luxury-gold/5"><div class="flex justify-between text-[11px] font-semibold"><span class="text-luxury-gold">${safeItemCode}</span><span class="text-luxury-muted truncate max-w-[150px]">${safeItemName}</span></div><input type="text" data-item-id="${safeItemId}" class="quote-item-note-input w-full bg-luxury-dark border border-luxury-gold/10 rounded px-2.5 py-1 text-xs text-luxury-text focus:border-luxury-gold outline-none" placeholder="e.g. Living Room" value="${safeNote}" oninput="updateQuotationPreview()">${codeField}</div>`);
+                const sectionUi=['quotation','sales_order'].includes(documentType) ? `
+                    <div class="mt-2 border-t border-luxury-gold/10 pt-2 space-y-2">
+                      <div class="flex items-center justify-between gap-2">
+                        <label class="text-[10px] uppercase font-bold tracking-wide text-luxury-muted">Floor / Room / Section</label>
+                        <span class="flex items-center gap-1">
+                          <button type="button" ${idx===0?'disabled':''} onclick="moveDocumentItem('${safeItemId}',-1)" aria-label="Move item up" title="Move up" class="px-2 py-1 rounded border border-luxury-gold/20 text-xs text-luxury-gold disabled:opacity-30">↑ Up</button>
+                          <button type="button" ${idx===cart.length-1?'disabled':''} onclick="moveDocumentItem('${safeItemId}',1)" aria-label="Move item down" title="Move down" class="px-2 py-1 rounded border border-luxury-gold/20 text-xs text-luxury-gold disabled:opacity-30">↓ Down</button>
+                        </span>
+                      </div>
+                      <input type="text" list="doc-section-suggestions" maxlength="100" data-item-id="${safeItemId}" class="quote-section-name-input w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-2.5 py-2 text-xs text-luxury-text" value="${escapeHtml(documentSectionName(c))}" placeholder="e.g. Ground Floor / Living Room" oninput="updateDocumentSection(this.dataset.itemId,this.value)">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <label class="text-[10px] font-semibold text-luxury-muted">Discount %</label>
+                        <input type="number" min="0" max="100" step="0.1" data-item-id="${safeItemId}" class="quote-section-discount-input w-20 bg-luxury-dark border border-luxury-gold/20 rounded px-2 py-1.5 text-xs text-luxury-text" value="${Math.max(0,Math.min(100,Number(c.discount)||0))}">
+                        <button type="button" onclick="applyDocumentSectionDiscount('${safeItemId}')" class="px-3 py-1.5 bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold rounded-lg text-[10px] font-bold">Apply to Section</button>
+                      </div>
+                    </div>` : '';
+                notesForm.insertAdjacentHTML('beforeend', `<div class="space-y-1 bg-luxury-dark/40 p-2.5 rounded-lg border border-luxury-gold/5"><div class="flex justify-between text-[11px] font-semibold"><span class="text-luxury-gold">${safeItemCode}</span><span class="text-luxury-muted truncate max-w-[150px]">${safeItemName}</span></div><input type="text" data-item-id="${safeItemId}" class="quote-item-note-input w-full bg-luxury-dark border border-luxury-gold/10 rounded px-2.5 py-1 text-xs text-luxury-text focus:border-luxury-gold outline-none" placeholder="Item note (optional)" value="${safeNote}" oninput="updateQuotationPreview()">${codeField}${sectionUi}</div>`);
             });
         }
 
