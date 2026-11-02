@@ -3173,6 +3173,15 @@
             document.getElementById('cart-item-replace-dialog')?.remove();
         }
 
+        function replaceCartCatalogItems() {
+            return products.filter(p => p && p.id != null && !p.isSet && !p.manualItem);
+        }
+
+        function replaceCartSelectOptions(values, allLabel) {
+            return '<option value="">'+escapeHtml(allLabel)+'</option>'+
+                values.map(value => '<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>').join('');
+        }
+
         function openReplaceCartItem(lineKey) {
             const index = findCartLineIndex(lineKey);
             if (index < 0) return showNotification('This Interest List row is no longer available.', 'error');
@@ -3184,72 +3193,162 @@
             const dlg = document.createElement('div');
             dlg.id = 'cart-item-replace-dialog';
             dlg.dataset.lineKey = String(lineKey);
-            dlg.className = 'fixed inset-0 z-[9999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5';
+            dlg._replaceLimit = 30;
+            dlg.className = 'fixed inset-0 z-[9999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5';
             dlg.setAttribute('role', 'dialog');
             dlg.setAttribute('aria-modal', 'true');
             dlg.setAttribute('aria-label', 'Replace Interest List product');
-            dlg.innerHTML = '<div class="bg-luxury-card text-luxury-text w-full max-w-2xl rounded-2xl border border-luxury-gold/35 shadow-2xl flex flex-col overflow-hidden" style="max-height:min(88dvh,780px)">'+
-                '<div class="p-4 border-b border-luxury-gold/20 flex justify-between items-start gap-3">'+
+            const catalog=replaceCartCatalogItems();
+            const unique = values => [...new Set(values.filter(Boolean))].sort((a,b) => a.localeCompare(b,undefined,{sensitivity:'base'}));
+            const brands=unique(catalog.map(p=>String(p.brand||'').trim()));
+            const categories=unique(catalog.map(getDisplayCategory));
+            dlg.innerHTML = '<div class="bg-luxury-card text-luxury-text w-full max-w-3xl rounded-2xl border border-luxury-gold/35 shadow-2xl flex flex-col overflow-hidden" style="height:min(90dvh,820px);max-height:calc(100dvh - 16px)">'+
+                '<div class="px-4 py-3 border-b border-luxury-gold/20 flex justify-between items-start gap-3 shrink-0">'+
                     '<div class="min-w-0"><h3 class="font-serif text-lg text-luxury-gold font-bold">Replace Item in This Row</h3>'+
                     '<p class="text-xs text-luxury-soft mt-1">Replacing <b>'+escapeHtml(current.code||current.itemName||'current item')+'</b> · Row '+(index+1)+'</p>'+
-                    '<p class="text-[11px] text-luxury-muted mt-1">Keeps this row position and quantity. New product price and promotion apply; old price overrides and pre-order setting are cleared.</p></div>'+
+                    '<p class="text-[11px] text-luxury-muted mt-1">Keeps position and quantity. New price and promotion apply; old price override and pre-order setting are cleared.</p></div>'+
                     '<button type="button" data-replace-close class="shrink-0 text-luxury-muted hover:text-luxury-text p-2" aria-label="Cancel replacement"><i class="fa-solid fa-xmark"></i></button>'+
                 '</div>'+
-                '<div class="p-4 pb-2"><label for="cart-replace-search" class="text-[11px] uppercase tracking-wide font-semibold text-luxury-muted">Search Catalog</label>'+
-                    '<input id="cart-replace-search" type="search" autocomplete="off" placeholder="Search product code, name, brand or category..." class="mt-2 w-full bg-luxury-dark text-luxury-text border border-luxury-gold/30 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-luxury-gold" />'+
+                '<div class="px-4 pt-3 pb-2 border-b border-luxury-gold/10 shrink-0 space-y-2">'+
+                    '<input id="cart-replace-search" type="search" autocomplete="off" placeholder="Search code, name, brand, material..." aria-label="Search replacement products" class="w-full bg-luxury-dark text-luxury-text border border-luxury-gold/30 rounded-xl px-3 h-10 text-sm focus:outline-none focus:border-luxury-gold" />'+
+                    '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">'+
+                        '<label class="min-w-0"><span class="block text-[10px] uppercase tracking-wide font-semibold text-luxury-muted mb-1">Brand</span><select id="cart-replace-brand" aria-label="Filter replacement products by brand" class="w-full h-10 rounded-lg bg-luxury-dark text-luxury-text border border-luxury-gold/25 px-2 text-xs">'+replaceCartSelectOptions(brands,'All Brands')+'</select></label>'+
+                        '<label class="min-w-0"><span class="block text-[10px] uppercase tracking-wide font-semibold text-luxury-muted mb-1">Category</span><select id="cart-replace-category" aria-label="Filter replacement products by category" class="w-full h-10 rounded-lg bg-luxury-dark text-luxury-text border border-luxury-gold/25 px-2 text-xs">'+replaceCartSelectOptions(categories,'All Categories')+'</select></label>'+
+                        '<label class="min-w-0"><span class="block text-[10px] uppercase tracking-wide font-semibold text-luxury-muted mb-1">Type</span><select id="cart-replace-subcategory" aria-label="Filter replacement products by type" class="w-full h-10 rounded-lg bg-luxury-dark text-luxury-text border border-luxury-gold/25 px-2 text-xs"><option value="">All Types</option></select></label>'+
+                        '<label class="min-w-0"><span class="block text-[10px] uppercase tracking-wide font-semibold text-luxury-muted mb-1">Stock</span><select id="cart-replace-stock" aria-label="Filter replacement products by stock availability" class="w-full h-10 rounded-lg bg-luxury-dark text-luxury-text border border-luxury-gold/25 px-2 text-xs"><option value="">All Stock</option><option value="available">In Stock</option><option value="preorder">Pre-order / Out of Stock</option></select></label>'+
+                    '</div>'+
+                    '<div class="flex flex-wrap items-center justify-between gap-2">'+
+                        '<label class="flex items-center gap-2 text-[10px] text-luxury-muted">Sort <select id="cart-replace-sort" aria-label="Sort replacement products" class="bg-luxury-dark text-luxury-text border border-luxury-gold/20 rounded-lg px-2 py-1.5 text-xs"><option value="suggested">Suggested</option><option value="name">Name A–Z</option><option value="price_asc">Price: Low to High</option><option value="price_desc">Price: High to Low</option></select></label>'+
+                        '<button type="button" id="cart-replace-clear" class="text-[11px] font-semibold text-luxury-gold px-2 py-1.5 border border-luxury-gold/20 rounded-lg">Clear Filters</button>'+
+                    '</div>'+
                 '</div>'+
-                '<div id="cart-replace-results" class="overflow-y-auto min-h-[160px] flex-1 px-4 pb-4" aria-live="polite"></div>'+
-                '<div class="p-3 border-t border-luxury-gold/20 flex justify-end"><button type="button" data-replace-close class="px-4 py-2 rounded-xl border border-luxury-gold/20 text-xs text-luxury-text">Cancel</button></div>'+
+                '<div id="cart-replace-results" class="overflow-y-auto overscroll-contain min-h-0 flex-1 px-3 sm:px-4 py-3" aria-live="polite"></div>'+
+                '<div class="p-3 border-t border-luxury-gold/20 flex justify-between items-center gap-3 shrink-0">'+
+                    '<span class="text-[10px] text-luxury-muted">Tap a product to replace this row</span>'+
+                    '<button type="button" data-replace-close class="px-4 py-2 rounded-xl border border-luxury-gold/20 text-xs text-luxury-text">Cancel</button></div>'+
             '</div>';
             dlg.onclick = e => {if (e.target === dlg || e.target.closest('[data-replace-close]')) closeReplaceCartItem();};
             dlg.onkeydown = e => {if (e.key === 'Escape') {e.preventDefault();closeReplaceCartItem();}};
-            const input = dlg.querySelector('#cart-replace-search');
-            input.addEventListener('input', () => renderReplaceCartResults());
+            const search=dlg.querySelector('#cart-replace-search');
+            const brand=dlg.querySelector('#cart-replace-brand');
+            const category=dlg.querySelector('#cart-replace-category');
+            const subcategory=dlg.querySelector('#cart-replace-subcategory');
+            const stock=dlg.querySelector('#cart-replace-stock');
+            const sort=dlg.querySelector('#cart-replace-sort');
+            const refresh = () => {dlg._replaceLimit=30;renderReplaceCartResults();};
+            search.addEventListener('input',refresh);
+            [brand,subcategory,stock,sort].forEach(el=>el.addEventListener('change',refresh));
+            category.addEventListener('change',()=>{renderReplaceCartTypes();refresh();});
+            brand.addEventListener('change',()=>{renderReplaceCartTypes();refresh();});
+            dlg.querySelector('#cart-replace-clear').addEventListener('click',()=>{
+                [search,brand,category,stock,subcategory].forEach(el=>el.value='');
+                sort.value='suggested';
+                renderReplaceCartTypes();
+                refresh();
+            });
             dlg.querySelector('#cart-replace-results').addEventListener('click', e => {
-                const button = e.target.closest('[data-replace-choice]');
+                const more=e.target.closest('[data-replace-more]');
+                if (more) {
+                    dlg._replaceLimit+=30;
+                    renderReplaceCartResults(true);
+                    return;
+                }
+                const button=e.target.closest('[data-replace-choice]');
                 if (!button) return;
-                const candidate = dlg._replaceChoices?.[Number(button.dataset.replaceChoice)];
+                const candidate=dlg._replaceChoices?.[Number(button.dataset.replaceChoice)];
                 if (candidate) confirmReplaceCartItem(candidate.id);
             });
             document.body.appendChild(dlg);
+            renderReplaceCartTypes();
             renderReplaceCartResults();
-            input.focus();
+            // On mobile, don't raise the keyboard over the default browse list.
+            if (!window.matchMedia?.('(max-width: 640px)')?.matches) search.focus();
         }
 
-        function renderReplaceCartResults() {
-            const dlg = document.getElementById('cart-item-replace-dialog');
+        function renderReplaceCartTypes() {
+            const dlg=document.getElementById('cart-item-replace-dialog');
             if (!dlg) return;
-            const result = dlg.querySelector('#cart-replace-results');
-            const term = String(dlg.querySelector('#cart-replace-search')?.value||'').trim().toLowerCase();
-            if (!term) {
-                result.innerHTML = '<div class="py-8 text-center text-xs text-luxury-muted">Enter a code, name, brand or category to find a replacement.</div>';
-                dlg._replaceChoices = [];
-                return;
-            }
-            const words = term.split(/\s+/).filter(Boolean);
-            const list = products.filter(p => p && !p.isSet && !p.manualItem &&
-                words.every(word => [p.code,p.itemName,p.brand,p.class,p.description]
-                    .some(value => String(value||'').toLowerCase().includes(word))));
-            const shown = list.slice(0,40);
-            dlg._replaceChoices = shown;
-            const current = findCartLine(dlg.dataset.lineKey);
-            result.innerHTML = shown.length ? '<div class="text-[10px] text-luxury-muted mb-2">'+list.length+
-                ' matched'+(list.length>shown.length?' · showing first '+shown.length:'')+'</div>'+
-                shown.map((p,i)=>{
-                    const img = resolveGoogleDriveImg(p.imgLink);
-                    const isSame = current?.item && String(current.item.id) === String(p.id);
-                    const alreadyInList = !isSame && cart.some(c => c.type!=='set' && c.item && String(c.item.id)===String(p.id));
+            const el=dlg.querySelector('#cart-replace-subcategory');
+            if (!el) return;
+            const old=el.value;
+            const brand=dlg.querySelector('#cart-replace-brand')?.value||'';
+            const category=dlg.querySelector('#cart-replace-category')?.value||'';
+            const types=[...new Set(replaceCartCatalogItems().filter(p=>
+                (!brand||p.brand===brand)&&(!category||getDisplayCategory(p)===category)
+            ).map(getDisplaySubcategory).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+            el.innerHTML=replaceCartSelectOptions(types,'All Types');
+            el.value=types.includes(old)?old:'';
+        }
+
+        function replaceCartMatchProducts({term='',brand='',category='',subcategory='',stock='',sort='suggested',currentItem=null}={}) {
+            const words=String(term).trim().toLowerCase().split(/\s+/).filter(Boolean);
+            const list=replaceCartCatalogItems().filter(p=>
+                (!brand||p.brand===brand) &&
+                (!category||getDisplayCategory(p)===category) &&
+                (!subcategory||getDisplaySubcategory(p)===subcategory) &&
+                (stock!=='available'||Number(p.qty||0)>0) &&
+                (stock!=='preorder'||Number(p.qty||0)<=0) &&
+                words.every(word=>[p.code,p.itemName,p.brand,p.class,p.subclass,p.description,p.location,getDisplayCategory(p),getDisplaySubcategory(p)]
+                    .some(value=>String(value||'').toLowerCase().includes(word))));
+            const price=p=>Number(getActualSalesPrice(p))||0;
+            const name=(a,b)=>String(a.itemName||a.code||'').localeCompare(String(b.itemName||b.code||''));
+            const currentCategory=getDisplayCategory(currentItem),currentBrand=String(currentItem?.brand||'');
+            list.sort((a,b)=>{
+                if(sort==='name')return name(a,b);
+                if(sort==='price_asc')return price(a)-price(b)||name(a,b);
+                if(sort==='price_desc')return price(b)-price(a)||name(a,b);
+                // Default browsable suggestions: similar category + brand first,
+                // then available stock. Exact search code matches rise to the top.
+                const score=p=>{
+                    let n=0;
+                    if(words.length && words.some(w=>String(p.code||'').toLowerCase().startsWith(w)))n+=20;
+                    if(currentItem&&getDisplayCategory(p)===currentCategory)n+=8;
+                    if(currentBrand&&p.brand===currentBrand)n+=4;
+                    if(Number(p.qty||0)>0)n+=2;
+                    return n;
+                };
+                return score(b)-score(a)||name(a,b);
+            });
+            return list;
+        }
+
+        function renderReplaceCartResults(keepScroll=false) {
+            const dlg=document.getElementById('cart-item-replace-dialog');
+            if (!dlg) return;
+            const result=dlg.querySelector('#cart-replace-results');
+            const term=dlg.querySelector('#cart-replace-search')?.value||'';
+            const brand=dlg.querySelector('#cart-replace-brand')?.value||'';
+            const category=dlg.querySelector('#cart-replace-category')?.value||'';
+            const subcategory=dlg.querySelector('#cart-replace-subcategory')?.value||'';
+            const stock=dlg.querySelector('#cart-replace-stock')?.value||'';
+            const sort=dlg.querySelector('#cart-replace-sort')?.value||'suggested';
+            const current=findCartLine(dlg.dataset.lineKey);
+            const list=replaceCartMatchProducts({term,brand,category,subcategory,stock,sort,currentItem:current?.item});
+            const shown=list.slice(0,dlg._replaceLimit||30);
+            dlg._replaceChoices=shown;
+            const previousScroll=result.scrollTop;
+            result.innerHTML='<div class="flex items-center justify-between gap-2 mb-2 text-[11px] text-luxury-muted">'+
+                '<span>'+(list.length?(list.length+' products · showing '+shown.length):'No matching products')+'</span>'+
+                '<span>'+(term||brand||category||subcategory||stock?'Filtered catalog':'Suggested products · scroll to browse')+'</span></div>'+
+                (shown.length ? shown.map((p,i)=>{
+                    const img=resolveGoogleDriveImg(p.imgLink);
+                    const isSame=current?.item&&String(current.item.id)===String(p.id);
+                    const elsewhere=!isSame&&cart.some(c=>c.type!=='set'&&c.item&&String(c.item.id)===String(p.id));
+                    const qty=Number(p.qty||0);
+                    const availability=qty>0?'Available: '+qty+' pcs':'Pre-order / Out of Stock';
                     return '<button type="button" data-replace-choice="'+i+'"'+(isSame?' disabled':'')+
-                        ' class="w-full p-3 mb-2 rounded-xl text-left border border-luxury-gold/15 hover:border-luxury-gold/50 disabled:opacity-50 flex gap-3 items-center transition-colors">'+
-                        (img?'<img src="'+escapeHtml(img)+'" alt="" loading="lazy" class="w-14 h-14 object-contain rounded-lg bg-white shrink-0" />':
-                            '<div class="w-14 h-14 bg-luxury-dark rounded-lg flex items-center justify-center text-luxury-gold/40 shrink-0"><i class="fa-solid fa-image"></i></div>')+
+                        ' class="w-full p-2.5 sm:p-3 mb-2 rounded-xl text-left border border-luxury-gold/15 hover:border-luxury-gold/50 disabled:opacity-50 flex gap-3 items-center transition-colors">'+
+                        (img?'<img src="'+escapeHtml(img)+'" alt="" loading="lazy" class="w-16 h-16 object-contain rounded-lg bg-white shrink-0" />':
+                            '<span class="w-16 h-16 bg-luxury-dark rounded-lg flex items-center justify-center text-luxury-gold/40 shrink-0"><i class="fa-solid fa-image"></i></span>')+
                         '<span class="min-w-0 flex-1"><span class="block text-[10px] font-bold text-luxury-gold">'+escapeHtml(p.code||'')+'</span>'+
                         '<span class="block text-xs font-semibold text-luxury-text line-clamp-2">'+escapeHtml(p.itemName||'Unnamed product')+'</span>'+
-                        '<span class="block text-[10px] text-luxury-muted">'+escapeHtml(p.brand||'')+
-                        (alreadyInList?' · Already elsewhere in list':'')+'</span></span>'+
+                        '<span class="block text-[10px] text-luxury-muted">'+escapeHtml(p.brand||'Other')+' · '+escapeHtml(getDisplaySubcategory(p))+'</span>'+
+                        '<span class="block text-[10px] '+(qty>0?'text-emerald-500':'text-amber-500')+'">'+escapeHtml(availability)+(elsewhere?' · Already in list':'')+'</span></span>'+
                         '<span class="shrink-0 text-right"><span class="block text-xs font-bold text-luxury-gold">'+formatCurrency(getActualSalesPrice(p))+'</span>'+
-                        '<span class="block text-[10px] font-semibold mt-1">'+(isSame?'Current':'Replace →')+'</span></span></button>';
-                }).join(''):'<div class="py-8 text-center text-xs text-luxury-muted">No matching catalog products. Try a different code or name.</div>';
+                        '<span class="block text-[10px] font-semibold mt-1">'+(isSame?'Current Item':'Replace →')+'</span></span></button>';
+                }).join('') : '<div class="py-10 text-center text-xs text-luxury-muted">No matching items. Try clearing filters or choosing another brand/category.</div>')+
+                (list.length>shown.length?'<button type="button" data-replace-more class="w-full mt-2 mb-2 py-3 border border-luxury-gold/30 rounded-xl text-sm font-semibold text-luxury-gold hover:bg-luxury-gold/10">Load More · '+(list.length-shown.length)+' remaining</button>':'');
+            result.scrollTop=keepScroll?previousScroll:0;
         }
 
         function confirmReplaceCartItem(productId) {
