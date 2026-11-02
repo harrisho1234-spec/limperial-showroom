@@ -58,7 +58,7 @@ test('discount grouping uses existing effective discounts without applying new o
         ['50% Discount',['A','D']],
         ['20% Discount',['B']],
         ['10% Discount',['C']],
-        ['No Discount',['E']]
+        ['', ['E']]
     ]);
     assert.deepEqual(asNames(f.planDocumentGroups([
         {id:'base10',discount:10},
@@ -185,4 +185,35 @@ test('discount editor exposes distinct item and confirmed section actions',()=>{
     assert.match(html,/Apply to Item<\/button>/);
     assert.match(html,/Apply to Entire Section\.\.\.<\/button>/);
     assert.match(html,/window\.confirm\('Apply '/);
+});
+
+test('full-price item display can be plain, Regular Price, or legacy No Discount',()=>{
+    const f=loadDocumentFunctions();
+    const input=rows(),before=JSON.stringify(input);
+    const plain=asNames(f.planDocumentGroups(input,'discount',0,'plain'));
+    const regular=asNames(f.planDocumentGroups(input,'discount',0,'regular'));
+    const legacy=asNames(f.planDocumentGroups(input,'discount',0,'no-discount'));
+    assert.deepEqual(plain[plain.length-1],['',['E']]);
+    assert.deepEqual(regular[regular.length-1],['Regular Price',['E']]);
+    assert.deepEqual(legacy[legacy.length-1],['No Discount',['E']]);
+    assert.equal(JSON.stringify(input),before,'changing the heading must not change item data');
+    assert.equal(f.planDocumentGroups(input,'discount',0,'plain').length,4,
+        'all full-price items must remain in the document');
+});
+test('the full-price presentation setting is shown only for discount grouping',()=>{
+    assert.match(html,/id="doc-no-discount-options"/);
+    assert.match(html,/id="doc-no-discount-style"/);
+    assert.match(html,/value="plain" selected>List normally/);
+    assert.match(html,/value="regular">Group as Regular Price/);
+    assert.match(html,/value="no-discount">Group as No Discount/);
+    assert.match(html,/classList\.toggle\('hidden',mode!=='discount'\)/);
+    assert.match(html,/planDocumentGroups\(cart,documentGroupingMode\(\),activeBatchPct,documentNoDiscountStyle\(\)\)/);
+    assert.match(html,/planDocumentGroups\(cart,groupingMode,discountPctValue,documentNoDiscountStyle\(\)\)/);
+});
+test('unheaded regular-price lines do not introduce a redundant group subtotal',()=>{
+    assert.match(html,/const title=groupPlan\[activeGroupIndex\]\?\.title;/);
+    assert.match(html,/if\(!title\|\|!showGroupSubtotals\)return;/);
+    assert.match(html,/if\(title\) \{/);
+    assert.match(html,/const displayedRows=groupPlan\.flatMap/);
+    assert.match(html,/const textQuoteArea = document\.getElementById\('quote-textarea'\)/);
 });
