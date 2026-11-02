@@ -3302,6 +3302,7 @@
                 const score=p=>{
                     let n=0;
                     if(words.length && words.some(w=>String(p.code||'').toLowerCase().startsWith(w)))n+=20;
+                    if(currentItem&&getDisplaySubcategory(p)===getDisplaySubcategory(currentItem))n+=12;
                     if(currentItem&&getDisplayCategory(p)===currentCategory)n+=8;
                     if(currentBrand&&p.brand===currentBrand)n+=4;
                     if(Number(p.qty||0)>0)n+=2;
