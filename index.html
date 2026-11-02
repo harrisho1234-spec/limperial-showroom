@@ -5805,15 +5805,17 @@
             let docStockTracker = {}; let activeBatchPct = discountPctValue > 0 ? parseFloat(discountPctValue) || 0 : 0;
             // Keep section labels in the printed/pictured document and plain
             // text, with subtotal after each contiguous named section.
-            const hasDocumentSections=['quotation','sales_order'].includes(documentType)
-                &&cart.some(c=>documentSectionName(c));
+            const groupPlan=planDocumentGroups(cart,documentGroupingMode(),activeBatchPct);
+            const displayedRows=groupPlan.flatMap((group,groupIndex)=>
+                group.items.map(cartItem=>({cartItem,groupIndex})));
+            const showGroupSubtotals=documentGroupSubtotalsEnabled();
             const sectionColumns=7+(showCostMode?3:0)+(hasAnyDiscount?1:0);
-            let currentDocSection='',sectionGross=0,sectionNet=0;
+            let activeGroupIndex=-1,sectionGross=0,sectionNet=0;
             const flushDocSection=()=>{
-                if(!currentDocSection)return;
-                tableRowsHtml+=documentSectionSubTotalRow(currentDocSection,sectionGross,sectionNet,sectionColumns);
-                plainText+='   '+currentDocSection+' Subtotal: '+formatCurrency(sectionNet)+'\n';
-                sectionGross=0;sectionNet=0;
+                const title=groupPlan[activeGroupIndex]?.title;
+                if(!title||!showGroupSubtotals)return;
+                tableRowsHtml+=documentSectionSubTotalRow(title,sectionGross,sectionNet,sectionColumns);
+                plainText+='   '+title+' Subtotal: '+formatCurrency(sectionNet)+'\n';
             };
 
             
@@ -5827,22 +5829,19 @@
                 const emptyCols = 7 + (showCostMode ? 3 : 0) + (hasAnyDiscount ? 1 : 0);
                 tableRowsHtml = `<tr><td colspan="${emptyCols}" style="border: 1px solid #cbd5e1; padding: 28px 16px; text-align: center; color: #94a3b8; font-style: italic; font-size: 11px;"><i class="fa-solid fa-basket-shopping" style="margin-right: 6px; color: #dfb26c;"></i>No items currently selected. Click "Select" on showroom items, or click "Save" above to retrieve a saved list.</td></tr>`;
             }
-            cart.forEach((cartItem, idx) => {
+            displayedRows.forEach(({cartItem,groupIndex}, idx) => {
                 const uniqueId = cartLineKey(cartItem);
-                const section=hasDocumentSections?documentSectionName(cartItem):'';
-                if(hasDocumentSections&&section!==currentDocSection){
+                if(groupIndex!==activeGroupIndex) {
                     flushDocSection();
-                    currentDocSection=section;
-                    if(section){
-                        const allSectionRows=cart.filter(c=>documentSectionName(c)===section);
-                        const individual=allSectionRows.map(c=>Math.max(0,Math.min(100,Number(c.discount)||0)));
-                        const uniform=individual.every(v=>Math.abs(v-individual[0])<0.00001);
-                        const discountLabel=uniform&&individual[0]>0?' · '+formatDocumentDiscountPct(individual[0])+'% discount':'';
-                        tableRowsHtml+='<tr style="background:#ecf3fb;break-after:avoid;"><td colspan="'+sectionColumns+'" style="border:1px solid #b6c9e3;padding:10px 12px;color:#0f2d4a;font-size:11px;font-weight:700;">'+escapeHtml(section)+escapeHtml(discountLabel)+'</td></tr>';
-                        plainText+='\n=== '+section+(discountLabel||'')+' ===\n';
+                    activeGroupIndex=groupIndex;
+                    sectionGross=0;sectionNet=0;
+                    const title=groupPlan[groupIndex]?.title;
+                    if(title) {
+                        tableRowsHtml+='<tr style="background:#ecf3fb;break-after:avoid;"><td colspan="'+sectionColumns+'" style="border:1px solid #b6c9e3;padding:10px 12px;color:#0f2d4a;font-size:11px;font-weight:700;">'+escapeHtml(title)+'</td></tr>';
+                        plainText+='\n=== '+title+' ===\n';
                     }
                 }
-                if(section) {
+                if(groupPlan[groupIndex]?.title && showGroupSubtotals) {
                     const line=documentLineValues(cartItem,activeBatchPct);
                     sectionGross+=line.gross;sectionNet+=line.net;
                 }
@@ -5907,7 +5906,7 @@
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(setBasePrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 600; color: #1e293b; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(setTotalOriginalPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 ${showCostMode ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(setTotalCost)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(lineTotalCost)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 600; color: ${lineMargin >= 0 ? '#10b981' : '#f43f5e'}; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(lineMargin)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
-                                ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-weight: 600; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;"><div>-${formatDocumentDiscountPct(setDiscount)}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(discountValueAmount)})</div><div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
+                                ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-weight: 600; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${documentDiscountCellHtml(setDiscount,discountValueAmount)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 700; color: #0f2d4a; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(lineFinalPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                             </tr>`;
                     }
@@ -5971,13 +5970,13 @@
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(itemActualPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 600; color: #1e293b; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(originalPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                                 ${showCostMode ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(getCosting(item))}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 500; color: #1e293b; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(lineTotalCost)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 600; color: ${lineMargin >= 0 ? '#10b981' : '#f43f5e'}; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${formatCurrency(lineMargin)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
-                                ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-weight: 600; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;"><div>-${formatDocumentDiscountPct(itemDiscount)}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(discountValueAmount)})</div><div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
+                                ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-weight: 600; font-size: 11px; font-family: monospace; white-space: nowrap; position: relative;">${documentDiscountCellHtml(itemDiscount,discountValueAmount)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>` : ''}
                                 <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-weight: 700; color: #0f2d4a; font-size: 11px; font-family: monospace; position: relative;">${formatCurrency(lineFinalPrice)}<div class="row-resizer-handle" style="position: absolute; left: 0; right: 0; bottom: 0; height: 6px; cursor: row-resize; z-index: 10;" onmousedown="initRowResize(event, ${idx})"></div></td>
                             </tr>`;
                     }
                 }
             });
-            if(hasDocumentSections)flushDocSection();
+            flushDocSection();
 
             let finalOverallPayout = finalNetSum; let batchDiscountApplied = 0;
             if (discountFlatValue > 0) { batchDiscountApplied = Math.min(Math.max(0,discountFlatValue),Math.max(0,finalNetSum)); finalOverallPayout = Math.max(0, finalNetSum - batchDiscountApplied); totalDiscountSum += batchDiscountApplied; if (showCostMode) totalMarginSum -= batchDiscountApplied; }
