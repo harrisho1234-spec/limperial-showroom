@@ -42,11 +42,12 @@ test('quotation discounts display clean percentages without changing the calcula
 test('quotation, Sales Order and copied text share formatted percentages', () => {
     // Image export clones the preview and printing reads preview.innerHTML.
     for (const [expression, count] of [
-        ['formatDocumentDiscountPct(setDiscount)', 2],
-        ['formatDocumentDiscountPct(itemDiscount)', 2],
+        ['formatDocumentDiscountPct(setDiscount)', 1],
+        ['formatDocumentDiscountPct(itemDiscount)', 1],
+        ['documentDiscountCellHtml(setDiscount,discountValueAmount)', 1],
+        ['documentDiscountCellHtml(itemDiscount,discountValueAmount)', 1],
         ['formatDocumentDiscountPct(discountPctValue)', 4],
-        ['formatDocumentDiscountPct(depositPct)', 2],
-        ['formatDocumentDiscountPct(individual[0])', 1]
+        ['formatDocumentDiscountPct(depositPct)', 2]
     ]) {
         assert.equal(html.split(expression).length - 1, count, expression);
     }
