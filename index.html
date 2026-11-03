@@ -836,9 +836,9 @@
                         <div id="doc-grouping-controls" class="space-y-2 rounded-xl border border-luxury-gold/20 bg-luxury-dark/40 p-3">
                             <label for="doc-group-mode" class="block text-[10px] font-bold uppercase tracking-wider text-luxury-gold">Organize Items By</label>
                             <select id="doc-group-mode" class="w-full rounded-lg border border-luxury-gold/20 bg-luxury-dark px-3 py-2 text-xs text-luxury-text" onchange="changeDocumentGrouping()">
-                                <option value="floor" selected>Floor / Room / Section</option>
+                                <option value="floor">Floor / Room / Section</option>
                                 <option value="discount">Discount % (automatic grouping)</option>
-                                <option value="none">No grouping (original order)</option>
+                                <option value="none" selected>No grouping (Original Order)</option>
                             </select>
                             <div id="doc-no-discount-options" class="hidden space-y-1">
                                 <label for="doc-no-discount-style" class="block text-[10px] font-bold uppercase tracking-wider text-luxury-muted">Products with 0% Discount</label>
@@ -2220,7 +2220,7 @@
                 const groupModeSelect=document.getElementById('doc-group-mode');
                 const groupTotalsToggle=document.getElementById('doc-group-subtotals');
                 const noDiscountStyle=document.getElementById('doc-no-discount-style');
-                if (groupModeSelect) groupModeSelect.value='floor';
+                if (groupModeSelect) groupModeSelect.value='none';
                 if (groupTotalsToggle) groupTotalsToggle.checked=true;
                 if (noDiscountStyle) noDiscountStyle.value='plain';
             }
@@ -5561,7 +5561,7 @@
         function documentGroupingMode() {
             if (!['quotation','sales_order'].includes(documentType)) return 'none';
             const mode=document.getElementById('doc-group-mode')?.value;
-            return ['floor','discount','none'].includes(mode) ? mode : 'floor';
+            return ['floor','discount','none'].includes(mode) ? mode : 'none';
         }
         function documentGroupSubtotalsEnabled() {
             return document.getElementById('doc-group-subtotals')?.checked !== false;
@@ -5570,7 +5570,7 @@
             const style=document.getElementById('doc-no-discount-style')?.value;
             return ['plain','regular','no-discount'].includes(style)?style:'plain';
         }
-        function planDocumentGroups(rows,mode='floor',batchPct=0,noDiscountStyle='plain') {
+        function planDocumentGroups(rows,mode='none',batchPct=0,noDiscountStyle='plain') {
             if(mode==='none'||(mode==='floor'&&!rows.some(row=>documentSectionName(row)))) {
                 return [{title:'',items:rows.slice()}];
             }
@@ -5797,7 +5797,7 @@
             const groupModeSelect=document.getElementById('doc-group-mode');
             const groupTotalsToggle=document.getElementById('doc-group-subtotals');
             const noDiscountStyle=document.getElementById('doc-no-discount-style');
-            if(groupModeSelect)groupModeSelect.value='floor';
+            if(groupModeSelect)groupModeSelect.value='none';
             if(groupTotalsToggle)groupTotalsToggle.checked=true;
             if(noDiscountStyle)noDiscountStyle.value='plain';
             refreshDocumentGroupingUi();
