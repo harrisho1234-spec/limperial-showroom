@@ -217,3 +217,18 @@ test('unheaded regular-price lines do not introduce a redundant group subtotal',
     assert.match(html,/const displayedRows=groupPlan\.flatMap/);
     assert.match(html,/const textQuoteArea = document\.getElementById\('quote-textarea'\)/);
 });
+
+
+test('new quotations and Sales Orders default to original order without changing saved choices',()=>{
+    const f=loadDocumentFunctions();
+    const input=rows();
+    assert.deepEqual(asNames(f.planDocumentGroups(input)), [
+        ['', ['A','B','C','D','E']]
+    ]);
+    assert.match(html, /<option value="none" selected>No grouping \(Original Order\)<\/option>/);
+    assert.doesNotMatch(html, /<option value="floor" selected>/);
+    assert.equal((html.match(/groupModeSelect\.value='none'/g)||[]).length, 2);
+    assert.match(html, /return \['floor','discount','none'\]\.includes\(mode\) \? mode : 'none'/);
+    // The type switch resets the choice only when !restored.
+    assert.match(html, /if \(!restored\) \{\s*const groupModeSelect=/);
+});
