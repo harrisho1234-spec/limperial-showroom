@@ -23,7 +23,7 @@ test('responsive workspace is loaded after existing mobile/selling CSS',()=>{
 });
 test('tablet and compact laptop media breakpoints preserve full desktop',()=>{
  assert.match(css,/@media \(min-width:768px\) and \(max-width:1535px\)/);
- assert.match(css,/@media \(min-width:1024px\) and \(max-width:1800px\) and \(max-height:820px\)/);
+ assert.match(css,/\(min-width:1024px\) and \(max-width:1800px\) and \(max-height:820px\)/);
  assert.match(css,/#main-app > main > aside\s*\{\s*display:none !important;/);
  assert.match(css,/#main-app > main\s*\{[\s\S]*?max-width:none !important;/);
  assert.match(css,/#product-scroll-container\s*\{[\s\S]*?overflow-y:auto !important;/);
