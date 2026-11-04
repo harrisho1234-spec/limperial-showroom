@@ -1,0 +1,253 @@
+/* L'Imperial Showroom — responsive catalog-first workspace (2026-11-04)
+ * In smaller tablet/laptop viewports, do not permanently reserve 380px for
+ * the interest list or half the screen height for filtering.
+ * Keep existing filter inputs, catalog, cart, discounts and saved lists intact.
+ */
+
+/* 768–1535px: tablet / laptop / browser zoom.
+ * Also compact short desktop windows (up to 1800px wide).
+ * Phones retain the separate existing compact mobile styling.
+ */
+@media (min-width:768px) and (max-width:1535px),
+       (min-width:1024px) and (max-width:1800px) and (max-height:820px) {
+  /* Product browsing gets the whole width; the existing mobile list/drawer
+     becomes the customer-interest workspace on demand. */
+  #main-app > main > aside {
+    display:none !important;
+  }
+  #catalog-controls-panel {
+    padding:12px 14px !important;
+    margin-bottom:10px !important;
+    border-radius:14px !important;
+    min-width:0;
+    max-height:none !important;
+    overflow:visible !important;
+  }
+  #catalog-controls-panel #search-input {
+    height:42px !important;
+  }
+  /* The established phone filter button is reused on tablets and laptops.
+     All five dropdowns, quick filters, Grid/List, export and reset stay inside. */
+  #catalog-controls-panel #mobile-filter-trigger {
+    display:flex !important;
+    width:100%;
+    min-height:37px;
+    padding:8px 11px;
+    margin-top:8px !important;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border:1px solid rgba(223,178,108,.34);
+    border-radius:10px;
+    background:var(--luxury-accent);
+    color:var(--luxury-text);
+    font-size:12px;
+    font-weight:750;
+    text-align:left;
+    cursor:pointer;
+  }
+  #catalog-controls-panel #mobile-filter-trigger:hover,
+  #catalog-controls-panel #mobile-filter-trigger:focus-visible {
+    border-color:rgba(223,178,108,.75);
+    outline-offset:2px;
+  }
+  #catalog-controls-panel #mobile-filter-count:not(:empty) {
+    display:inline-flex !important;
+    align-items:center;
+    justify-content:center;
+    height:18px;
+    min-width:18px;
+    padding:0 4px;
+    border-radius:20px;
+    background:#dfb26c;
+    color:#111827;
+    font-size:10px;
+    font-weight:800;
+  }
+  #catalog-controls-panel #mobile-advanced-filters {
+    display:none !important;
+    margin-top:10px !important;
+    padding-top:10px;
+    border-top:1px solid rgba(223,178,108,.20);
+  }
+  body.mobile-filters-open #catalog-controls-panel #mobile-advanced-filters {
+    display:block !important;
+    max-height:min(60dvh,590px);
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    padding-bottom:7px;
+  }
+  #catalog-controls-panel #mobile-advanced-filters .mobile-filter-done {
+    display:flex !important;
+    width:100%;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:39px;
+    margin-top:10px;
+    padding:8px 14px;
+    border-radius:9px;
+    background:#dfb26c;
+    color:#151719;
+    font-size:12px;
+    font-weight:800;
+  }
+  /* Favor one compact, horizontally scrollable row of essential tools
+     over stacked Favorites / Compare / Recent / Recover buttons. */
+  #catalog-controls-panel #showroom-phase1-tools {
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    align-items:center;
+    gap:7px !important;
+    min-width:0;
+    max-width:100%;
+    margin-top:8px !important;
+    padding:2px 0 4px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+    overscroll-behavior-x:contain;
+  }
+  #catalog-controls-panel #showroom-phase1-tools .sp1-toolbar-group {
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    align-items:center;
+    flex:0 0 auto !important;
+    width:auto !important;
+    gap:7px !important;
+  }
+  #catalog-controls-panel #showroom-phase1-tools .sp1-tool-btn {
+    flex:0 0 auto !important;
+    min-height:34px !important;
+    padding:7px 10px !important;
+    font-size:11px !important;
+    white-space:nowrap;
+  }
+
+  /* The original phone Interest List remains authoritative on tablets.
+     At laptop widths a right-hand overlay replaces the fixed sidebar. */
+  #mobile-cart-drawer {
+    display:flex !important;
+  }
+  #ss-mobile-bar:not([hidden]) {
+    display:flex !important;
+    align-items:center;
+    gap:9px;
+    position:fixed;
+    z-index:40;
+    bottom:0;
+    left:0;
+    right:0;
+    padding:8px max(10px,env(safe-area-inset-right))
+            calc(8px + env(safe-area-inset-bottom))
+            max(10px,env(safe-area-inset-left));
+    border-top:1px solid rgba(223,178,108,.42);
+    background:rgba(11,18,32,.97);
+    color:#f3ede2;
+    box-shadow:0 -10px 30px rgba(0,0,0,.20);
+    backdrop-filter:blur(13px);
+  }
+  #ss-mobile-bar .ss-bar-open-quotes {
+    display:inline-flex !important;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    height:38px;
+    padding:0 13px;
+    white-space:nowrap;
+    border-radius:10px;
+    border:1px solid rgba(223,178,108,.55);
+    background:rgba(223,178,108,.09);
+    color:#dfb26c;
+    font-size:12px;
+    font-weight:800;
+  }
+  #mobile-cart-open-saved-lists {
+    display:none !important;
+  }
+  #mobile-cart-drawer .ss-continue-shopping {
+    display:block !important;
+  }
+  body:not(.theme-dark) #ss-mobile-bar:not([hidden]) {
+    background:rgba(255,250,242,.97);
+    color:#573817;
+    border-top-color:rgba(169,111,39,.42);
+  }
+  body:not(.theme-dark) #ss-mobile-bar .ss-bar-open-quotes {
+    background:#fff8ec;
+    color:#815019;
+    border-color:#b99563;
+  }
+  body.ss-has-mobile-cart #main-app {
+    padding-bottom:calc(66px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Desktop-sized compact workspaces use one full-width, internally scrolling
+   product catalog. The header and bottom cart use the remaining viewport. */
+@media (min-width:1024px) and (max-width:1535px),
+       (min-width:1024px) and (max-width:1800px) and (max-height:820px) {
+  #main-app > main {
+    display:flex !important;
+    flex-direction:row !important;
+    flex:1 1 auto !important;
+    width:100%;
+    max-width:none !important;
+    min-height:0 !important;
+    height:auto !important;
+    margin-inline:auto;
+    padding:clamp(10px,1.6vw,22px) !important;
+    overflow:hidden !important;
+  }
+  #main-app > main > section {
+    min-width:0;
+    min-height:0;
+    height:100% !important;
+    flex:1 1 100%;
+    overflow:hidden !important;
+  }
+  #product-scroll-container {
+    min-height:0;
+    flex:1 1 auto;
+    overflow-y:auto !important;
+    overflow-x:hidden;
+    scroll-margin-top:70px;
+    padding-bottom:16px;
+    scrollbar-gutter:stable;
+  }
+  #mobile-cart-drawer {
+    align-items:flex-end;
+    justify-content:flex-end;
+    padding:clamp(8px,1.2vw,18px);
+  }
+  #mobile-cart-content {
+    width:min(460px,100%);
+    max-height:calc(100dvh - 24px) !important;
+    border:1px solid rgba(223,178,108,.38);
+    border-radius:19px !important;
+    overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+  }
+}
+
+/* Native mobile phone layout remains handled by showroom-mobile-compact.css.
+   Tablet portrait benefits from the original page scrolling behaviour,
+   while the filter block stays collapsed by default. */
+@media (min-width:768px) and (max-width:1023px) {
+  #main-app > main {
+    max-width:none !important;
+    padding:12px !important;
+  }
+  #catalog-controls-panel {
+    padding:12px !important;
+  }
+  #mobile-cart-content {
+    max-height:87dvh;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  #mobile-filter-trigger,
+  #mobile-cart-content {transition:none !important;}
+}
