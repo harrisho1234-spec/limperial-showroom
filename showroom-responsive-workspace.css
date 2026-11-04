@@ -23,6 +23,28 @@
     max-height:none !important;
     overflow:visible !important;
   }
+  /* Search and Filters share one row, instead of using two tall rows. */
+  #catalog-controls-panel {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) minmax(145px,180px);
+    gap:8px 10px !important;
+    align-items:start;
+  }
+  #catalog-controls-panel > * {
+    margin-top:0 !important;
+  }
+  #catalog-controls-panel > :first-child {
+    min-width:0;
+    grid-column:1;
+  }
+  #catalog-controls-panel #mobile-filter-trigger {
+    grid-column:2;
+  }
+  #catalog-controls-panel #mobile-advanced-filters,
+  #catalog-controls-panel #showroom-phase1-tools {
+    grid-column:1 / -1;
+    min-width:0;
+  }
   #catalog-controls-panel #search-input {
     height:42px !important;
   }
