@@ -8,6 +8,7 @@ const css=fs.readFileSync(path.join(__dirname,'..','showroom-responsive-workspac
 const compact=fs.readFileSync(path.join(__dirname,'..','showroom-mobile-compact.css'),'utf8');
 const selling=fs.readFileSync(path.join(__dirname,'..','showroom-selling.css'),'utf8');
 const sellingJS=fs.readFileSync(path.join(__dirname,'..','showroom-selling.js'),'utf8');
+const sw=fs.readFileSync(path.join(__dirname,'..','sw.js'),'utf8');
 
 test('responsive workspace is loaded after existing mobile/selling CSS',()=>{
  const cssIndex=html.indexOf('showroom-responsive-workspace.css?v=');
@@ -58,4 +59,10 @@ test('existing product data, filters and quotation workflows are not replaced',(
  assert.match(css,/#showroom-phase1-tools/);
  assert.match(css,/overflow-x:auto !important;/);
  assert.match(selling,/#ss-mobile-bar:not\(\[hidden\]\)/);
+});
+
+test('PWA gets the new responsive style after service-worker update',()=>{
+ assert.match(sw,/tablet-laptop-catalog-first-20261104/);
+ assert.match(sw,/showroom-responsive-workspace\.css\?v=20261104-tablet-catalog1/);
+ assert.match(html,/showroom-responsive-workspace\.css\?v=20261104-tablet-catalog1/);
 });
