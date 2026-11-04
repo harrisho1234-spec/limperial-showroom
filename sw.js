@@ -1,5 +1,5 @@
-// Limperial Luxury Showroom Service Worker - V25 Clean Slate
-const CACHE_NAME = 'limperial-v4-quotation-floor-room-sections-20261102';
+// Limperial Luxury Showroom Service Worker - V26 Tablet/Laptop Workspace
+const CACHE_NAME = 'limperial-v4-tablet-laptop-catalog-first-20261104';
 
 const STATIC_ASSETS = [
   './',
@@ -8,6 +8,7 @@ const STATIC_ASSETS = [
   './showroom-scanner.js?v=20261029-photo-crop1',
   './showroom-photo-scan.js?v=20261029-photo-crop1',
   './showroom-selling.css?v=20261009-tabletopen1',
+  './showroom-responsive-workspace.css?v=20261104-tablet-catalog1',
   './showroom-search-core.js?v=20261008-sellanalytics1',
   './showroom-selling.js?v=20261019-duplicate-rows1',
   './showroom-analytics.js?v=20261008-sellanalytics1',
