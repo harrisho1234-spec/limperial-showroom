@@ -33,7 +33,7 @@ test('compact menu inserts existing catalog product at exact row and scrubs expo
  assert.doesNotMatch(paper.textContent,/Build directly|Build Items Here/);
  assert.equal(paper.querySelectorAll('.qtable-new-line').length,0);
  click('[data-qtable-insert="a"]');
- assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3);
+ assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,4);
  click('[data-qtable-add-kind="catalog"]');
  const search=paper.querySelector('[data-qtable-filter="search"]');search.value='ABC';
  search.dispatchEvent(new w.Event('input',{bubbles:true}));api.refreshCatalog();
@@ -102,7 +102,7 @@ test('numeric cell updates validate quantity, price and discount; cancel leaves 
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
  change('quantity','1.5');change('price','-1');change('discount','101');
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
- click('[data-qtable-insert="a"]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3);
+ click('[data-qtable-insert="a"]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,4);
  click('[data-qtable-menu-close]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,0);assert.equal(w.cart.length,2);
 });
 test('pointer dragging and arrows reorder table rows for touch and mouse',()=>{
@@ -339,5 +339,66 @@ test('regular catalog products can mark/remove forced PO without altering stock 
   assert.equal(label(rows()[1]),true);
   const clean=w.QuotationTableEditor.cleanClone(paper.cloneNode(true));
   assert.equal(clean.querySelector('[data-qtable-force-po]'),null,'export has no editing controls');
+ }finally{dom.window.close()}
+});
+
+
+test('Discount Add item uses existing Batch Discount exactly once and displays plain Discount footer',()=>{
+ const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
+ const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://showroom.test/'}),w=dom.window,ctx=dom.getInternalVMContext();
+ try{
+  w.setInterval=()=>1;w.setTimeout=()=>1;
+  for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))
+   if(match[1].includes('let products ='))vm.runInContext(match[1],ctx);
+  w.onload=null;
+  vm.runInContext("products=loadFallbackProducts();filteredProducts=[...products];showNotification=()=>{};cart=[catalogCartEntry(products[0]),catalogCartEntry(products[1])];cart[0].quantity=2;cart[0].customPrice=100;cart[0].discount=10;cart[1].quantity=1;cart[1].customPrice=200;cart[1].discount=0;documentType='quotation';discountPctValue=0;discountFlatValue=0;",ctx);
+  w.eval(workspace);w.eval(editor);w.document.dispatchEvent(new w.Event('DOMContentLoaded'));w.updateQuotationPreview();
+  const paper=w.document.getElementById('quotation-live-paper');
+  const before=JSON.stringify(vm.runInContext("cart.map(r=>({id:r.id,qty:r.quantity,price:r.customPrice,discount:r.discount,stock:r.item.qty}))",ctx));
+  assert.equal(paper.querySelector('.qtable-discount-row'),null);
+  paper.querySelector('[data-qtable-insert]').click();
+  assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,4);
+  paper.querySelector('[data-qtable-add-kind="discount"]').click();
+  const field=k=>paper.querySelector('[data-qtable-input="'+k+'"]');
+  assert.ok(field('batchPercent')&&field('batchAmount'));
+  field('batchPercent').value='10';
+  field('batchAmount').value='40';
+  paper.querySelector('[data-qtable-form] button[type="submit"]').click();
+  assert.equal(vm.runInContext('discountPctValue',ctx),10);
+  assert.equal(vm.runInContext('discountFlatValue',ctx),40);
+  assert.equal(w.document.getElementById('discount-pct').value,'10');
+  assert.equal(w.document.getElementById('mobile-discount-pct').value,'10');
+  assert.equal(w.document.getElementById('discount-flat').value,'40');
+  assert.equal(w.document.getElementById('mobile-discount-flat').value,'40');
+  assert.equal(JSON.stringify(vm.runInContext("cart.map(r=>({id:r.id,qty:r.quantity,price:r.customPrice,discount:r.discount,stock:r.item.qty}))",ctx)),before);
+  const subtotal=paper.querySelector('tr:has(td[colspan="3"])');
+  const discount=paper.querySelector('.qtable-discount-row');
+  const grand=paper.querySelector('.qtable-grand-total-row');
+  assert.ok(subtotal&&discount&&grand);
+  assert.match(subtotal.cells[subtotal.cells.length-1].textContent,/\$400/);
+  assert.match(discount.cells[0].textContent,/Discount:/);
+  assert.doesNotMatch(discount.cells[0].textContent,/Batch Discount|Bulk Discount/);
+  assert.match(discount.cells[1].textContent,/-\$98/);
+  assert.match(grand.cells[1].textContent,/\$302/);
+  assert.equal(paper.querySelectorAll('tr[data-qtable-key]').length,2,'discount is not added as a stock item');
+  assert.match(w.document.getElementById('quote-textarea').value,/Discount:\s*-\$98/);
+  const exported=w.QuotationTableEditor.cleanClone(paper.cloneNode(true));
+  assert.ok(exported.querySelector('.qtable-discount-row'),'Discount still prints');
+  assert.equal(exported.querySelector('.qtable-discount-tools'),null,'Edit/Remove controls are excluded from print');
+  paper.querySelector('[data-qtable-edit-discount]').click();
+  assert.equal(field('batchPercent').value,'10');
+  assert.equal(field('batchAmount').value,'40');
+  w.QuotationTableEditor.cancel();
+  vm.runInContext("documentType='sales_order';salesOrderDepositMode='pct'",ctx);
+  w.document.getElementById('so-deposit-pct').value='50';
+  w.updateQuotationPreview();
+  assert.match(paper.textContent,/Deposit Paid/);
+  assert.match(paper.querySelector('.qtable-grand-total-row').textContent,/\$302/);
+  paper.querySelector('[data-qtable-clear-discount]').click();
+  assert.equal(vm.runInContext('discountPctValue',ctx),0);
+  assert.equal(vm.runInContext('discountFlatValue',ctx),0);
+  assert.equal(paper.querySelector('.qtable-discount-row'),null);
+  assert.equal(JSON.stringify(vm.runInContext("cart.map(r=>({id:r.id,qty:r.quantity,price:r.customPrice,discount:r.discount,stock:r.item.qty}))",ctx)),before,'clearing the batch discount leaves line discounts intact');
+  assert.equal(paper.querySelectorAll('tr[data-qtable-key]').length,2);
  }finally{dom.window.close()}
 });
