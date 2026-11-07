@@ -58,16 +58,32 @@ test('menu adds manual rows and presets a selectable service fee without invento
   assert.equal(w.cart[1].type,'service');
   click('[data-qtable-insert="b"]');click('[data-qtable-add-kind="service"]');
   const select=paper.querySelector('[data-qtable-service-type]');
-  assert.ok(select);assert.ok([...select.options].some(x=>x.value==='Installation fee'));
-  select.value='Installation fee';select.dispatchEvent(new w.Event('change',{bubbles:true}));
+  assert.ok(select);
+  assert.deepEqual([...select.options].map(x=>x.value),['Service Fee','Maintenance Fee','Cleaning Fee','Delivery/Installation','Other']);
+  select.value='Delivery/Installation';select.dispatchEvent(new w.Event('change',{bubbles:true}));
   fillForm({quantity:'1',price:'150',discount:'0'});
   click('[data-qtable-form] button[type="submit"]');
-  assert.equal(w.cart[3].item.itemName,'Installation fee');
+  assert.equal(w.cart[3].item.itemName,'Delivery/Installation');
   assert.equal(w.cart[3].customPrice,150);
   assert.equal(w.cart[3].type,'service');
   assert.ok(!w.cart[3].item.manualItem);
   assert.equal(w.products[0].qty,4);
  }
+});
+test('Other allows a custom service name that remains editable when reopened',()=>{
+ const {w,paper,click,fillForm,api}=boot();
+ click('[data-qtable-insert="a"]');click('[data-qtable-add-kind="service"]');
+ const select=paper.querySelector('[data-qtable-service-type]');
+ assert.equal(select.value,'Service Fee');
+ select.value='Other';select.dispatchEvent(new w.Event('change',{bubbles:true}));
+ assert.equal(paper.querySelector('[data-qtable-input="name"]').value,'');
+ fillForm({name:'Special site inspection',quantity:'1',price:'80',discount:'5'});
+ click('[data-qtable-form] button[type="submit"]');
+ const line=w.cart[1];assert.equal(line.item.itemName,'Special site inspection');
+ assert.equal(line.customPrice,80);assert.equal(line.discount,5);
+ api.open('edit',line.id);
+ assert.equal(paper.querySelector('[data-qtable-service-type]').value,'Other');
+ assert.equal(paper.querySelector('[data-qtable-input="name"]').value,'Special site inspection');
 });
 test('existing text edits clone catalog data; replacement keeps row ID, quantity and sections',()=>{
  const {w,paper,click,api}=boot();

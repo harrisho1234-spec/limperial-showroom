@@ -10,7 +10,7 @@ const rows=()=>typeof cart!=='undefined'&&Array.isArray(cart)?cart:[];
 const catalog=()=>typeof products!=='undefined'&&Array.isArray(products)?products:[];
 const fmt=amount=>'$'+(Number(amount)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 let active=null,choices=[],updateTimer=null,installed=false,inline=null,drag=null,addMenuAfter=null;
-const SERVICE_TYPES=['Delivery fee','Installation fee','Transportation fee','Crane / lifting fee','Site measurement fee'];
+const SERVICE_TYPES=['Service Fee','Maintenance Fee','Cleaning Fee','Delivery/Installation','Other'];
 const table=()=>$('quotation-live-paper')?.querySelector('table:has(thead)')||$('quotation-live-paper')?.querySelector('table');
 const headerCount=()=>table()?.tHead?.rows?.[0]?.cells?.length||7;
 const rowByKey=key=>rows().find(row=>keyFor(row)===String(key));
@@ -53,13 +53,13 @@ function formFields(kind,row){
  const form=active?.values||{};
  const val=(key,defaultValue)=>Object.prototype.hasOwnProperty.call(form,key)?form[key]:defaultValue;
  let html='';
- const selectedService=String(val('name',row?title(row):'Delivery fee')).trim();
+ const selectedService=String(val('name',row?title(row):'Service Fee')).trim();
  if(service)html+='<label class="qtable-field qtable-wide"><span>Service type</span>'+
   '<select data-qtable-service-type aria-label="Choose a service fee">'+
-  SERVICE_TYPES.map(name=>'<option value="'+escapeValue(name)+'"'+(name===selectedService?' selected':'')+'>'+escapeValue(name)+'</option>').join('')+
-  '<option value=""'+(!SERVICE_TYPES.includes(selectedService)?' selected':'')+'>Other / custom service</option></select></label>';
+  SERVICE_TYPES.map(name=>'<option value="'+escapeValue(name)+'"'+((name===selectedService||(name==='Other'&&!SERVICE_TYPES.includes(selectedService)))?' selected':'')+'>'+escapeValue(name)+'</option>').join('')+
+  '</select></label>';
  html+=addField(set?'Product set (read-only)':service?'Service description (editable)':'Item name',
-  'name',val('name',row?title(row):service?'Delivery fee':''),{readonly:set,wide:true,maxlength:160});
+  'name',val('name',row?title(row):service?'Service Fee':''),{readonly:set,wide:true,maxlength:160});
  if(!service&&!set){
    html+=addField('Brand','brand',val('brand',item.brand||''),{readonly:!manual,maxlength:100});
    html+=addField('Code','code',val('code',item.code==='MANUAL'?'':item.code||''),{readonly:!manual,maxlength:100});
@@ -121,7 +121,7 @@ function open(kind,key='',afterKey=null){
  const current=active?.kind;
  if(current&&current!=='catalog')active.values={...active.values,...readForm()};
  inline=null;addMenuAfter=null;
- active={kind,key:String(key),afterKey,values:kind==='catalog'&&current==='catalog'?active.values:kind==='service'?{name:'Delivery fee',quantity:'1',price:'0',discount:'0'}:{},limit:8,photoData:null};
+ active={kind,key:String(key),afterKey,values:kind==='catalog'&&current==='catalog'?active.values:kind==='service'?{name:'Service Fee',quantity:'1',price:'0',discount:'0'}:{},limit:8,photoData:null};
  decorate();
  if(kind==='catalog')refreshCatalog();
  const field=table()?.querySelector(kind==='catalog'?'[data-qtable-filter="search"]':'[data-qtable-input="name"]');
@@ -280,7 +280,7 @@ function decorate(){
     '<button type="button" data-qtable-menu-close aria-label="Close add item menu">✕</button></div>'+
     '<button type="button" data-qtable-add-kind="catalog"><b>⌕</b><span><strong>Search existing product</strong><small>Find by code, name, brand or category</small></span></button>'+
     '<button type="button" data-qtable-add-kind="manual"><b>✎</b><span><strong>Manual item</strong><small>Enter an item not in the catalog</small></span></button>'+
-    '<button type="button" data-qtable-add-kind="service"><b>＋</b><span><strong>Service fee</strong><small>Select delivery, installation or a custom fee</small></span></button>'+
+    '<button type="button" data-qtable-add-kind="service"><b>＋</b><span><strong>Service fee</strong><small>Maintenance, cleaning, delivery / installation or Other</small></span></button>'+
     '</div>':'')+'</div></td>';
   if(node)node.insertAdjacentElement('afterend',action);
   else if(summary)body.insertBefore(action,summary);else body.appendChild(action);
@@ -549,8 +549,9 @@ function handleServiceType(event){
  if(!name)return;
  const previous=String(name.value||'');
  const chosen=select.value;
- if(chosen)name.value=chosen;
- else if(SERVICE_TYPES.includes(previous))name.value='';
+ if(chosen==='Other'){
+  if(SERVICE_TYPES.includes(previous))name.value='';
+ }else name.value=chosen;
  active.values.name=name.value;
  name.focus({preventScroll:true});
 }
