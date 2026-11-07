@@ -199,6 +199,56 @@
             gap: 0.35rem !important;
         }
 
+        /* Customer Interest List: hold the item title, then drag to reorder. */
+        .cart-reorder-trigger {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: grab;
+        }
+        .cart-reorder-trigger:active { cursor: grabbing; }
+        .cart-reorder-grip {
+            display: inline-block;
+            margin-right: 6px;
+            color: #dfb26c;
+            opacity: .8;
+            font-size: 12px;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        .cart-reorder-compact { display: none !important; }
+        .cart-reorder-container.cart-reordering > .cart-sortable-row {
+            min-height: 38px !important;
+            padding: 5px 10px !important;
+            margin-bottom: 7px !important;
+            border-style: dashed !important;
+            touch-action: none;
+        }
+        .cart-reorder-container.cart-reordering > .cart-sortable-row > :not(.cart-reorder-compact) {
+            display: none !important;
+        }
+        .cart-reorder-container.cart-reordering > .cart-sortable-row .cart-reorder-compact {
+            display: flex !important;
+            align-items: center;
+            gap: 8px;
+            min-height: 26px;
+            width: 100%;
+            overflow: hidden;
+            color: var(--luxury-text);
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.25;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            pointer-events: none;
+        }
+        .cart-reorder-container.cart-reordering > .cart-sortable-row.cart-reorder-active {
+            border-color: #dfb26c !important;
+            background: rgba(223,178,108,.16) !important;
+            box-shadow: 0 5px 18px rgba(0,0,0,.18);
+            opacity: .96;
+        }
+
     </style>
     <link rel="stylesheet" href="showroom-readability.css?v=20261008-backgroundmorph1">
     <link rel="stylesheet" href="showroom-phase1.css?v=20261008-lightselect1">
@@ -435,9 +485,10 @@
                     </div>
                 </div>
                 
-                <div id="desktop-cart-items" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
-                <div class="px-4 pb-3">
-                    <button type="button" onclick="addServiceFee()" class="w-full py-2 bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/25 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"><i class="fa-solid fa-plus mr-1.5"></i>Service Fee</button><button type="button" onclick="openManualInterestItem()" class="w-full mt-2 py-2 bg-luxury-dark text-luxury-gold border border-luxury-gold/40 rounded-xl text-xs font-bold">+ Add Manual Item</button>
+                <div id="desktop-cart-items" class="cart-reorder-container flex-1 overflow-y-auto p-4 space-y-3"></div>
+                <div class="px-4 pb-3 grid grid-cols-2 gap-2">
+                    <button type="button" onclick="addServiceFee()" class="w-full py-2 bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/25 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"><i class="fa-solid fa-plus mr-1.5"></i>Service Fee</button>
+                    <button type="button" onclick="openManualInterestItem()" class="w-full py-2 bg-luxury-dark text-luxury-gold border border-luxury-gold/40 rounded-xl text-xs font-bold">+ Add Manual Item</button>
                 </div>
 
                 <div class="p-4 bg-luxury-accent/40 border-t border-luxury-gold/15 space-y-4 shrink-0 transition-colors duration-300">
@@ -538,9 +589,10 @@
                 <i class="fa-solid fa-arrow-left"></i> Continue browsing products
             </button>
             <div class="flex justify-end px-4 py-1" data-preorder-visibility-container></div>
-            <div id="mobile-cart-items" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
-            <div class="px-4 pb-3">
-                <button type="button" onclick="addServiceFee()" class="w-full py-2 bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/25 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"><i class="fa-solid fa-plus mr-1.5"></i>Service Fee</button><button type="button" onclick="openManualInterestItem()" class="w-full mt-2 py-2 bg-luxury-dark text-luxury-gold border border-luxury-gold/40 rounded-xl text-xs font-bold">+ Add Manual Item</button>
+            <div id="mobile-cart-items" class="cart-reorder-container flex-1 overflow-y-auto p-4 space-y-3"></div>
+            <div class="px-4 pb-3 grid grid-cols-2 gap-2">
+                <button type="button" onclick="addServiceFee()" class="w-full py-2 bg-luxury-dark hover:bg-luxury-gold/10 text-luxury-gold border border-luxury-gold/25 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"><i class="fa-solid fa-plus mr-1.5"></i>Service Fee</button>
+                    <button type="button" onclick="openManualInterestItem()" class="w-full py-2 bg-luxury-dark text-luxury-gold border border-luxury-gold/40 rounded-xl text-xs font-bold">+ Add Manual Item</button>
             </div>
 
             <div class="p-4 bg-luxury-accent/50 border-t border-luxury-gold/15 space-y-4 font-sans text-xs transition-colors duration-300">
@@ -918,6 +970,8 @@
         let savedInterestLists = [];
         let createdSets = [];
         let recommendedFocusItemId = null;
+        let cartReorderState = null;
+        let cartReorderEventsBound = false;
         let saveListsRequestToken = 0;
         let isSavingInterestList = false;
         let pendingSavedListConfirmation = null; // An opaque POST may have saved successfully even if read-back is delayed.
@@ -1209,10 +1263,7 @@
             showNotification('Preparing catalog image...', 'info');
 
             const mobile = isMobileDevice();
-            let previewTab = null;
-            if (mobile) {
-                try { previewTab = window.open('', '_blank'); } catch (e) { previewTab = null; }
-            }
+            const previewTab = null;
 
             renderCatalogImageBlob(item, includePrice).then((blob) => {
                 const safeCode = String(item.code || item.id || 'product').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -1221,21 +1272,25 @@
                 let file = null;
                 try { file = new File([blob], fileName, { type: 'image/jpeg' }); } catch (e) { file = null; }
 
-                const canUseShare = !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+                let canUseShare = false;
+                try { canUseShare = !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })); } catch (_) {}
 
                 if (canUseShare) {
-                    if (previewTab) previewTab.close();
-                    navigator.share({ files: [file], title: item.itemName })
-                        .then(() => showNotification("Image shared successfully!", "success"))
-                        .catch(err => {
-                            if (err.name !== 'AbortError') {
-                                deliverDownload(url, fileName, mobile, null);
-                            }
-                        });
+                    try {
+                        Promise.resolve(navigator.share({ files: [file], title: item.itemName }))
+                            .then(() => showNotification("Image ready to save or share.", "success"))
+                            .catch(err => {
+                                if (err.name === 'AbortError') showNotification('Export cancelled.', 'info');
+                                else deliverDownload(url, fileName, mobile, null);
+                            });
+                    } catch (shareError) {
+                        console.warn('Native image sharing unavailable; using download fallback.', shareError);
+                        deliverDownload(url, fileName, mobile, null);
+                    }
                 } else {
-                    deliverDownload(url, fileName, mobile, previewTab);
+                    deliverDownload(url, fileName, mobile, null);
                 }
-                setTimeout(() => URL.revokeObjectURL(url), 60000);
+                setTimeout(() => URL.revokeObjectURL(url), 180000);
             }).catch((err) => {
                 console.error(err); showNotification('Failed to export catalog image. Please try again.', 'error');
                 if (previewTab) previewTab.close();
@@ -1243,18 +1298,40 @@
         }
 
         function deliverDownload(url, fileName, mobile, previewTab) {
-            if (mobile) {
-                if (previewTab) {
-                    previewTab.location.href = url;
-                } else {
-                    window.open(url, '_blank');
-                }
-                showNotification("Opened in a new tab — tap and hold it to save.", "success");
-            } else {
-                const a = document.createElement('a');
-                a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove();
-                showNotification("Downloaded to device.", "success");
+            if (previewTab && !previewTab.closed) {
+                try { previewTab.close(); } catch (_) {}
             }
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.rel = 'noopener';
+            link.style.position = 'fixed';
+            link.style.left = '-10000px';
+            link.style.top = '0';
+            document.body.appendChild(link);
+
+            if ('download' in link) {
+                try {
+                    link.click();
+                    showNotification(mobile
+                        ? 'Download started. Check your browser Downloads or Files app.'
+                        : 'Download started.', 'success');
+                } catch (error) {
+                    console.error('Catalog download failed:', error);
+                    showNotification('The download could not start. Please try again or use Share / Save to Files.', 'error');
+                } finally {
+                    setTimeout(() => link.remove(), 1000);
+                }
+                return;
+            }
+
+            link.remove();
+            let opened = null;
+            try { opened = window.open(url, '_blank', 'noopener'); } catch (_) {}
+            if (!opened) {
+                try { window.location.assign(url); } catch (_) {}
+            }
+            showNotification('Open the exported file, then use your device Save option.', 'info');
         }
 
         function showPersistentNotification(message) {
@@ -1292,10 +1369,7 @@
             if (items.length === 0) { showNotification('No items currently shown to export.', 'error'); return; }
 
             const mobile = isMobileDevice();
-            let previewTab = null;
-            if (mobile) {
-                try { previewTab = window.open('', '_blank'); } catch (e) { previewTab = null; }
-            }
+            const previewTab = null;
 
             const progressToast = showPersistentNotification(`Preparing catalog images... 0 / ${items.length}`);
             const zip = new JSZip();
@@ -1319,7 +1393,6 @@
             const fileCount = Object.keys(zip.files).length;
             if (fileCount === 0) {
                 showNotification('Failed to generate catalog images.', 'error');
-                if (previewTab) previewTab.close();
                 return;
             }
 
@@ -1330,7 +1403,6 @@
             } catch (zipErr) {
                 console.error(zipErr);
                 showNotification('Failed to package the zip file.', 'error');
-                if (previewTab) previewTab.close();
                 return;
             }
 
@@ -1339,17 +1411,25 @@
             const url = URL.createObjectURL(zipBlob);
             let file = null;
             try { file = new File([zipBlob], zipName, { type: 'application/zip' }); } catch (e) { file = null; }
-            const canUseShare = !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+            let canUseShare = false;
+            try { canUseShare = !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })); } catch (_) {}
 
             if (canUseShare) {
-                if (previewTab) previewTab.close();
-                navigator.share({ files: [file], title: 'Limperial Catalog Export' })
-                    .then(() => showNotification(`Shared ${fileCount} catalog image${fileCount > 1 ? 's' : ''}.`, 'success'))
-                    .catch(err => { if (err.name !== 'AbortError') deliverDownload(url, zipName, mobile, null); });
+                try {
+                    Promise.resolve(navigator.share({ files: [file], title: 'Limperial Catalog Export' }))
+                        .then(() => showNotification(`Catalog file ready to save or share (${fileCount} images).`, 'success'))
+                        .catch(err => {
+                            if (err.name === 'AbortError') showNotification('Export cancelled.', 'info');
+                            else deliverDownload(url, zipName, mobile, null);
+                        });
+                } catch (shareError) {
+                    console.warn('Native catalog sharing unavailable; using download fallback.', shareError);
+                    deliverDownload(url, zipName, mobile, null);
+                }
             } else {
-                deliverDownload(url, zipName, mobile, previewTab);
+                deliverDownload(url, zipName, mobile, null);
             }
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            setTimeout(() => URL.revokeObjectURL(url), 180000);
         }
 
         // All filters remain wired; the previous swipe-up overlay is removed.
@@ -3607,6 +3687,7 @@
               '<input type="number" min="0" step="0.01" value="'+unit+'" onchange="changeServicePrice('+arg+',this.value);updateCartVisuals()" class="w-16 text-right bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded pl-4 pr-1 py-0.5 text-xs text-luxury-text outline-none transition-colors"></div></div>'+
               '<div class="flex items-center space-x-1.5"><span class="text-[9px] uppercase tracking-wider text-luxury-muted font-semibold">Disc:</span>'+
               '<input type="number" min="0" max="100" step="0.01" value="'+discount+'" onchange="changeServiceDiscount('+arg+',this.value);updateCartVisuals()" class="w-12 text-center bg-luxury-dark border border-luxury-gold/20 focus:border-luxury-gold rounded px-1 py-0.5 text-xs text-luxury-text outline-none transition-colors"><span class="text-xs text-luxury-gold font-bold">%</span></div></div></div>';
+            prepareCartReorderRow(row, line, key);
             container.appendChild(row);
         }
         function addServiceFee() {
@@ -3773,6 +3854,120 @@
                 }
             };
             updateDisplay('desktop-cart-items', 'disc-input-'); updateDisplay('mobile-cart-items', 'mobile-disc-input-');
+        }
+
+        function prepareCartReorderRow(row, cartItem, lineKey) {
+            if (!row || !cartItem) return;
+            const key = String(lineKey || cartLineKey(cartItem));
+            const itemName = cartItem.type === 'set'
+                ? String(cartItem.setName || 'Set')
+                : String(cartItem.item?.itemName || (cartItem.type === 'service' ? 'Service Fee' : 'Item'));
+            row.classList.add('cart-sortable-row');
+            row.dataset.cartLineKey = key;
+
+            const compact = document.createElement('div');
+            compact.className = 'cart-reorder-compact';
+            const compactGrip = document.createElement('span');
+            compactGrip.className = 'cart-reorder-grip';
+            compactGrip.textContent = '⠿';
+            const compactName = document.createElement('span');
+            compactName.textContent = itemName;
+            compactName.style.overflow = 'hidden';
+            compactName.style.textOverflow = 'ellipsis';
+            compact.append(compactGrip, compactName);
+            row.prepend(compact);
+
+            let trigger = row.querySelector('h5') || row.querySelector('.text-xs.font-serif.font-semibold');
+            if (!trigger) {
+                const serviceIcon = row.querySelector('.fa-concierge-bell');
+                trigger = serviceIcon?.nextElementSibling || serviceIcon || null;
+            }
+            if (trigger) {
+                trigger.classList.add('cart-reorder-trigger');
+                trigger.setAttribute('title', 'Hold and drag to reorder this item');
+                const grip = document.createElement('span');
+                grip.className = 'cart-reorder-grip';
+                grip.textContent = '⠿';
+                trigger.prepend(grip);
+            }
+            bindCartReorderEvents();
+        }
+
+        function bindCartReorderEvents() {
+            if (cartReorderEventsBound) return;
+            cartReorderEventsBound = true;
+
+            document.addEventListener('pointerdown', event => {
+                const trigger = event.target instanceof Element ? event.target.closest('.cart-reorder-trigger') : null;
+                if (!trigger || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+                const row = trigger.closest('.cart-sortable-row');
+                const container = row?.parentElement;
+                if (!row || !container || !['desktop-cart-items', 'mobile-cart-items'].includes(container.id)) return;
+                if (cartReorderState) clearTimeout(cartReorderState.timer);
+
+                const state = {
+                    row, container, trigger, pointerId: event.pointerId,
+                    startX: event.clientX, startY: event.clientY,
+                    active: false, timer: null
+                };
+                cartReorderState = state;
+                state.timer = setTimeout(() => {
+                    if (cartReorderState !== state || !row.isConnected) return;
+                    state.active = true;
+                    container.classList.add('cart-reordering');
+                    row.classList.add('cart-reorder-active');
+                    try { trigger.setPointerCapture(event.pointerId); } catch (_) {}
+                    try { if (navigator.vibrate) navigator.vibrate(18); } catch (_) {}
+                }, event.pointerType === 'mouse' ? 300 : 420);
+            }, true);
+
+            document.addEventListener('pointermove', event => {
+                const state = cartReorderState;
+                if (!state || event.pointerId !== state.pointerId) return;
+                if (!state.active) {
+                    if (Math.abs(event.clientX - state.startX) > 12 || Math.abs(event.clientY - state.startY) > 12) {
+                        clearTimeout(state.timer);
+                        cartReorderState = null;
+                    }
+                    return;
+                }
+                if (event.cancelable) event.preventDefault();
+                const hit = document.elementFromPoint(event.clientX, event.clientY);
+                const targetRow = hit?.closest?.('.cart-sortable-row');
+                if (!targetRow || targetRow === state.row || targetRow.parentElement !== state.container) return;
+                const rect = targetRow.getBoundingClientRect();
+                const insertBefore = event.clientY < rect.top + rect.height / 2;
+                if (insertBefore) state.container.insertBefore(state.row, targetRow);
+                else state.container.insertBefore(state.row, targetRow.nextSibling);
+
+                const box = state.container.getBoundingClientRect();
+                if (event.clientY < box.top + 28) state.container.scrollTop -= 12;
+                else if (event.clientY > box.bottom - 28) state.container.scrollTop += 12;
+            }, { capture: true, passive: false });
+
+            const finishReorder = event => {
+                const state = cartReorderState;
+                if (!state || (event && event.pointerId !== state.pointerId)) return;
+                clearTimeout(state.timer);
+                cartReorderState = null;
+                state.container.classList.remove('cart-reordering');
+                state.row.classList.remove('cart-reorder-active');
+                if (!state.active) return;
+
+                const currentByKey = new Map(cart.map(entry => [cartLineKey(entry), entry]));
+                const orderedKeys = Array.from(state.container.querySelectorAll(':scope > .cart-sortable-row'))
+                    .map(element => String(element.dataset.cartLineKey || ''));
+                const reordered = orderedKeys.map(key => currentByKey.get(key)).filter(Boolean);
+                if (reordered.length === cart.length) cart = reordered;
+                updateCartVisuals();
+                updateQuotationPreview();
+                window.ShowroomPhase1?.scheduleDraft?.();
+            };
+            document.addEventListener('pointerup', finishReorder, true);
+            document.addEventListener('pointercancel', finishReorder, true);
+            document.addEventListener('contextmenu', event => {
+                if (event.target instanceof Element && event.target.closest('.cart-reorder-container.cart-reordering')) event.preventDefault();
+            }, true);
         }
 
         function updateCartVisuals() {
@@ -3977,6 +4172,7 @@
                             </div>
                         </div>`;
                 }
+                prepareCartReorderRow(row, cartItem, uniqueId);
                 container.appendChild(row);
             });
             onCartCheckboxChange();
@@ -4170,6 +4366,7 @@
                             </div>
                         </div>`;
                 }
+                prepareCartReorderRow(row, cartItem, uniqueId);
                 container.appendChild(row);
             });
             onCartCheckboxChange();
@@ -5478,10 +5675,53 @@
             document.getElementById('confirm-modal-container').classList.add('scale-95'); document.getElementById('confirm-modal-container').classList.remove('scale-100');
         }
 
+        function clearDocumentFormsAfterCartClear() {
+            const types = ['quotation', 'sales_order', 'inventory', 'delivery_order'];
+            documentFormStates = {
+                quotation: { initialized: false },
+                sales_order: { initialized: false },
+                inventory: { initialized: false },
+                delivery_order: { initialized: false }
+            };
+            showPreOrderOnDoc = true;
+            clearActiveSavedQuotation();
+
+            const modal = document.getElementById('share-modal');
+            if (modal) {
+                modal.querySelectorAll('input[id], textarea[id], select[id]').forEach(el => {
+                    if (el.tagName === 'SELECT') {
+                        const defaultIndex = Array.from(el.options || []).findIndex(option => option.defaultSelected);
+                        el.selectedIndex = defaultIndex >= 0 ? defaultIndex : 0;
+                    } else {
+                        const inputType = String(el.type || '').toLowerCase();
+                        if (inputType === 'checkbox' || inputType === 'radio') el.checked = !!el.defaultChecked;
+                        else if (!['button', 'submit', 'reset', 'file'].includes(inputType)) el.value = el.defaultValue || '';
+                    }
+                });
+            }
+
+            const prefix = document.getElementById('quote-prefix-select');
+            if (prefix) { prefix.value = 'S'; prefix.disabled = false; }
+            const groupMode = document.getElementById('doc-group-mode');
+            const groupTotals = document.getElementById('doc-group-subtotals');
+            const noDiscountStyle = document.getElementById('doc-no-discount-style');
+            if (groupMode) groupMode.value = 'none';
+            if (groupTotals) groupTotals.checked = true;
+            if (noDiscountStyle) noDiscountStyle.value = 'plain';
+            const preorderToggle = document.getElementById('doc-preorder-toggle');
+            if (preorderToggle) preorderToggle.checked = true;
+
+            refreshDocumentGroupingUi();
+            renderQuoteItemsNotesForm();
+            updateQuotationNumberHelp();
+            updateQuotationPreview();
+        }
+
         function executeClearCart() {
             cart = []; discountPctValue = 0; discountFlatValue = 0; handlePartnerToggle(false);
             ['discount-pct', 'discount-flat', 'mobile-discount-pct', 'mobile-discount-flat'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-            updateCartVisuals(); renderProductGrid(); toggleMobileCart(false); closeConfirmModal(); showNotification("List cleared.", "info");
+            clearDocumentFormsAfterCartClear();
+            updateCartVisuals(); renderProductGrid(); toggleMobileCart(false); closeConfirmModal(); showNotification("List and quotation document information cleared.", "info");
         }
 
         function toggleMobileCart(open) {
@@ -5740,7 +5980,7 @@
                     ?'Assign floor/room names independently of discounts. Item Discount % updates only that product. Apply to Entire Section requires confirmation.'
                     :groupingMode==='discount'
                         ?'Groups use each item\'s existing discount. Apply to Item changes only this row.'
-                        :'Use Up/Down for manual order. Apply to Item changes only this row.')+
+                        :'Item order follows the Customer Interest List. Apply to Item changes only this row.')+
                   '</p>'
                 : '';
 
@@ -5749,8 +5989,6 @@
             editorRows.forEach((c, idx) => {
                 const itemId = c.id || (c.item ? c.item.id : idx);
                 const itemGroup=editorGroups.find(group=>group.items.includes(c));
-                const positionInGroup=itemGroup?.items.indexOf(c) ?? idx;
-                const lastPosition=(itemGroup?.items.length??editorRows.length)-1;
                 const itemName = c.type === 'set' ? `${c.setName}` : (c.item?.itemName || '');
                 const itemCode = c.type === 'set' ? 'SET' : (c.item?.code || '');
                 const safeItemId = escapeHtml(itemId);
@@ -5767,14 +6005,7 @@
                     </div></div>` : '';
                 const sectionUi=['quotation','sales_order'].includes(documentType) ? `
                     <div class="mt-2 border-t border-luxury-gold/10 pt-2 space-y-2">
-                      <div class="flex items-center justify-between gap-2">
-                        <label class="text-[10px] uppercase font-bold tracking-wide text-luxury-muted">${groupingMode==='floor'?'Floor / Room / Section':'Item Position'}</label>
-                        <span class="flex items-center gap-1">
-                          <button type="button" ${positionInGroup===0?'disabled':''} onclick="moveDocumentItem('${safeItemId}',-1)" aria-label="Move item up" title="Move up" class="px-2 py-1 rounded border border-luxury-gold/20 text-xs text-luxury-gold disabled:opacity-30">↑ Up</button>
-                          <button type="button" ${positionInGroup===lastPosition?'disabled':''} onclick="moveDocumentItem('${safeItemId}',1)" aria-label="Move item down" title="Move down" class="px-2 py-1 rounded border border-luxury-gold/20 text-xs text-luxury-gold disabled:opacity-30">↓ Down</button>
-                        </span>
-                      </div>
-                      ${groupingMode==='floor'? `<input type="text" list="doc-section-suggestions" maxlength="100" data-item-id="${safeItemId}" class="quote-section-name-input w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-2.5 py-2 text-xs text-luxury-text" value="${escapeHtml(documentSectionName(c))}" placeholder="e.g. Ground Floor / Living Room" oninput="updateDocumentSection(this.dataset.itemId,this.value)" onchange="renderQuoteItemsNotesForm()">` : ''}
+                      ${groupingMode==='floor'? `<div><label class="block text-[10px] uppercase font-bold tracking-wide text-luxury-muted mb-1">Floor / Room / Section</label><input type="text" list="doc-section-suggestions" maxlength="100" data-item-id="${safeItemId}" class="quote-section-name-input w-full bg-luxury-dark border border-luxury-gold/20 rounded-lg px-2.5 py-2 text-xs text-luxury-text" value="${escapeHtml(documentSectionName(c))}" placeholder="e.g. Ground Floor / Living Room" oninput="updateDocumentSection(this.dataset.itemId,this.value)" onchange="renderQuoteItemsNotesForm()"></div>` : ''}
                       <div class="flex flex-wrap items-center gap-2">
                         <label class="text-[10px] font-semibold text-luxury-muted">Item Discount %</label>
                         <input type="number" min="0" max="100" step="0.01" data-item-id="${safeItemId}" class="quote-section-discount-input w-20 bg-luxury-dark border border-luxury-gold/20 rounded px-2 py-1.5 text-xs text-luxury-text" value="${formatDocumentDiscountPct(Math.max(0,Math.min(100,Number(c.discount)||0)))}" oninput="applyDocumentItemDiscount(this.dataset.itemId,this)" onchange="finishDocumentItemDiscount(this.dataset.itemId,this)">
@@ -5935,7 +6166,7 @@
                     cartItem.items.forEach(sub => {
                         const itemId = sub.item.id; if (docStockTracker[itemId] === undefined) docStockTracker[itemId] = Math.max(0, sub.item.qty);
                         const globalReq = sub.quantity * cartItem.quantity; let preQty = 0;
-                        if (item.manualItem) preQty = cartItem.forcePreorder ? globalReq : 0;
+                        if (sub.item?.manualItem) preQty = cartItem.forcePreorder ? globalReq : 0;
                     else if (cartItem.forcePreorder) preQty = globalReq; else { if (globalReq > docStockTracker[itemId]) { preQty = globalReq - docStockTracker[itemId]; docStockTracker[itemId] = 0; } else docStockTracker[itemId] -= globalReq; }
                         if (preQty > 0) setPreorderArr.push(`[${sub.item.code}]: Pre-order ${preQty} Pcs`);
                     });
