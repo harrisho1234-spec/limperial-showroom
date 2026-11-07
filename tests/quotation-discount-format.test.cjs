@@ -47,7 +47,8 @@ test('quotation, Sales Order and copied text share formatted percentages', () =>
         ['documentDiscountCellHtml(setDiscount,discountValueAmount)', 1],
         ['documentDiscountCellHtml(itemDiscount,discountValueAmount)', 1],
         ['formatDocumentDiscountPct(discountPctValue)', 4],
-        ['formatDocumentDiscountPct(depositPct)', 2]
+        ['formatDocumentDiscountPct(depositPct)', 1],
+        ['depositPercentLabel', 3]
     ]) {
         assert.equal(html.split(expression).length - 1, count, expression);
     }
