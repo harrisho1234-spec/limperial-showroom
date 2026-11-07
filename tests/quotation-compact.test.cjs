@@ -198,6 +198,51 @@ test('per-row Hide PO controls quotation and Sales Order label display only, not
 });
 
 
+test('quotation row Remove uses two-step confirmation and removes only the exact duplicate line',()=>{
+ for(const docType of ['quotation','sales_order']){
+  const {w,paper,click,api}=boot(docType);
+  const sameCatalog=w.products[0];
+  const untouched=w.cart[1],first=w.cart[0];
+  const originalCatalog=JSON.stringify(sameCatalog);
+  first.discount=15;first.documentSections={quotation:'Ground Floor'};
+  first.customPrice=275;
+  const firstKey=first.id;
+  assert.equal(paper.querySelectorAll('[data-qtable-delete]').length,2);
+  click('[data-qtable-delete="a"]');
+  assert.equal(api.getPendingDeleteKey(),firstKey);
+  assert.equal(w.cart.length,2,'first click only asks for confirmation');
+  assert.match(paper.querySelector('.qtable-delete-confirm').textContent,/Remove this row/);
+  click('[data-qtable-cancel-delete]');
+  assert.equal(api.getPendingDeleteKey(),null);
+  assert.equal(w.cart.length,2,'cancel leaves all items untouched');
+  click('[data-qtable-delete="a"]');
+  const yes=paper.querySelector('[data-qtable-confirm-delete="a"]');
+  assert.ok(yes);
+  yes.click();
+  assert.equal(api.getPendingDeleteKey(),null);
+  assert.equal(w.cart.length,1);
+  assert.strictEqual(w.cart[0],untouched,'a second row with the same catalog product stays in place');
+  assert.equal(paper.querySelectorAll('tr[data-qtable-key]').length,1);
+  assert.equal(paper.querySelectorAll('[data-qtable-delete]').length,1);
+  assert.equal(JSON.stringify(sameCatalog),originalCatalog,'catalog master was never modified');
+  assert.equal(paper.querySelectorAll('[data-qtable-insert]').length,1);
+  assert.equal(api.getActive(),null);
+  click('[data-qtable-delete="b"]');
+  click('[data-qtable-confirm-delete="b"]');
+  assert.equal(w.cart.length,0);
+  assert.ok(paper.querySelector('[data-qtable-insert=""]'),'the empty quotation still supports adding new lines');
+ }
+});
+test('row removal Escape cancels confirmation without modifying the cart',()=>{
+ const {w,paper,click,api}=boot();
+ click('[data-qtable-delete="a"]');
+ const confirm=paper.querySelector('.qtable-delete-confirm');
+ assert.ok(confirm);
+ confirm.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+ assert.equal(api.getPendingDeleteKey(),null);
+ assert.equal(w.cart.length,2);
+ assert.equal(paper.querySelector('.qtable-delete-confirm'),null);
+});
 test('manual items can show pre-order from the table and stay synchronized with the Interest List',()=>{
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
  const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://showroom.test/'}),w=dom.window,ctx=dom.getInternalVMContext();
