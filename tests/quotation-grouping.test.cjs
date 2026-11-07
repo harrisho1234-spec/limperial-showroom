@@ -95,7 +95,7 @@ test('preview, copy, image and print share grouping and correct row-resize refer
     assert.match(html, /if\(groupPlan\[groupIndex\]\?\.title && showGroupSubtotals\)/);
     assert.match(html, /initRowResize\(event, \$\{cartIndex\}\)/);
     assert.match(html, /exportPaper = previewPaper\.cloneNode\(true\)/);
-    assert.match(html, /const previewContent = previewPaper\.innerHTML/);
+    assert.match(html, /const previewContent = \(window\.QuotationTableEditor\?\.cleanClone\(previewPaper\.cloneNode\(true\)\) \|\| previewPaper\)\.innerHTML/);
     assert.match(html, /const textQuoteArea = document\.getElementById\('quote-textarea'\)/);
 });
 
