@@ -205,7 +205,7 @@ function setCellEditable(cell,key,field){
  cell.classList.add('qtable-editable');
  cell.dataset.qtableKey=key;
  cell.dataset.qtableField=field;
- cell.title='Tap to edit '+field+' in this quotation';
+ cell.title=field==='discount'?'Displays item + batch discount; tap to edit this item’s individual discount':'Tap to edit '+field+' in this quotation';
 }
 function numericCell(cell,line,field,value){
  if(!cell)return;
@@ -254,7 +254,10 @@ function decorate(){
   if(discountHeader) setCellEditable(node.cells[node.cells.length-2],key,'discount');
   numericCell(node.cells[3],line,'quantity',line.quantity||1);
   if(!isSet(line))numericCell(node.cells[4],line,'price',unitPrice(line));
-  if(discountHeader)numericCell(node.cells[node.cells.length-2],line,'discount',line.discount||0);
+  // The document renderer already displays the effective line + batch
+  // discount and its deducted dollar amount. Keep that visible rather than
+  // hiding it under an input showing only this line's individual value (0).
+  // Clicking the discount cell opens Edit to change the individual percentage.
   if(cell){
    const tools=document.createElement('span');
    tools.className='qtable-cell-tools';

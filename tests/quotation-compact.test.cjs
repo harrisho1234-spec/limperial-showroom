@@ -95,13 +95,22 @@ test('existing text edits clone catalog data; replacement keeps row ID, quantity
  assert.equal(w.cart[0].id,'a');assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].documentSections.quotation,'Lobby');
  assert.equal(api.getInline(),null);
 });
-test('numeric cell updates validate quantity, price and discount; cancel leaves cart intact',()=>{
+test('numeric cells validate quantity and price; individual discount remains editable via row form',()=>{
  const {w,paper,click}=boot();
  const change=(field,value)=>{const input=paper.querySelector(`[data-qtable-number="${field}"]`);input.value=value;input.dispatchEvent(new w.Event('change',{bubbles:true}));};
- change('quantity','3');change('price','120.55');change('discount','12.5');
+ const editDiscount=value=>{
+  click('td[data-qtable-field="discount"]');
+  const field=paper.querySelector('[data-qtable-input="discount"]');
+  assert.ok(field,'row editor offers the individual discount');
+  field.value=value;
+  field.dispatchEvent(new w.Event('input',{bubbles:true}));
+  paper.querySelector('[data-qtable-form] button[type="submit"]').click();
+ };
+ change('quantity','3');change('price','120.55');editDiscount('12.5');
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
- change('quantity','1.5');change('price','-1');change('discount','101');
+ change('quantity','1.5');change('price','-1');editDiscount('101');
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
+ click('[data-qtable-cancel]');
  click('[data-qtable-insert="a"]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3);
  click('[data-qtable-menu-close]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,0);assert.equal(w.cart.length,2);
 });
@@ -146,7 +155,8 @@ test('real quotation renderer preserves totals, groups, saved line metadata and 
   const price=paper.querySelectorAll('[data-qtable-number="price"]')[1];price.value='250';price.dispatchEvent(new w.Event('change',{bubbles:true}));
   assert.equal(vm.runInContext('cart[1].customPrice',ctx),250);
   assert.match(w.QuotationTableEditor.cleanClone(paper.cloneNode(true)).textContent,/\$250/);
-  assert.equal(paper.querySelectorAll('[data-qtable-number="discount"]').length,3);
+  assert.equal(paper.querySelectorAll('[data-qtable-number="discount"]').length,0,'the discount column shows the calculated effective value, not the individual-only input');
+  assert.equal(paper.querySelectorAll('td[data-qtable-field="discount"]').length,3,'clicking a discount cell still opens item-level editing');
   vm.runInContext("documentType='sales_order';salesOrderDepositMode='amount';",ctx);
   w.document.getElementById('so-deposit-amount').value='25';w.updateQuotationPreview();
   assert.match(paper.textContent,/Deposit Paid/);assert.match(paper.textContent,/\$25/);
@@ -444,5 +454,58 @@ test('Discount entry sits below Sub Total and applies % and $ to the existing ba
   fields().form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
   assert.equal(vm.runInContext('discountFlatValue',ctx),35,'invalid discount does not mutate saved values');
   assert.equal(vm.runInContext('discountPctValue',ctx),0);
+ }finally{dom.window.close()}
+});
+
+
+test('effective bulk discount is shown while the individual setting remains zero',()=>{
+ const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
+ const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://showroom.test/'}),w=dom.window,ctx=dom.getInternalVMContext();
+ try{
+  w.setInterval=()=>1;w.setTimeout=()=>1;
+  for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))
+   if(match[1].includes('let products ='))vm.runInContext(match[1],ctx);
+  w.onload=null;
+  vm.runInContext("products=loadFallbackProducts();filteredProducts=[...products];showNotification=()=>{};cart=[catalogCartEntry(products[0]),catalogCartEntry(products[1])];cart[0].quantity=2;cart[0].customPrice=200;cart[0].discount=0;cart[1].quantity=1;cart[1].customPrice=100;cart[1].discount=0;documentType='quotation';discountPctValue=30;discountFlatValue=0;",ctx);
+  w.eval(workspace);w.eval(editor);w.document.dispatchEvent(new w.Event('DOMContentLoaded'));w.updateQuotationPreview();
+  const paper=w.document.getElementById('quotation-live-paper');
+  const lines=()=>[...paper.querySelectorAll('tr[data-qtable-key]')];
+  const disc=row=>row.querySelector('td[data-qtable-field="discount"]');
+  assert.equal(lines().length,2);
+  assert.equal(paper.querySelectorAll('[data-qtable-number="discount"]').length,0,'calculated discount is not covered by an individual-only numeric input');
+  assert.match(disc(lines()[0]).textContent,/-30%/);
+  assert.match(disc(lines()[0]).textContent,/-\$120/);
+  assert.match(disc(lines()[1]).textContent,/-30%/);
+  assert.match(disc(lines()[1]).textContent,/-\$30/);
+  assert.deepEqual(JSON.parse(JSON.stringify(vm.runInContext('cart.map(x=>x.discount)',ctx))),[0,0],'individual discounts remain zero');
+  assert.match(lines()[0].cells[lines()[0].cells.length-1].textContent,/\$280/);
+  assert.match(lines()[1].cells[lines()[1].cells.length-1].textContent,/\$70/);
+
+  // Tapping the calculated column still opens the individual discount editor,
+  // where an untouched item starts at 0% (not the bulk 30%).
+  disc(lines()[0]).click();
+  const field=paper.querySelector('[data-qtable-input="discount"]');
+  assert.ok(field,'individual discount is editable from the existing row editor');
+  assert.equal(field.value,'0');
+  field.value='10';field.dispatchEvent(new w.Event('input',{bubbles:true}));
+  paper.querySelector('[data-qtable-form] button[type="submit"]').click();
+  assert.equal(vm.runInContext('cart[0].discount',ctx),10);
+  assert.equal(vm.runInContext('cart[1].discount',ctx),0);
+  assert.equal(vm.runInContext('discountPctValue',ctx),30,'batch percent is not overwritten');
+  assert.match(disc(lines()[0]).textContent,/-37%/,'10% individual combines multiplicatively with 30% bulk');
+  assert.match(disc(lines()[0]).textContent,/-\$148/);
+  assert.match(disc(lines()[1]).textContent,/-30%/,'other row remains bulk-only');
+  assert.match(lines()[0].cells[lines()[0].cells.length-1].textContent,/\$252/);
+
+  vm.runInContext('discountFlatValue=50',ctx);w.updateQuotationPreview();
+  assert.match(disc(lines()[0]).textContent,/-37%/,'global dollar discount stays in footer, not incorrectly allocated to individual rows');
+  assert.match(paper.querySelector('.qtable-grand-total-row').textContent,/\$272/);
+  const exported=w.QuotationTableEditor.cleanClone(paper.cloneNode(true));
+  const exportRows=[...exported.querySelectorAll('tr[data-qtable-key]')];
+  assert.equal(exportRows.length,2);
+  assert.match(exportRows[0].cells[exportRows[0].cells.length-2].textContent,/-37%/);
+  assert.match(exportRows[1].cells[exportRows[1].cells.length-2].textContent,/-30%/);
+  assert.match(exported.querySelector('.qtable-export-summary').cells[exported.querySelector('.qtable-export-summary').cells.length-1].textContent,/\$272/);
+  assert.equal(JSON.parse(JSON.stringify(vm.runInContext('cart.map(x=>x.item.qty)',ctx))).length,2);
  }finally{dom.window.close()}
 });
