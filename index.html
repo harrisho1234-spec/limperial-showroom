@@ -945,6 +945,7 @@
         let partnerCommValue = 0;
         let hasPartner = false;
         let documentType = 'quotation';
+        let salesOrderDepositMode = 'pct'; // last edited field is authoritative
         let showPreOrderOnDoc = true;
         let currentPage = 1;
         let itemsPerPage = 12;
@@ -2202,6 +2203,7 @@
                 if (itemId) state.itemNotes[String(itemId)] = input.value || '';
             });
 
+            if (type === 'sales_order') state.depositMode = salesOrderDepositMode;
             documentFormStates[type] = state;
         }
 
@@ -2221,6 +2223,7 @@
             });
 
             showPreOrderOnDoc = state.showPreOrderOnDoc !== false;
+            if (type === 'sales_order') salesOrderDepositMode = state.depositMode === 'amount' ? 'amount' : 'pct';
             const preorderToggle = document.getElementById('doc-preorder-toggle');
             if (preorderToggle) preorderToggle.checked = showPreOrderOnDoc;
 
@@ -2310,7 +2313,10 @@
             // item-editor render. Refresh it again using the restored mode,
             // preserving the already-restored note inputs.
             if (type !== previousType) renderQuoteItemsNotesForm();
-            if (type === 'sales_order' && !restored) syncDepositAmountFromPct();
+            if (type === 'sales_order' && !restored) {
+                salesOrderDepositMode = 'pct';
+                syncDepositAmountFromPct();
+            }
             updateQuotationNumberHelp();
             updateQuotationPreview();
         }
@@ -4403,30 +4409,45 @@
             return originalSubtotal - totalDiscountsAppliedOverall;
         }
 
+        // Keep exact cents from a manually entered deposit; the displayed
+        // percentage is an approximation and must not become the calculation input.
+        function calculateSalesOrderDeposit(totalValue, mode, percentValue, amountValue) {
+            const number = Number(totalValue);
+            const total = Number.isFinite(number) ? Math.max(0, Math.round(number * 100) / 100) : 0;
+            const parsedPercent = Number(percentValue);
+            const pct = Number.isFinite(parsedPercent) ? Math.min(100, Math.max(0, parsedPercent)) : 0;
+            const enteredNumber = Number(amountValue);
+            const entered = Number.isFinite(enteredNumber) ? Math.max(0, Math.round(enteredNumber * 100) / 100) : 0;
+            const amount = mode === 'amount' ? Math.min(total, entered) : Math.round(total * pct / 100 * 100) / 100;
+            return {
+                amount,
+                remaining: Math.round((total - amount) * 100) / 100,
+                percentage: mode === 'amount' ? (total ? Math.round(amount / total * 10000) / 100 : 0) : pct
+            };
+        }
+
         function syncDepositAmountFromPct() {
             const pctInput = document.getElementById('so-deposit-pct');
             const amtInput = document.getElementById('so-deposit-amount');
             if (!pctInput || !amtInput) return;
-            let pct = parseFloat(pctInput.value) || 0;
-            if (pct < 0) pct = 0; if (pct > 100) pct = 100;
-            const total = getCartFinalTotal();
-            amtInput.value = total > 0 ? (Math.round(total * pct / 100 * 100) / 100) : 0;
+            const deposit = calculateSalesOrderDeposit(getCartFinalTotal(), 'pct', pctInput.value, amtInput.value);
+            amtInput.value = deposit.amount;
         }
 
         function updateDepositFromPct() {
+            salesOrderDepositMode = 'pct';
             syncDepositAmountFromPct();
             updateQuotationPreview();
         }
 
         function updateDepositFromAmount() {
+            salesOrderDepositMode = 'amount';
             const pctInput = document.getElementById('so-deposit-pct');
             const amtInput = document.getElementById('so-deposit-amount');
             if (!pctInput || !amtInput) return;
-            const total = getCartFinalTotal();
-            let amt = parseFloat(amtInput.value) || 0;
-            if (amt < 0) amt = 0; if (total > 0 && amt > total) amt = total;
-            const pct = total > 0 ? (amt / total * 100) : 0;
-            pctInput.value = Math.round(pct * 100) / 100;
+            const deposit = calculateSalesOrderDeposit(getCartFinalTotal(), 'amount', pctInput.value, amtInput.value);
+            if (amtInput.value !== '' && Number(amtInput.value) !== deposit.amount) amtInput.value = deposit.amount;
+            pctInput.value = deposit.percentage;
             updateQuotationPreview();
         }
 
@@ -5684,6 +5705,7 @@
                 delivery_order: { initialized: false }
             };
             showPreOrderOnDoc = true;
+            salesOrderDepositMode = 'pct';
             clearActiveSavedQuotation();
 
             const modal = document.getElementById('share-modal');
@@ -6045,6 +6067,7 @@
                     checked: inputType === 'checkbox' || inputType === 'radio' ? !!el.checked : undefined
                 };
             });
+            if (documentType === 'sales_order') salesOrderDepositMode = 'pct';
             documentFormStates[documentType] = state;
             if (documentType === 'quotation') {
                 clearActiveSavedQuotation();
@@ -6320,27 +6343,33 @@
                     </tr>`;
 
                 if (documentType === 'sales_order') {
-                    let depositPct = 50;
                     const depositInput = document.getElementById('so-deposit-pct');
-                    if (depositInput) {
-                        depositPct = parseFloat(depositInput.value) || 0;
-                        if (depositPct < 0) depositPct = 0;
-                        if (depositPct > 100) depositPct = 100;
-                    }
-                    const depositValueAmount = finalOverallPayout * (depositPct / 100);
-                    const remainingBalanceAmount = finalOverallPayout - depositValueAmount;
-
                     const depositAmountInput = document.getElementById('so-deposit-amount');
-                    if (depositAmountInput && document.activeElement !== depositAmountInput) {
-                        depositAmountInput.value = Math.round(depositValueAmount * 100) / 100;
+                    const deposit = calculateSalesOrderDeposit(
+                        finalOverallPayout, salesOrderDepositMode,
+                        depositInput?.value ?? 50, depositAmountInput?.value ?? 0
+                    );
+                    const depositPct = deposit.percentage;
+                    const depositValueAmount = deposit.amount;
+                    const remainingBalanceAmount = deposit.remaining;
+                    const depositPercentLabel = (salesOrderDepositMode === 'amount' ? '≈' : '')
+                        + formatDocumentDiscountPct(depositPct) + '%';
+
+                    // Never round-trip a typed dollar amount through its display percentage.
+                    if (salesOrderDepositMode === 'amount') {
+                        if (depositInput) depositInput.value = depositPct;
+                        if (depositAmountInput && document.activeElement !== depositAmountInput)
+                            depositAmountInput.value = depositValueAmount;
+                    } else if (depositAmountInput) {
+                        depositAmountInput.value = depositValueAmount;
                     }
 
-                    plainText += `Deposit Paid (${formatDocumentDiscountPct(depositPct)}%):      ${formatCurrency(depositValueAmount)}\n`;
+                    plainText += `Deposit Paid (${depositPercentLabel}):      ${formatCurrency(depositValueAmount)}\n`;
                     plainText += `Remaining Balance:     ${formatCurrency(remainingBalanceAmount)}\n`;
 
                     subtotalRowHtml += `
                         <tr style="background-color: #fcf8f2; font-weight: 700;">
-                            <td colspan="${colsToSpan}" style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; color: #b45309; font-size: 10px;">Deposit Paid (${formatDocumentDiscountPct(depositPct)}%):</td>
+                            <td colspan="${colsToSpan}" style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; color: #b45309; font-size: 10px;">Deposit Paid (${depositPercentLabel}):</td>
                             <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #b45309; font-family: monospace; font-size: 11px;">${formatCurrency(depositValueAmount)}</td>
                         </tr>
                         <tr style="background-color: #f0fdf4; font-weight: 700; border-top: 1px solid #cbd5e1;">
