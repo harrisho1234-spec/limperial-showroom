@@ -196,3 +196,54 @@ test('per-row Hide PO controls quotation and Sales Order label display only, not
   assert.ok(containsPO(rows()[0])&&containsPO(rows()[1]));
  }finally{dom.window.close()}
 });
+
+
+test('manual items can show pre-order from the table and stay synchronized with the Interest List',()=>{
+ const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
+ const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://showroom.test/'}),w=dom.window,ctx=dom.getInternalVMContext();
+ try{
+  w.setInterval=()=>1;w.setTimeout=()=>1;
+  for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))
+   if(match[1].includes('let products ='))vm.runInContext(match[1],ctx);
+  w.onload=null;
+  vm.runInContext("products=loadFallbackProducts();filteredProducts=[...products];showNotification=()=>{};cart=[{id:'manual-test',type:'service',item:{id:'manual-test',manualItem:true,code:'MANUAL',brand:'Other',class:'Manual',itemName:'Custom installation',description:'By site requirement',qty:0,price:150,actualSalesPrice:150,costing:0},quantity:1,discount:0,customPrice:150,rowHeight:90,forcePreorder:false}];documentType='quotation';showPreOrderOnDoc=true;",ctx);
+  w.eval(workspace);w.eval(editor);w.document.dispatchEvent(new w.Event('DOMContentLoaded'));w.updateQuotationPreview();
+  const paper=w.document.getElementById('quotation-live-paper');
+  const row=()=>paper.querySelector('tr[data-qtable-key="manual-test"]');
+  const labelVisible=()=>/pre[\s-]*order:\s*1\s*pc/i.test(row().cells[1].textContent);
+  const entry=()=>vm.runInContext("cart[0]",ctx);
+  const original=JSON.stringify({qty:entry().quantity,discount:entry().discount,price:entry().customPrice,stock:entry().item.qty});
+  assert.equal(labelVisible(),false);
+  assert.match(row().querySelector('[data-qtable-manual-po]').textContent,/Mark PO/);
+  assert.equal(row().querySelector('[data-qtable-preorder]'),null);
+  row().querySelector('[data-qtable-manual-po]').click();
+  assert.equal(entry().forcePreorder,true);
+  assert.equal(labelVisible(),true);
+  assert.match(row().querySelector('[data-qtable-manual-po]').textContent,/Remove PO/);
+  assert.ok(row().querySelector('[data-qtable-preorder]'),'manual pre-order retains the separate Hide PO control');
+  row().querySelector('[data-qtable-preorder]').click();
+  assert.equal(entry().hidePreorderOnDoc,true);
+  assert.equal(entry().forcePreorder,true,'hiding a label must not change actual order status');
+  assert.equal(labelVisible(),false);
+  row().querySelector('[data-qtable-manual-po]').click();
+  assert.equal(entry().forcePreorder,false);
+  assert.equal(labelVisible(),false);
+  row().querySelector('[data-qtable-manual-po]').click();
+  assert.equal(entry().forcePreorder,true);
+  assert.equal(entry().hidePreorderOnDoc,false,'marking PO again makes the label visible');
+  assert.equal(labelVisible(),true);
+  assert.equal(JSON.stringify({qty:entry().quantity,discount:entry().discount,price:entry().customPrice,stock:entry().item.qty}),original);
+  vm.runInContext("documentType='sales_order'",ctx);w.updateQuotationPreview();
+  assert.equal(labelVisible(),true,'Sales Order uses the same manual item status');
+  row().querySelector('[data-qtable-manual-po]').click();
+  assert.equal(labelVisible(),false);
+  assert.equal(entry().forcePreorder,false);
+  vm.runInContext("toggleForcePreorder('manual-test')",ctx);
+  assert.equal(entry().forcePreorder,true);
+  assert.equal(labelVisible(),true,'the existing Interest List control updates the table');
+  assert.match(row().querySelector('[data-qtable-manual-po]').textContent,/Remove PO/);
+  const exported=w.QuotationTableEditor.cleanClone(paper.cloneNode(true));
+  assert.equal(exported.querySelector('[data-qtable-manual-po]'),null,'export excludes the editing controls');
+  assert.match(exported.querySelector('tr[data-qtable-key]').cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
+ }finally{dom.window.close()}
+});
