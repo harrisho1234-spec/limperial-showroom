@@ -146,7 +146,8 @@ test('real quotation renderer preserves totals, groups, saved line metadata and 
   const price=paper.querySelectorAll('[data-qtable-number="price"]')[1];price.value='250';price.dispatchEvent(new w.Event('change',{bubbles:true}));
   assert.equal(vm.runInContext('cart[1].customPrice',ctx),250);
   assert.match(w.QuotationTableEditor.cleanClone(paper.cloneNode(true)).textContent,/\$250/);
-  assert.equal(paper.querySelectorAll('[data-qtable-number="discount"]').length,3);
+  assert.equal(paper.querySelectorAll('[data-qtable-number="discount"]').length,0,'the discount column shows the calculated effective value, not the individual-only input');
+  assert.equal(paper.querySelectorAll('td[data-qtable-field="discount"]').length,3,'clicking a discount cell still opens item-level editing');
   vm.runInContext("documentType='sales_order';salesOrderDepositMode='amount';",ctx);
   w.document.getElementById('so-deposit-amount').value='25';w.updateQuotationPreview();
   assert.match(paper.textContent,/Deposit Paid/);assert.match(paper.textContent,/\$25/);
