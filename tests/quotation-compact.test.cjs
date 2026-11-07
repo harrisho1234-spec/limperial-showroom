@@ -509,3 +509,48 @@ test('effective bulk discount is shown while the individual setting remains zero
   assert.equal(JSON.parse(JSON.stringify(vm.runInContext('cart.map(x=>x.item.qty)',ctx))).length,2);
  }finally{dom.window.close()}
 });
+
+
+test('compact toolbar keeps five primary icons and hides secondary PO/remove controls in More menu',()=>{
+ for(const type of ['quotation','sales_order']){
+  const {w,paper,click,api}=boot(type);
+  const row=()=>paper.querySelector('tr[data-qtable-key="a"]');
+  const toolbar=()=>row().querySelector('.qtable-cell-tools');
+  const more=()=>toolbar().querySelector('.qtable-more-actions');
+  assert.equal(toolbar().querySelectorAll(':scope > button').length,5,'Edit, Up, Down, Drag and More fit one row');
+  assert.equal(toolbar().querySelector('[data-qtable-edit]').textContent.trim(),'✎','Edit uses an icon with an accessible label');
+  assert.equal(toolbar().querySelector('[data-qtable-more-actions]').getAttribute('aria-expanded'),'false');
+  assert.equal(more().hidden,true,'extra buttons hidden by default');
+  assert.equal(more().querySelectorAll('[data-qtable-force-po]').length,1);
+  assert.equal(more().querySelectorAll('[data-qtable-delete]').length,1);
+  assert.equal(api.getMoreMenuKey(),null);
+  const cartBefore=JSON.stringify(w.cart);
+  click('[data-qtable-more-actions="a"]');
+  assert.equal(api.getMoreMenuKey(),'a');
+  assert.equal(more().hidden,false);
+  assert.equal(toolbar().querySelector('[data-qtable-more-actions]').getAttribute('aria-expanded'),'true');
+  assert.equal(JSON.stringify(w.cart),cartBefore,'opening the menu does not alter order data');
+  more().dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+  assert.equal(api.getMoreMenuKey(),null,'Escape closes more actions');
+  assert.equal(more().hidden,true);
+  click('[data-qtable-more-actions="a"]');
+  click('[data-qtable-force-po="a"]');
+  assert.equal(w.cart[0].forcePreorder,true,'PO action still operates via More');
+  assert.equal(more().hidden,false,'menu stays open as state updates');
+  click('[data-qtable-delete="a"]');
+  assert.ok(more().querySelector('.qtable-delete-confirm'));
+  assert.equal(w.cart.length,2,'remove action still requires confirmation');
+  click('[data-qtable-cancel-delete]');
+  assert.equal(w.cart.length,2,'cancel is safe');
+  click('[data-qtable-more-actions="a"]');
+  assert.equal(more().hidden,true);
+  const addButtons=[...paper.querySelectorAll('[data-qtable-insert]')];
+  assert.equal(addButtons.length,2);
+  assert.ok(addButtons.every(x=>x.textContent.trim()==='＋ Add'),'small add label appears beneath each line');
+  click('[data-qtable-insert="a"]');
+  assert.equal(api.getMoreMenuKey(),null,'add menu closes More');
+  assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3,'catalog/manual/service adding preserved');
+  const exported=api.cleanClone(paper.cloneNode(true));
+  assert.equal(exported.querySelector('.qtable-cell-tools,.qtable-more-actions,.qtable-action-row'),null,'new toolbar and controls never export');
+ }
+});
