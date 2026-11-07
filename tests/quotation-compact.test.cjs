@@ -33,7 +33,7 @@ test('compact menu inserts existing catalog product at exact row and scrubs expo
  assert.doesNotMatch(paper.textContent,/Build directly|Build Items Here/);
  assert.equal(paper.querySelectorAll('.qtable-new-line').length,0);
  click('[data-qtable-insert="a"]');
- assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,4);
+ assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3);
  click('[data-qtable-add-kind="catalog"]');
  const search=paper.querySelector('[data-qtable-filter="search"]');search.value='ABC';
  search.dispatchEvent(new w.Event('input',{bubbles:true}));api.refreshCatalog();
@@ -102,7 +102,7 @@ test('numeric cell updates validate quantity, price and discount; cancel leaves 
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
  change('quantity','1.5');change('price','-1');change('discount','101');
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
- click('[data-qtable-insert="a"]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,4);
+ click('[data-qtable-insert="a"]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3);
  click('[data-qtable-menu-close]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,0);assert.equal(w.cart.length,2);
 });
 test('pointer dragging and arrows reorder table rows for touch and mouse',()=>{
@@ -343,7 +343,7 @@ test('regular catalog products can mark/remove forced PO without altering stock 
 });
 
 
-test('Discount Add item uses existing Batch Discount exactly once and displays plain Discount footer',()=>{
+test('Discount entry sits below Sub Total and applies % and $ to the existing batch calculation exactly once',()=>{
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
  const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://showroom.test/'}),w=dom.window,ctx=dom.getInternalVMContext();
  try{
@@ -355,15 +355,21 @@ test('Discount Add item uses existing Batch Discount exactly once and displays p
   w.eval(workspace);w.eval(editor);w.document.dispatchEvent(new w.Event('DOMContentLoaded'));w.updateQuotationPreview();
   const paper=w.document.getElementById('quotation-live-paper');
   const before=JSON.stringify(vm.runInContext("cart.map(r=>({id:r.id,qty:r.quantity,price:r.customPrice,discount:r.discount,stock:r.item.qty}))",ctx));
-  assert.equal(paper.querySelector('.qtable-discount-row'),null);
+  const fields=()=>({
+   percent:paper.querySelector('[data-qtable-footer-percent]'),
+   amount:paper.querySelector('[data-qtable-footer-amount]'),
+   form:paper.querySelector('[data-qtable-footer-discount-form]')
+  });
+  assert.equal(paper.querySelector('.qtable-discount-row'),null,'customer-facing discount line is optional');
+  assert.ok(fields().percent&&fields().amount,'both percentage and dollar inputs are visible even without a batch discount');
+  assert.equal(paper.querySelectorAll('tr.qtable-discount-entry-row').length,1);
+  assert.match(paper.querySelector('.qtable-discount-inline-title').textContent,/Discount \(optional\)/);
+  assert.equal(paper.querySelector('tr:has(td[colspan="3"])').nextElementSibling.className,'qtable-discount-entry-row','entry is immediately below Sub Total');
   paper.querySelector('[data-qtable-insert]').click();
-  assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,4);
-  paper.querySelector('[data-qtable-add-kind="discount"]').click();
-  const field=k=>paper.querySelector('[data-qtable-input="'+k+'"]');
-  assert.ok(field('batchPercent')&&field('batchAmount'));
-  field('batchPercent').value='10';
-  field('batchAmount').value='40';
-  paper.querySelector('[data-qtable-form] button[type="submit"]').click();
+  assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3,'discount is no longer a product Add item type');
+  paper.querySelector('[data-qtable-menu-close]').click();
+  fields().percent.value='10';fields().amount.value='40';
+  fields().form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
   assert.equal(vm.runInContext('discountPctValue',ctx),10);
   assert.equal(vm.runInContext('discountFlatValue',ctx),40);
   assert.equal(w.document.getElementById('discount-pct').value,'10');
@@ -380,38 +386,44 @@ test('Discount Add item uses existing Batch Discount exactly once and displays p
   assert.doesNotMatch(discount.cells[0].textContent,/Batch Discount|Bulk Discount/);
   assert.match(discount.cells[1].textContent,/-\$98/);
   assert.match(grand.cells[1].textContent,/\$302/);
-  assert.equal(paper.querySelectorAll('tr[data-qtable-key]').length,2,'discount is not added as a stock item');
+  assert.equal(paper.querySelectorAll('tr[data-qtable-key]').length,2,'discount is not an inventory item');
   assert.match(w.document.getElementById('quote-textarea').value,/Discount:\s*-\$98/);
   const exported=w.QuotationTableEditor.cleanClone(paper.cloneNode(true));
-  assert.ok(exported.querySelector('.qtable-discount-row'),'Discount still prints');
-  assert.equal(exported.querySelector('.qtable-discount-tools'),null,'Edit/Remove controls are excluded from print');
+  assert.equal(exported.querySelector('.qtable-discount-entry-row'),null,'entry controls excluded from customer exports');
+  assert.ok(exported.querySelector('.qtable-discount-row'),'customer-facing Discount row remains');
+  assert.equal(exported.querySelector('.qtable-discount-tools'),null,'footer editor buttons are excluded from exports');
+  assert.equal(fields().percent.value,'10');
+  assert.equal(fields().amount.value,'40');
   paper.querySelector('[data-qtable-edit-discount]').click();
-  assert.equal(field('batchPercent').value,'10');
-  assert.equal(field('batchAmount').value,'40');
-  w.QuotationTableEditor.cancel();
+  assert.strictEqual(w.document.activeElement,fields().percent,'Edit focuses inline percentage field rather than opening a second editor');
   vm.runInContext("documentType='sales_order';salesOrderDepositMode='pct'",ctx);
   w.document.getElementById('so-deposit-pct').value='50';
   w.updateQuotationPreview();
   assert.match(paper.textContent,/Deposit Paid/);
   assert.match(paper.querySelector('.qtable-grand-total-row').textContent,/\$302/);
-  paper.querySelector('[data-qtable-clear-discount]').click();
+  const entry=paper.querySelector('.qtable-discount-entry-row');
+  const deposit=[...paper.querySelectorAll('tr')].find(row=>row.textContent.includes('Deposit Paid'));
+  assert.ok(entry.compareDocumentPosition(deposit)&w.Node.DOCUMENT_POSITION_FOLLOWING,'entry occurs above Sales Order deposit');
+  paper.querySelector('.qtable-footer-clear').click();
   assert.equal(vm.runInContext('discountPctValue',ctx),0);
   assert.equal(vm.runInContext('discountFlatValue',ctx),0);
   assert.equal(paper.querySelector('.qtable-discount-row'),null);
-  assert.equal(JSON.stringify(vm.runInContext("cart.map(r=>({id:r.id,qty:r.quantity,price:r.customPrice,discount:r.discount,stock:r.item.qty}))",ctx)),before,'clearing the batch discount leaves line discounts intact');
-  assert.equal(paper.querySelectorAll('tr[data-qtable-key]').length,2);
-  const desktopFlat=w.document.getElementById('discount-flat');
-  desktopFlat.value='25';
+  assert.ok(fields().form,'optional editor remains available after clearing');
+  assert.equal(JSON.stringify(vm.runInContext("cart.map(r=>({id:r.id,qty:r.quantity,price:r.customPrice,discount:r.discount,stock:r.item.qty}))",ctx)),before,'item discounts and stock remain unchanged');
+  const desktopFlat=w.document.getElementById('discount-flat');desktopFlat.value='25';
   vm.runInContext("handleDiscountChange('flat')",ctx);
   assert.equal(vm.runInContext('discountFlatValue',ctx),25);
   assert.equal(w.document.getElementById('mobile-discount-flat').value,'25');
-  assert.match(paper.querySelector('.qtable-discount-row').textContent,/Discount:/,'outside desktop changes refresh the visible document');
+  assert.equal(fields().amount.value,'25','outside discount updates footer inputs');
   assert.match(paper.querySelector('.qtable-grand-total-row').textContent,/\$355/);
-  const mobileFlat=w.document.getElementById('mobile-discount-flat');
-  mobileFlat.value='35';
+  const mobileFlat=w.document.getElementById('mobile-discount-flat');mobileFlat.value='35';
   vm.runInContext("handleMobileDiscountChange('flat')",ctx);
   assert.equal(w.document.getElementById('discount-flat').value,'35');
+  assert.equal(fields().amount.value,'35');
   assert.match(paper.querySelector('.qtable-grand-total-row').textContent,/\$345/);
-
+  fields().percent.value='-2';
+  fields().form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+  assert.equal(vm.runInContext('discountFlatValue',ctx),35,'invalid discount does not mutate saved values');
+  assert.equal(vm.runInContext('discountPctValue',ctx),0);
  }finally{dom.window.close()}
 });
