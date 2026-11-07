@@ -181,7 +181,7 @@ test('per-row Hide PO controls quotation and Sales Order label display only, not
   const exported=w.QuotationTableEditor.cleanClone(paper.cloneNode(true));
   assert.equal(exported.querySelector('[data-qtable-preorder]'),null);
   assert.doesNotMatch(exported.querySelector('tbody').rows[0].cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
-  assert.match(exported.querySelector('tbody').rows[2].cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
+  assert.match(exported.querySelector('tbody').rows[1].cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
   vm.runInContext("documentType='sales_order';salesOrderDepositMode='amount';",ctx);
   w.updateQuotationPreview();
   assert.equal(containsPO(rows()[0]),false);
