@@ -1,10 +1,13 @@
-name: Quotation, Sales Order deposit and grouping checks
+name: Quotation builder, deposit and grouping checks
 
 on:
   push:
     branches: [main]
     paths:
       - 'index.html'
+      - 'quotation-workspace.js'
+      - 'quotation-workspace.css'
+      - 'tests/quotation-workspace.test.cjs'
       - 'tests/quotation-grouping.test.cjs'
       - 'tests/quotation-discount-format.test.cjs'
       - 'tests/sales-order-deposit.test.cjs'
@@ -19,5 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check grouping, discount formatting and exact Sales Order deposits
-        run: node --test tests/quotation-grouping.test.cjs tests/quotation-discount-format.test.cjs tests/sales-order-deposit.test.cjs
+      - name: Check workspace syntax
+        run: node --check quotation-workspace.js
+      - name: Test quotation editor, grouping and Sales Order deposits
+        run: node --test tests/quotation-workspace.test.cjs tests/quotation-grouping.test.cjs tests/quotation-discount-format.test.cjs tests/sales-order-deposit.test.cjs
