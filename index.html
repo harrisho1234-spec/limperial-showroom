@@ -1648,6 +1648,7 @@
                             if (syncStatusPill) syncStatusPill.className = "flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5 text-xs";
                             showNotification("Inventory fully updated.", "success");
                             loadCreatedSets();
+                            window.dispatchEvent(new Event("showroom:products-loaded"));
                         }
                         
                         const overlay = document.getElementById('initial-loading-overlay');
