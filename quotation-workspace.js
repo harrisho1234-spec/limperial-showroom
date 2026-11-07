@@ -201,7 +201,10 @@ function mount(){
    '<div class="qwb-result-heading qwb-selected-heading"><b>Items in this document</b><small id="qwb-selected-count">0 rows</small></div>'+
    '<p id="qwb-order-note" class="qwb-hint">Drag a row or use the arrow buttons to arrange it.</p>'+
    '<div id="qwb-selected" class="qwb-selected" role="list" aria-label="Quotation item order"></div>';
-  heading.parentElement.insertBefore(section,heading);
+  // Put direct selection near the document tabs, not below all item-note controls.
+  const documentTabs=$('doc-type-quote')?.parentElement;
+  if(documentTabs?.parentElement)documentTabs.insertAdjacentElement('afterend',section);
+  else heading.parentElement.insertBefore(section,heading);
   section.addEventListener('click',onClick);
   section.addEventListener('input',onInput);
   section.addEventListener('change',onChange);
