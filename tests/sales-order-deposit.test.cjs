@@ -71,7 +71,7 @@ function executePreview(mode,pct,amount,total=59494.50){
     document:doc,documentType:'sales_order',finalOverallPayout:total,
     formatDocumentDiscountPct:n=>String(n),
     formatCurrency:n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),
-    plainText:'',subtotalRowHtml:''
+    colsToSpan:5,plainText:'',subtotalRowHtml:''
   });
   vm.runInContext('salesOrderDepositMode='+JSON.stringify(mode)+';\n'+body,ctx);
   return {text:ctx.plainText,rows:ctx.subtotalRowHtml,pctInput:percentageInput,amountInput};
