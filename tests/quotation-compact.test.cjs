@@ -153,3 +153,46 @@ test('real quotation renderer preserves totals, groups, saved line metadata and 
   assert.equal(paper.querySelectorAll('[data-qtable-insert]').length,3);
  }finally{dom.window.close()}
 });
+
+
+test('per-row Hide PO controls quotation and Sales Order label display only, not quantities or stock',()=>{
+ const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
+ const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://showroom.test/'}),w=dom.window,ctx=dom.getInternalVMContext();
+ try{
+  w.setInterval=()=>1;w.setTimeout=()=>1;
+  for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))
+   if(match[1].includes('let products ='))vm.runInContext(match[1],ctx);
+  w.onload=null;
+  vm.runInContext("products=loadFallbackProducts();filteredProducts=[...products];showNotification=()=>{};cart=[catalogCartEntry(products[0]),catalogCartEntry(products[1])];cart[0].forcePreorder=true;cart[1].forcePreorder=true;documentType='quotation';showPreOrderOnDoc=true;",ctx);
+  w.eval(workspace);w.eval(editor);w.document.dispatchEvent(new w.Event('DOMContentLoaded'));w.updateQuotationPreview();
+  const paper=w.document.getElementById('quotation-live-paper');
+  const rows=()=>[...paper.querySelectorAll('tr[data-qtable-key]')];
+  const containsPO=row=>/pre[\s-]*order:\s*1\s*pc/i.test(row.cells[1].textContent);
+  assert.equal(rows().length,2);
+  assert.ok(containsPO(rows()[0])&&containsPO(rows()[1]));
+  assert.equal(paper.querySelectorAll('[data-qtable-preorder]').length,2);
+  const initial=vm.runInContext("cart.map(x=>({qty:x.quantity,force:x.forcePreorder,stock:x.item.qty,price:x.customPrice,discount:x.discount}))",ctx);
+  paper.querySelector('[data-qtable-preorder]').click();
+  assert.equal(vm.runInContext("cart[0].hidePreorderOnDoc",ctx),true);
+  assert.equal(containsPO(rows()[0]),false);
+  assert.equal(containsPO(rows()[1]),true,'other lines remain visible');
+  assert.match(rows()[0].querySelector('[data-qtable-preorder]').textContent,/Show PO/);
+  assert.deepEqual(JSON.parse(JSON.stringify(vm.runInContext("cart.map(x=>({qty:x.quantity,force:x.forcePreorder,stock:x.item.qty,price:x.customPrice,discount:x.discount}))",ctx))),JSON.parse(JSON.stringify(initial)));
+  const exported=w.QuotationTableEditor.cleanClone(paper.cloneNode(true));
+  assert.equal(exported.querySelector('[data-qtable-preorder]'),null);
+  assert.doesNotMatch(exported.querySelector('tbody').rows[0].cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
+  assert.match(exported.querySelector('tbody').rows[2].cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
+  vm.runInContext("documentType='sales_order';salesOrderDepositMode='amount';",ctx);
+  w.updateQuotationPreview();
+  assert.equal(containsPO(rows()[0]),false);
+  assert.equal(containsPO(rows()[1]),true);
+  rows()[0].querySelector('[data-qtable-preorder]').click();
+  assert.equal(vm.runInContext("cart[0].hidePreorderOnDoc",ctx),false);
+  assert.ok(containsPO(rows()[0]));
+  vm.runInContext('toggleDocPreOrder(false)',ctx);
+  assert.equal(containsPO(rows()[0]),false);
+  assert.equal(containsPO(rows()[1]),false);
+  vm.runInContext('toggleDocPreOrder(true)',ctx);
+  assert.ok(containsPO(rows()[0])&&containsPO(rows()[1]));
+ }finally{dom.window.close()}
+});
