@@ -400,5 +400,18 @@ test('Discount Add item uses existing Batch Discount exactly once and displays p
   assert.equal(paper.querySelector('.qtable-discount-row'),null);
   assert.equal(JSON.stringify(vm.runInContext("cart.map(r=>({id:r.id,qty:r.quantity,price:r.customPrice,discount:r.discount,stock:r.item.qty}))",ctx)),before,'clearing the batch discount leaves line discounts intact');
   assert.equal(paper.querySelectorAll('tr[data-qtable-key]').length,2);
+  const desktopFlat=w.document.getElementById('discount-flat');
+  desktopFlat.value='25';
+  vm.runInContext("handleDiscountChange('flat')",ctx);
+  assert.equal(vm.runInContext('discountFlatValue',ctx),25);
+  assert.equal(w.document.getElementById('mobile-discount-flat').value,'25');
+  assert.match(paper.querySelector('.qtable-discount-row').textContent,/Discount:/,'outside desktop changes refresh the visible document');
+  assert.match(paper.querySelector('.qtable-grand-total-row').textContent,/\$355/);
+  const mobileFlat=w.document.getElementById('mobile-discount-flat');
+  mobileFlat.value='35';
+  vm.runInContext("handleMobileDiscountChange('flat')",ctx);
+  assert.equal(w.document.getElementById('discount-flat').value,'35');
+  assert.match(paper.querySelector('.qtable-grand-total-row').textContent,/\$345/);
+
  }finally{dom.window.close()}
 });
