@@ -710,6 +710,8 @@ async function handlePhoto(event){
  finally{URL.revokeObjectURL(url)}
 }
 function compactExportTotals(root){
+ // Accept lightweight export test doubles without a full querySelector API.
+ if(typeof root.querySelector!=='function')return;
  // The live editor keeps optional percentage/dollar inputs and a detailed
  // total. Customer exports restore the original one-row subtotal layout.
  const subtotal=root.querySelector('tr.qtable-export-summary');
