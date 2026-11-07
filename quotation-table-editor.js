@@ -402,7 +402,7 @@ function install(){
   };
  }
  window.QuotationTableEditor={decorate,open,cancel,cleanClone,commit,selectProduct,move,getActive:()=>active,
-  originalRows,formFields, catalogMatch};
+  originalRows,formFields,catalogMatch,refreshCatalog,getCatalogChoices:()=>choices.slice()};
  decorate();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
