@@ -212,7 +212,8 @@ function decorate(){
   setCellEditable(cell,key,'description');
   setCellEditable(node.cells[3],key,'quantity');
   setCellEditable(node.cells[4],key,'price');
-  if(node.cells.length>=8) setCellEditable(node.cells[node.cells.length-2],key,'discount');
+  const discountHeader=[...t.tHead?.rows?.[0]?.cells||[]].some(th=>/discount|disc\.?/i.test(String(th.textContent||'')));
+  if(discountHeader) setCellEditable(node.cells[node.cells.length-2],key,'discount');
   if(cell){
    const tools=document.createElement('span');
    tools.className='qtable-cell-tools';
