@@ -1,0 +1,30 @@
+# L'Imperial Showroom app versioning
+
+The sticky header always displays the current release number and the date that release was published. The single metadata source is `app-version.js`, initially **V4.10.1 · Last updated 07 Nov 2026**.
+
+## Numbering
+
+- **V4** stays fixed for this application.
+- **10** is the current major/monthly release **sequence**, not the calendar month number. This keeps the requested V4.10.1 starting point even though the date is November.
+- **1** is the update count within release 10. Regular releases increment this count: V4.10.2, V4.10.3, …
+- At the next major/monthly release, increment the middle number and reset the update count to 1: V4.11.1.
+- The last-updated date changes when the update is actually released; page refreshes never increment it.
+
+## For the next deployment
+
+From the repo root, in the same PR as the app changes, run:
+
+```bash
+node scripts/bump-app-version.cjs update            # V4.10.1 → V4.10.2
+node scripts/bump-app-version.cjs monthly           # V4.10.1 → V4.11.1
+```
+
+These commands set the release date to the current date in Asia/Phnom_Penh, and consistently update `app-version.js`, the cache-busting version URL in `index.html`, and the offline service-worker cache in `sw.js`. Do **not** run both commands for a single release. For a specified date or a preview:
+
+```bash
+node scripts/bump-app-version.cjs update --date 2026-11-08 --dry-run
+```
+
+Run `node --test tests/app-version.test.cjs` and existing app tests. Merge the PR after tests pass and verify GitHub Pages has deployed the same commit. For every subsequent app release, bump the version as part of that release; do not create a version merely because a page was reloaded or a draft was saved.
+
+The persistent label is in the sticky header, just below the main control row, on desktop, tablet and mobile. The version is information only: it does not alter catalog, stock, quotations, permissions, sales orders, or synchronization.

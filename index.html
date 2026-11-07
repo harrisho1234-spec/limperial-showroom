@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Limperial V4</title>
+    <script defer src="app-version.js?v=V4.10.1"></script>
     
     <!-- PWA Web App Manifest and Theme Configuration -->
     <link rel="manifest" href="manifest.json">
@@ -333,6 +334,13 @@
                         <i class="fa-solid fa-arrows-rotate text-xs sm:text-sm"></i>
                     </button>
                 </div>
+            </div>
+            <div id="showroom-version-indicator" role="note"
+                 class="max-w-7xl mx-auto mt-0.5 flex items-center justify-end gap-1.5 text-[9px] sm:text-[10px] leading-4 text-luxury-soft select-none"
+                 aria-label="Application version and last updated date">
+                <span id="showroom-app-version" class="font-bold tracking-wide text-luxury-gold"></span>
+                <span aria-hidden="true" class="text-luxury-muted">·</span>
+                <span id="showroom-last-updated" class="text-luxury-muted"></span>
             </div>
         </header>
 
