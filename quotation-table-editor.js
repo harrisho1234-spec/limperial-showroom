@@ -709,9 +709,41 @@ async function handlePhoto(event){
  }catch(e){notice(e.message||'Unable to read photo.','error')}
  finally{URL.revokeObjectURL(url)}
 }
+function compactExportTotals(root){
+ // Accept lightweight export test doubles without a full querySelector API.
+ if(typeof root.querySelector!=='function')return;
+ // The live editor keeps optional percentage/dollar inputs and a detailed
+ // total. Customer exports restore the original one-row subtotal layout.
+ const subtotal=root.querySelector('tr.qtable-export-summary');
+ const discountRow=root.querySelector('tr.qtable-discount-row');
+ const grandRow=root.querySelector('tr.qtable-grand-total-row');
+ if(!subtotal||!discountRow||!grandRow||subtotal.cells.length<2)return;
+ const gross=Number(subtotal.dataset.qtableExportGross);
+ const discount=Number(subtotal.dataset.qtableExportDiscount);
+ const net=Number(subtotal.dataset.qtableExportNet);
+ if(![gross,discount,net].every(Number.isFinite)||gross<0||discount<0||net<0)return;
+ const discountCell=subtotal.cells[subtotal.cells.length-2];
+ const totalCell=subtotal.cells[subtotal.cells.length-1];
+ const money=amount=>typeof formatCurrency==='function'?formatCurrency(amount):fmt(amount);
+ if(discount>0){
+  // Multiple item discounts, batch percentage and fixed-dollar discounts may
+  // coexist. Display the effective total percentage, not an untrue single
+  // input rate; the underlying existing financial result is unchanged.
+  const percent=gross>0?Number(Math.min(100,discount/gross*100).toFixed(2)):0;
+  discountCell.innerHTML='<div>-'+percent+'%</div>'+
+   '<div style="font-size:10px;font-weight:500;">(-'+escapeValue(money(discount))+')</div>';
+ }else discountCell.textContent='—';
+ totalCell.textContent=money(net);
+ discountRow.remove();
+ grandRow.remove();
+ subtotal.removeAttribute('data-qtable-export-gross');
+ subtotal.removeAttribute('data-qtable-export-discount');
+ subtotal.removeAttribute('data-qtable-export-net');
+}
 function cleanClone(root){
  if(!root)return root;
  root.querySelectorAll('.qtable-action-row,.qtable-panel-row,.qtable-cell-tools,.qtable-inline-host,.qtable-discount-tools,.qtable-discount-entry-row').forEach(el=>el.remove());
+ compactExportTotals(root);
  root.querySelectorAll('.qtable-editable').forEach(el=>el.classList.remove('qtable-editable'));
  return root;
 }
