@@ -259,7 +259,7 @@ function decorate(){
    tools.innerHTML+='<button type="button" data-qtable-drag="'+safe+'" aria-label="Drag row to reorder">⠿</button>';
    // Remove only this cart line, never another instance of the same product.
    tools.innerHTML+='<button type="button" class="qtable-delete" data-qtable-delete="'+safe+
-    '" aria-label="Remove '+escapeValue(title(line))+' from quotation" aria-expanded="'+(pendingDeleteKey===key)+'" title="Remove this row">✕</button>';
+    '" aria-label="Remove '+escapeValue(title(line))+' from quotation" aria-expanded="'+(pendingDeleteKey===key)+'" title="Remove this row">✕ Remove</button>';
    if(pendingDeleteKey===key){
     tools.innerHTML+='<span class="qtable-delete-confirm" role="group" aria-label="Confirm remove quotation row">'+
      '<span>Remove this row?</span>'+
@@ -524,6 +524,7 @@ function requestDelete(key){
  if(!editorEnabled()||!rowByKey(key))return;
  // Confirm explicitly before mutating the shared working Interest List.
  pendingDeleteKey=String(key);
+ active=null;inline=null;addMenuAfter=null;
  decorate();
  table()?.querySelector('.qtable-delete-yes')?.focus({preventScroll:true});
 }
