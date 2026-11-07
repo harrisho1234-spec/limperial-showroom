@@ -84,6 +84,7 @@ function renderResults(){
   const brand=$('qwb-brand')?.value||'';
   const cat=$('qwb-category')?.value||'';
   const stock=$('qwb-stock')?.value||'';
+  const sort=$('qwb-sort')?.value||'suggested';
   let matches=catalog().filter(p=>p&&p.id!==undefined&&(!brand||p.brand===brand)&&
     (!cat||category(p)===cat)&&(!stock||stockStatus(p)===stock)&&searchMatches(p,q));
   if(q)matches.sort((a,b)=>{
@@ -93,6 +94,9 @@ function renderResults(){
     };
     return score(b)-score(a);
   });
+  if(sort==='name')matches.sort((a,b)=>String(a.itemName||'').localeCompare(String(b.itemName||'')));
+  if(sort==='price-low')matches.sort((a,b)=>itemPrice(a)-itemPrice(b));
+  if(sort==='price-high')matches.sort((a,b)=>itemPrice(b)-itemPrice(a));
   const count=matches.length;
   resultItems=matches.slice(0,Math.max(12,limit));
   const allSelected=new Set(cartRows().filter(x=>x.type!=='service').map(x=>String(x.item?.id??x.setId??'')));
@@ -187,7 +191,10 @@ function mount(){
      '<select id="qwb-category" aria-label="Filter by category"><option value="">All categories</option></select>'+
      '<select id="qwb-stock" aria-label="Filter by stock">'+
        '<option value="">All stock</option><option value="in">In stock</option>'+
-       '<option value="preorder">Pre-order</option><option value="out">No stock</option></select></div>'+
+       '<option value="preorder">Pre-order</option><option value="out">No stock</option></select>'+ 
+     '<select id="qwb-sort" aria-label="Sort catalog products"><option value="suggested">Suggested order</option>'+ 
+     '<option value="name">Name A–Z</option><option value="price-low">Price: low to high</option>'+ 
+     '<option value="price-high">Price: high to low</option></select></div>'+
    '<div class="qwb-result-heading"><b>Catalog</b><small id="qwb-count">0 matches</small></div>'+
    '<div id="qwb-results" class="qwb-results" role="list" aria-label="Catalog search results"></div>'+
    '<button type="button" id="qwb-more" hidden>Show more</button>'+
@@ -198,6 +205,9 @@ function mount(){
   section.addEventListener('click',onClick);
   section.addEventListener('input',onInput);
   section.addEventListener('change',onChange);
+  section.addEventListener('focusin',event=>{
+    if(event.target.id==='qwb-search'){refreshFilters();renderResults()}
+  });
   section.addEventListener('dragstart',onDragStart);
   section.addEventListener('dragover',onDragOver);
   section.addEventListener('dragleave',onDragLeave);
@@ -324,7 +334,7 @@ function onInput(event){
 }
 function onChange(event){
   const target=event.target;
-  if(['qwb-brand','qwb-category','qwb-stock'].includes(target.id)){
+  if(['qwb-brand','qwb-category','qwb-stock','qwb-sort'].includes(target.id)){
     limit=12;renderResults();return;
   }
   const field=target.dataset.qwbField,key=target.dataset.qwbKey;
