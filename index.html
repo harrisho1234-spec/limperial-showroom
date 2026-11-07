@@ -3504,6 +3504,7 @@
             cart.splice(index,1,next);
             closeReplaceCartItem();
             window.SeasonalPromos?.afterAddToCart(catalogItem.id);
+            renderQuoteItemsNotesForm();
             updateCartVisuals();
             if(desktop)desktop.scrollTop=scrollDesktop;
             if(mobile)mobile.scrollTop=scrollMobile;
@@ -3658,7 +3659,7 @@
             const item={id:'manual-'+id,code:get('code').slice(0,100)||'MANUAL',brand:get('brand').slice(0,100)||'Other',class:'Manual',itemName:name,description:get('description').slice(0,1000),manualItem:true,qty:0,price,salesPrice:price,actualSalesPrice:price,costing:0,margin:0,location:'Not in Catalog',imgLink:m.dataset.photo||''};
             if(line){line.item=item;line.quantity=qty;line.customPrice=price;line.forcePreorder=get('fulfillment')==='preorder';}
             else cart.push({id,type:'service',item,quantity:qty,discount:0,customPrice:price,rowHeight:90,forcePreorder:get('fulfillment')==='preorder'});
-            closeManualInterestItem();updateCartVisuals();renderProductGrid();updateQuotationPreview();
+            closeManualInterestItem();updateCartVisuals();renderProductGrid();renderQuoteItemsNotesForm();updateQuotationPreview();
             showNotification('Manual item saved to Interest List.','success');
         }
         function adjustManualInterestQty(id,delta){
