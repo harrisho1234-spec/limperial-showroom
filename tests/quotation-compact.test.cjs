@@ -180,8 +180,8 @@ test('per-row Hide PO controls quotation and Sales Order label display only, not
   assert.deepEqual(JSON.parse(JSON.stringify(vm.runInContext("cart.map(x=>({qty:x.quantity,force:x.forcePreorder,stock:x.item.qty,price:x.customPrice,discount:x.discount}))",ctx))),JSON.parse(JSON.stringify(initial)));
   const exported=w.QuotationTableEditor.cleanClone(paper.cloneNode(true));
   assert.equal(exported.querySelector('[data-qtable-preorder]'),null);
-  assert.doesNotMatch(exported.querySelector('tbody').rows[0].cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
-  assert.match(exported.querySelector('tbody').rows[1].cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
+  assert.doesNotMatch(exported.querySelectorAll('tr[data-qtable-key]')[0].cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
+  assert.match(exported.querySelectorAll('tr[data-qtable-key]')[1].cells[1].textContent,/pre[\s-]*order:\s*1\s*pc/i);
   vm.runInContext("documentType='sales_order';salesOrderDepositMode='amount';",ctx);
   w.updateQuotationPreview();
   assert.equal(containsPO(rows()[0]),false);
