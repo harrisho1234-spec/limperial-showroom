@@ -4533,6 +4533,8 @@
             const mPct = document.getElementById('mobile-discount-pct'); const mFlat = document.getElementById('mobile-discount-flat');
             if (mPct && pctInput) mPct.value = pctInput.value; if (mFlat && flatInput) mFlat.value = flatInput.value;
             calculateAndDrawTotals();
+            updateQuotationPreview();
+            window.ShowroomPhase1?.scheduleDraft?.();
         }
 
         function handleMobileDiscountChange(source) {
@@ -4542,6 +4544,8 @@
             const dPct = document.getElementById('discount-pct'); const dFlat = document.getElementById('discount-flat');
             if (dPct && mPct) dPct.value = mPct.value; if (dFlat && mFlat) dFlat.value = mFlat.value;
             calculateAndDrawTotals();
+            updateQuotationPreview();
+            window.ShowroomPhase1?.scheduleDraft?.();
         }
 
         function applyPresetDiscount(percent) {
@@ -4549,6 +4553,8 @@
             if (dPct) dPct.value = percent; if (mPct) mPct.value = percent;
             discountPctValue = percent;
             calculateAndDrawTotals();
+            updateQuotationPreview();
+            window.ShowroomPhase1?.scheduleDraft?.();
         }
 
         function handlePartnerCommChange(type, val, inputEl) {
