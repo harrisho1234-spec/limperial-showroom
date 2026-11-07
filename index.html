@@ -6126,6 +6126,7 @@
             let tableRowsHtml = ''; let totalQtySum = 0; let totalItemsCount = 0; let totalSetsCount = 0; let totalAmtSum = 0; let totalDiscountSum = 0; let finalNetSum = 0; let totalCostSum = 0; let totalMarginSum = 0;
             const noteMap = {}; document.querySelectorAll('.quote-item-note-input').forEach(input => noteMap[input.getAttribute('data-item-id')] = input.value);
             const hasAnyDiscount = cart.some(c => (c.discount || 0) > 0) || discountPctValue > 0 || discountFlatValue > 0;
+            const hasBatchDiscountRow = ['quotation','sales_order'].includes(documentType) && (discountPctValue > 0 || discountFlatValue > 0);
             const soApprover = documentType === 'sales_order' && hasAnyDiscount ? String(document.getElementById('so-discount-approved-by')?.value || '').trim() : '';
             if (soApprover) plainText += 'Discount Approved By: ' + soApprover + '\n';
             const soApprovalBox = document.getElementById('so-discount-approval');
@@ -6316,9 +6317,9 @@
             if (!isInventory && !isDeliveryOrder) {
                 plainText += `-----------------------------------\nSub Total:             ${formatCurrency(totalAmtSum)}\n`;
                 if (totalDiscountSum > 0) {
-                    let discLabelText = 'Total Discounts:';
-                    if (discountPctValue > 0 && discountFlatValue > 0) discLabelText = `Total Discounts (-${formatDocumentDiscountPct(discountPctValue)}% & -${formatCurrency(discountFlatValue)}):`;
-                    else if (discountPctValue > 0) discLabelText = `Total Discounts (-${formatDocumentDiscountPct(discountPctValue)}%):`;
+                    let discLabelText = hasBatchDiscountRow ? 'Discount:' : 'Total Discounts:';
+                    if (!hasBatchDiscountRow && discountPctValue > 0 && discountFlatValue > 0) discLabelText = `Total Discounts (-${formatDocumentDiscountPct(discountPctValue)}% & -${formatCurrency(discountFlatValue)}):`;
+                    else if (!hasBatchDiscountRow && discountPctValue > 0) discLabelText = `Total Discounts (-${formatDocumentDiscountPct(discountPctValue)}%):`;
                     plainText += `${discLabelText} -${formatCurrency(totalDiscountSum)}\n`;
                 }
                 plainText += `Grand Total:           ${formatCurrency(finalOverallPayout)}\n`;
@@ -6344,9 +6345,28 @@
                         <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-family: monospace;"></td>
                         <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-family: monospace; color: #1e293b; font-size: 10px;">${formatCurrency(totalAmtSum)}</td>
                         ${showCostMode ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px;"></td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-family: monospace; color: #1e293b; font-size: 10px;">${formatCurrency(totalCostSum)}</td><td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; font-family: monospace; color: ${totalMarginSum >= 0 ? '#10b981' : '#f43f5e'}; font-size: 10px;">${formatCurrency(totalMarginSum)}</td>` : ''}
-                        ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-family: monospace; font-size: 11px; font-weight: 600;">${(discountPctValue > 0 && discountFlatValue > 0) ? `<div>-${formatDocumentDiscountPct(discountPctValue)}% & -${formatCurrency(discountFlatValue)}</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : (discountPctValue > 0 ? `<div>-${formatDocumentDiscountPct(discountPctValue)}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : (discountFlatValue > 0 ? `<div>Flat Disc</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : `<div style="font-size: 10px; font-weight: 600;">(-${formatCurrency(totalDiscountSum)})</div>`))}</td>` : ''}
-                        <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #0f2d4a; font-family: monospace; font-size: 11px;">${formatCurrency(finalOverallPayout)}</td>
+                        ${hasAnyDiscount ? `<td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #ef4444; font-family: monospace; font-size: 11px; font-weight: 600;">${hasBatchDiscountRow ? '—' : (discountPctValue > 0 && discountFlatValue > 0) ? `<div>-${formatDocumentDiscountPct(discountPctValue)}% & -${formatCurrency(discountFlatValue)}</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : (discountPctValue > 0 ? `<div>-${formatDocumentDiscountPct(discountPctValue)}%</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : (discountFlatValue > 0 ? `<div>Flat Disc</div><div style="font-size: 10px; font-weight: 500;">(-${formatCurrency(totalDiscountSum)})</div>` : `<div style="font-size: 10px; font-weight: 600;">(-${formatCurrency(totalDiscountSum)})</div>`))}</td>` : ''}
+                        <td style="border: 1px solid #cbd5e1; padding: 8px 6px; text-align: right; color: #0f2d4a; font-family: monospace; font-size: 11px;">${formatCurrency(hasBatchDiscountRow ? totalAmtSum : finalOverallPayout)}</td>
                     </tr>`;
+                // Display existing discounts only; financial ledger already
+                // subtracted them. Gross minus discounts equals Grand Total.
+                if(hasBatchDiscountRow){
+                    subtotalRowHtml += `
+                        <tr class="qtable-discount-row" style="background:#fff9f5;">
+                            <td colspan="${colsToSpan}" style="border:1px solid #cbd5e1;padding:8px 10px;text-align:right;font-weight:700;color:#aa554a;font-size:11px;">
+                                Discount:
+                                <span class="qtable-discount-tools">
+                                    <button type="button" data-qtable-edit-discount aria-label="Edit quotation discount">✎ Edit</button>
+                                    <button type="button" data-qtable-clear-discount aria-label="Remove quotation discount">✕ Remove</button>
+                                </span>
+                            </td>
+                            <td style="border:1px solid #cbd5e1;padding:8px 6px;text-align:right;font-weight:700;color:#aa554a;font-family:monospace;font-size:11px;">-${formatCurrency(totalDiscountSum)}</td>
+                        </tr>
+                        <tr class="qtable-grand-total-row" style="background:#eff6ff;font-weight:700;">
+                            <td colspan="${colsToSpan}" style="border:1px solid #cbd5e1;padding:8px;text-align:right;color:#0f2d4a;font-size:11px;">Grand Total:</td>
+                            <td style="border:1px solid #cbd5e1;padding:8px 6px;text-align:right;color:#0f2d4a;font-family:monospace;font-size:11px;">${formatCurrency(finalOverallPayout)}</td>
+                        </tr>`;
+                }
 
                 if (documentType === 'sales_order') {
                     const depositInput = document.getElementById('so-deposit-pct');
@@ -7108,7 +7128,7 @@
     <script src="showroom-scanner.js?v=20261029-photo-crop1"></script>
     <script src="customer-shopping-session.js?v=20261023-session-theme2"></script>
     <script src="quotation-workspace.js?v=20261107-compact2"></script>
-    <script src="quotation-table-editor.js?v=20261107-delete1"></script>
+    <script src="quotation-table-editor.js?v=20261107-batchdiscount1"></script>
 <div id="manual-interest-modal" class="hidden fixed inset-0 z-[110] bg-black/75 p-3 overflow-auto" role="dialog" aria-modal="true"><form onsubmit="saveManualInterestItem(event)" class="max-w-lg mx-auto my-8 rounded-2xl bg-luxury-dark text-luxury-text border border-luxury-gold/40 p-5 space-y-3"><div class="flex justify-between"><h3 class="font-bold">Manual Item</h3><button type="button" onclick="closeManualInterestItem()">✕</button></div><p class="text-xs text-luxury-muted">Not in catalog · Estimated price · No stock changes</p><label class="block text-xs">Name *<input data-manual="name" required maxlength="160" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="block text-xs">Brand (optional)<input data-manual="brand" maxlength="100" placeholder="Enter brand" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="block text-xs">Code<input data-manual="code" maxlength="100" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><div class="grid grid-cols-2 gap-2"><label class="text-xs">Quantity *<input data-manual="qty" required type="number" min="1" max="9999" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label><label class="text-xs">Estimated Price ($) *<input data-manual="price" required type="number" min="0" step=".01" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></label></div><label class="block text-xs">Availability / Order Status<select data-manual="fulfillment" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"><option value="standard">Standard item (no pre-order label)</option><option value="preorder">Pre-order (show on quotation)</option></select></label><label class="block text-xs">Specifications / Notes<textarea data-manual="description" maxlength="1000" rows="3" class="block w-full mt-1 bg-luxury-accent p-3 rounded-lg"></textarea></label><label class="block text-xs">Product Photo (optional)<input type="file" data-manual-photo accept="image/*" onchange="selectManualPhoto(this)" class="block w-full mt-1"></label><img data-manual-preview class="hidden w-24 h-24 rounded-lg object-cover" alt="Photo preview"><button type="button" onclick="removeManualPhoto()" class="text-xs underline">Remove photo</button><button type="submit" class="w-full bg-luxury-gold text-[#171b22] rounded-lg p-3 font-bold">Save Item</button></form></div>
 <script>document.addEventListener('DOMContentLoaded',refreshCartPreorderVisibilityControls);</script>
 </body>
