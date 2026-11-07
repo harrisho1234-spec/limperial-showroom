@@ -1,0 +1,125 @@
+/* Live quotation-table editing. Controls are stripped from print/image exports. */
+#quotation-live-paper .qtable-editable{cursor:pointer;position:relative}
+#quotation-live-paper .qtable-editable:hover,
+#quotation-live-paper .qtable-editable:focus-within{
+  background:#fffae9!important;box-shadow:inset 0 0 0 1px #d1a25c
+}
+#quotation-live-paper .qtable-cell-tools{
+  display:flex;flex-wrap:wrap;gap:3px;align-items:center;margin-top:7px;
+  font-family:Inter,Arial,sans-serif
+}
+#quotation-live-paper .qtable-cell-tools button{
+  padding:4px 6px;min-height:24px;border:1px solid #d7b980;
+  border-radius:5px;color:#76531c;background:#fff8e8;
+  font-size:9px;font-weight:700;cursor:pointer
+}
+#quotation-live-paper .qtable-cell-tools button:first-child{font-size:10px}
+#quotation-live-paper .qtable-cell-tools button:hover{background:#f7e4b9}
+#quotation-live-paper .qtable-action-row td{
+  background:#fffaf0;border:1px solid #e5d2aa!important;padding:10px!important
+}
+#quotation-live-paper .qtable-action-content{
+  display:flex;align-items:center;justify-content:flex-start;gap:7px;flex-wrap:wrap;
+  color:#76531c;font:600 11px Inter,Arial,sans-serif;
+}
+#quotation-live-paper .qtable-action-content strong{
+  font-size:11px;margin-right:8px;flex:0 1 auto
+}
+#quotation-live-paper .qtable-action-content button{
+  padding:8px 10px;min-height:34px;white-space:nowrap;
+  border:1px solid #d9b575;border-radius:7px;background:#fff;color:#895d21;
+  font:bold 10px Inter,Arial,sans-serif;cursor:pointer
+}
+#quotation-live-paper .qtable-action-content button:hover{background:#fff0d0}
+#quotation-live-paper .qtable-panel-row td{
+  border:1px solid #e5d2aa!important;background:#fff9ee!important;
+  padding:12px!important
+}
+#quotation-live-paper .qtable-edit-panel{
+  color:#243448;min-width:0;
+  font:12px Inter,Arial,sans-serif
+}
+#quotation-live-paper .qtable-edit-heading{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #e9d5ac;
+}
+#quotation-live-paper .qtable-edit-heading b{font-size:13px;color:#98651f}
+#quotation-live-paper .qtable-edit-heading button{
+  min-width:32px;min-height:32px;background:white;border:1px solid #e3c99a;
+  border-radius:7px;cursor:pointer
+}
+#quotation-live-paper .qtable-form-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px
+}
+#quotation-live-paper .qtable-field{
+  min-width:0;display:flex;flex-direction:column;gap:4px;
+  font-size:10px;font-weight:700;color:#515b67;
+}
+#quotation-live-paper .qtable-field.qtable-wide{grid-column:1/-1}
+#quotation-live-paper .qtable-field input,
+#quotation-live-paper .qtable-field textarea,
+#quotation-live-paper .qtable-catalog-filters input,
+#quotation-live-paper .qtable-catalog-filters select{
+  width:100%;min-width:0;min-height:36px;padding:8px;border:1px solid #d8be95;
+  border-radius:7px;font:12px Inter,Arial,sans-serif;background:white;color:#213346;
+}
+#quotation-live-paper .qtable-field textarea{resize:vertical}
+#quotation-live-paper .qtable-readonly{
+  padding:8px;min-height:36px;background:#f2f2f2;color:#687381;
+  border:1px solid #e5ded3;border-radius:7px;font-size:11px
+}
+#quotation-live-paper .qtable-disclaimer{
+  font:10px/1.5 Inter,Arial,sans-serif;color:#6d7080;margin:10px 0 0
+}
+#quotation-live-paper .qtable-form-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#quotation-live-paper .qtable-form-buttons button{
+  min-height:36px;padding:8px 15px;border:1px solid #d8bd8c;
+  border-radius:7px;background:#fff;color:#734c1e;
+  font:bold 11px Inter,Arial,sans-serif;cursor:pointer
+}
+#quotation-live-paper .qtable-form-buttons .qtable-primary{
+  background:#aa792f;color:white;border-color:#aa792f
+}
+#quotation-live-paper .qtable-catalog-filters{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px
+}
+#quotation-live-paper .qtable-catalog-filters input{grid-column:1/-1}
+#quotation-live-paper .qtable-catalog-results{
+  max-height:250px;overflow-y:auto;margin-top:12px;
+  overscroll-behavior:contain;border:1px solid #e8d6b8;border-radius:9px;background:#fff
+}
+#quotation-live-paper .qtable-result-count{padding:8px 10px;font-size:10px;color:#746147}
+#quotation-live-paper .qtable-catalog-product{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;
+  border-top:1px solid #f0e4d3
+}
+#quotation-live-paper .qtable-catalog-product img{
+  width:42px;height:42px;flex-shrink:0;object-fit:contain;border:1px solid #ead6b8;border-radius:5px
+}
+#quotation-live-paper .qtable-catalog-product div{flex:1;min-width:0}
+#quotation-live-paper .qtable-catalog-product b{
+  display:block;font-size:11px;color:#29394a;line-height:1.4
+}
+#quotation-live-paper .qtable-catalog-product small{
+  display:block;color:#667386;font-size:9px;margin-top:2px
+}
+#quotation-live-paper .qtable-catalog-product button,
+#quotation-live-paper [data-qtable-more]{
+  padding:7px 10px;min-height:34px;flex-shrink:0;background:#fff9e8;
+  color:#895e27;font:bold 10px Inter,Arial,sans-serif;
+  border:1px solid #dabf8f;border-radius:6px;cursor:pointer
+}
+#quotation-live-paper [data-qtable-more]{display:block;width:100%;text-align:center}
+#quotation-live-paper .qtable-photo-status{grid-column:1/-1;font-size:10px}
+#quotation-live-paper .qtable-photo-status button{color:#a04337;text-decoration:underline}
+@media (max-width:720px){
+  #quotation-live-paper .qtable-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #quotation-live-paper .qtable-catalog-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #quotation-live-paper .qtable-action-content button{min-height:40px}
+  #quotation-live-paper .qtable-cell-tools button{min-height:32px}
+}
+@media print{
+  #quotation-live-paper .qtable-action-row,
+  #quotation-live-paper .qtable-panel-row,
+  #quotation-live-paper .qtable-cell-tools{display:none!important}
+}
