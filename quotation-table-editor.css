@@ -219,16 +219,16 @@
 #quotation-live-paper .qtable-cell-tools button.qtable-preorder-toggle[aria-pressed="true"]{color:#2d6653;border-color:#9fc7b1;background:#edf8f1}
 @media(max-width:720px){#quotation-live-paper .qtable-cell-tools button.qtable-preorder-toggle{min-height:34px;padding:6px 9px}}
 
-/* Manual quotation lines can be marked as pre-order without editing the cart outside. */
-#quotation-live-paper .qtable-cell-tools button.qtable-manual-preorder{
+/* Catalog and manual quotation rows use the same existing forced-preorder status. */
+#quotation-live-paper .qtable-cell-tools button.qtable-force-preorder{
   font-size:10px;padding:4px 7px;white-space:nowrap;
   border-color:#d6b681;background:#fffaf1;color:#76531c
 }
-#quotation-live-paper .qtable-cell-tools button.qtable-manual-preorder[aria-pressed="true"]{
+#quotation-live-paper .qtable-cell-tools button.qtable-force-preorder[aria-pressed="true"]{
   background:#fff0d6;border-color:#d4a25b;color:#965716
 }
 @media(max-width:720px){
-  #quotation-live-paper .qtable-cell-tools button.qtable-manual-preorder{
+  #quotation-live-paper .qtable-cell-tools button.qtable-force-preorder{
     min-height:34px;padding:6px 9px
   }
 }
