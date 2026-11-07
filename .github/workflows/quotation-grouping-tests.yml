@@ -10,6 +10,7 @@ on:
       - 'quotation-table-editor.js'
       - 'quotation-table-editor.css'
       - 'tests/quotation-table-editor.test.cjs'
+      - 'tests/quotation-compact.test.cjs'
       - 'tests/quotation-workspace.test.cjs'
       - 'tests/quotation-grouping.test.cjs'
       - 'tests/quotation-discount-format.test.cjs'
@@ -27,5 +28,7 @@ jobs:
           node-version: '22'
       - name: Check workspace and in-table editor syntax
         run: node --check quotation-workspace.js && node --check quotation-table-editor.js
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
       - name: Test quotation editor, grouping and Sales Order deposits
-        run: node --test tests/quotation-table-editor.test.cjs tests/quotation-workspace.test.cjs tests/quotation-grouping.test.cjs tests/quotation-discount-format.test.cjs tests/sales-order-deposit.test.cjs
+        run: node --test tests/quotation-compact.test.cjs tests/quotation-table-editor.test.cjs tests/quotation-workspace.test.cjs tests/quotation-grouping.test.cjs tests/quotation-discount-format.test.cjs tests/sales-order-deposit.test.cjs

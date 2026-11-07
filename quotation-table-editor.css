@@ -1,4 +1,3 @@
-/* Live quotation-table editing. Controls are stripped from print/image exports. */
 #quotation-live-paper .qtable-editable{cursor:pointer;position:relative}
 #quotation-live-paper .qtable-editable:hover,
 #quotation-live-paper .qtable-editable:focus-within{
@@ -123,3 +122,30 @@
   #quotation-live-paper .qtable-panel-row,
   #quotation-live-paper .qtable-cell-tools{display:none!important}
 }
+
+/* Live quotation-table editing. Controls are stripped from print/image exports. */
+#quotation-live-paper .qtable-inline-host{display:block;position:relative;font:12px Inter,Arial,sans-serif}
+#quotation-live-paper .qtable-inline-host input{width:100%;min-width:0;padding:5px 3px;border:1px solid transparent;border-bottom-color:#d7b980;border-radius:3px;background:transparent;color:#16324a;font:inherit;box-sizing:border-box}
+#quotation-live-paper .qtable-inline-host input:focus{outline:2px solid #b78b48;background:white}
+#quotation-live-paper .qtable-inline-host input[type=number]{min-width:48px;text-align:right}
+#quotation-live-paper .qtable-suggestions{display:block;max-height:200px;overflow:auto;border:1px solid #d7b980;border-radius:4px;background:#fff;margin-top:3px;text-align:left}
+#quotation-live-paper .qtable-suggestions button{display:block;width:100%;text-align:left;background:white;padding:8px;border:0;border-bottom:1px solid #eee;font:11px Inter,Arial,sans-serif;color:#16324a;cursor:pointer;white-space:normal}
+#quotation-live-paper .qtable-suggestions button:hover,#quotation-live-paper .qtable-suggestions button:focus{background:#fff1d5}
+#quotation-live-paper .qtable-suggestions small{display:block;font-size:10px;color:#64748b}
+#quotation-live-paper .qtable-kinds{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+#quotation-live-paper .qtable-kinds button{padding:5px 8px;border:1px solid #d7b980;border-radius:4px;background:white;font-size:11px;color:#76531c}
+#quotation-live-paper .qtable-kinds button[aria-pressed=true]{background:#f7e4b9}
+#quotation-live-paper .qtable-action-row td{padding:0 4px!important;background:transparent!important;border:0!important;text-align:left}
+#quotation-live-paper [data-qtable-insert]{border:0;background:transparent;color:#98651f;font:bold 18px Arial;cursor:pointer;min-width:32px;min-height:28px}
+#quotation-live-paper .qtable-new-line{padding:4px 0;max-width:430px}
+#quotation-live-paper [data-qtable-drag]{touch-action:none;cursor:grab;user-select:none}
+#quotation-live-paper .qtable-drop{outline:2px solid #b78b48}
+@media screen{
+ #quotation-live-paper td:has(> .qtable-inline-host)>.qtable-original{display:none}
+ #quotation-live-paper td:has(> .qtable-inline-host input[data-qtable-existing])>div:first-of-type{display:none}
+}
+@media(max-width:720px){
+ #quotation-live-paper .qtable-inline-host input{font-size:16px;min-height:36px}
+ #quotation-live-paper .qtable-kinds button,#quotation-live-paper .qtable-suggestions button,#quotation-live-paper [data-qtable-insert]{min-height:40px}
+}
+@media print{#quotation-live-paper .qtable-inline-host{display:none!important}}

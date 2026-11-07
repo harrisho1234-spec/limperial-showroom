@@ -9,8 +9,8 @@ const editorEnabled=()=>typeof documentType!=='undefined'&&['quotation','sales_o
 const rows=()=>typeof cart!=='undefined'&&Array.isArray(cart)?cart:[];
 const catalog=()=>typeof products!=='undefined'&&Array.isArray(products)?products:[];
 const fmt=amount=>'$'+(Number(amount)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-let active=null,choices=[],updateTimer=null,installed=false;
-const table=()=>$('quotation-live-paper')?.querySelector('table');
+let active=null,choices=[],updateTimer=null,installed=false,inline=null,drag=null;
+const table=()=>$('quotation-live-paper')?.querySelector('table:has(thead)')||$('quotation-live-paper')?.querySelector('table');
 const headerCount=()=>table()?.tHead?.rows?.[0]?.cells?.length||7;
 const rowByKey=key=>rows().find(row=>keyFor(row)===String(key));
 const description=row=>row?.type==='set'?'Product set':row?.item?.description||'';
@@ -109,17 +109,18 @@ function readForm(){
  root.querySelectorAll('[data-qtable-input]').forEach(input=>{data[input.dataset.qtableInput]=input.value});
  return data;
 }
-function open(kind,key=''){
+function open(kind,key='',afterKey=null){
  if(!editorEnabled())return;
  const current=active?.kind;
  if(current&&current!=='catalog')active.values={...active.values,...readForm()};
- active={kind,key:String(key),values:kind==='catalog'&&current==='catalog'?active.values:{},limit:8,photoData:null};
+ inline=null;
+ active={kind,key:String(key),afterKey,values:kind==='catalog'&&current==='catalog'?active.values:{},limit:8,photoData:null};
  decorate();
  if(kind==='catalog')refreshCatalog();
  const field=table()?.querySelector(kind==='catalog'?'[data-qtable-filter="search"]':'[data-qtable-input="name"]');
  field?.focus({preventScroll:true});
 }
-function cancel(){active=null;decorate()}
+function cancel(){active=null;inline=null;decorate()}
 function catalogMatch(product,query){
  const words=query.toLowerCase().split(/\s+/).filter(Boolean);
  const haystack=[product?.code,product?.itemName,product?.brand,product?.description,product?.keyMaterial,product?.class,product?.subclass]
@@ -193,6 +194,29 @@ function setCellEditable(cell,key,field){
  cell.dataset.qtableField=field;
  cell.title='Tap to edit '+field+' in this quotation';
 }
+function numericCell(cell,line,field,value){
+ if(!cell)return;
+ if(!cell.querySelector('.qtable-original')){
+  const original=document.createElement('span');original.className='qtable-original';
+  while(cell.firstChild)original.appendChild(cell.firstChild);
+  cell.appendChild(original);
+ }
+ const host=document.createElement('span');host.className='qtable-inline-host';
+ host.innerHTML='<input type="number" data-qtable-number="'+field+'" data-qtable-key="'+escapeValue(keyFor(line))+'" aria-label="'+field+'" min="'+(field==='quantity'?1:0)+'" step="'+(field==='quantity'?1:'0.01')+'" value="'+value+'">';
+ cell.appendChild(host);
+}
+function handleNumber(event){
+ const input=event.target,field=input.dataset.qtableNumber;if(!field)return;
+ const line=rowByKey(input.dataset.qtableKey);if(!line)return;
+ const n=Number(input.value);
+ if(!input.value.trim()||!Number.isFinite(n)||n<0||
+  (field==='quantity'&&(!Number.isInteger(n)||n<1||n>9999))||
+  (field==='discount'&&n>100)||(field==='price'&&n>999999999)){
+  notice('Enter a valid '+field+'.','error');input.value=field==='price'?unitPrice(line):line[field]||0;return;
+ }
+ if(field==='price'&&isSet(line))return;
+ line[field==='price'?'customPrice':field]=Math.round(n*100)/100;updateDocument();
+}
 function decorate(){
  const t=table();
  if(!t)return;
@@ -200,6 +224,7 @@ function decorate(){
  if(!editorEnabled()){active=null;return}
  const body=t.tBodies?.[0];if(!body)return;
  body.querySelectorAll('.qtable-action-row,.qtable-panel-row').forEach(el=>el.remove());
+ t.querySelectorAll('.qtable-inline-host').forEach(el=>el.remove());
  t.querySelectorAll('.qtable-cell-tools').forEach(el=>el.remove());
  t.querySelectorAll('.qtable-editable').forEach(el=>{
   el.classList.remove('qtable-editable');delete el.dataset.qtableKey;delete el.dataset.qtableField;
@@ -212,8 +237,11 @@ function decorate(){
   setCellEditable(cell,key,'description');
   setCellEditable(node.cells[3],key,'quantity');
   setCellEditable(node.cells[4],key,'price');
-  const discountHeader=[...t.tHead?.rows?.[0]?.cells||[]].some(th=>/discount|disc\.?/i.test(String(th.textContent||'')));
+  const discountHeader=[...t.tHead?.rows?.[0]?.cells||[]].some(th=>/discount|dis(?:c)?\./i.test(String(th.textContent||'')));
   if(discountHeader) setCellEditable(node.cells[node.cells.length-2],key,'discount');
+  numericCell(node.cells[3],line,'quantity',line.quantity||1);
+  if(!isSet(line))numericCell(node.cells[4],line,'price',unitPrice(line));
+  if(discountHeader)numericCell(node.cells[node.cells.length-2],line,'discount',line.discount||0);
   if(cell){
    const tools=document.createElement('span');
    tools.className='qtable-cell-tools';
@@ -221,27 +249,154 @@ function decorate(){
    tools.innerHTML='<button type="button" data-qtable-edit="'+safe+'" aria-label="Edit '+escapeValue(title(line))+' in quotation">✎ Edit</button>'+
     '<button type="button" data-qtable-move="-1" data-qtable-key="'+safe+'" aria-label="Move row up">↑</button>'+
     '<button type="button" data-qtable-move="1" data-qtable-key="'+safe+'" aria-label="Move row down">↓</button>';
+   tools.innerHTML+='<button type="button" data-qtable-drag="'+safe+'" aria-label="Drag row to reorder">⠿</button>';
    cell.appendChild(tools);
+   if(!isSet(line)){
+    const host=document.createElement('span');host.className='qtable-inline-host';
+    host.innerHTML='<input data-qtable-inline data-qtable-existing="'+safe+'" aria-label="Product name or code" autocomplete="off" maxlength="160" value="'+escapeValue(title(line))+'"><span data-qtable-suggestions></span>';
+    cell.insertBefore(host,cell.firstChild);
+   }
   }
  }
  const cols=headerCount();
- const action=document.createElement('tr');
- action.className='qtable-action-row';
- action.innerHTML='<td colspan="'+cols+'"><div class="qtable-action-content">'+
-  '<strong>Build directly in this table</strong>'+
-  '<button type="button" data-qtable-open="catalog">+ Existing Product</button>'+
-  '<button type="button" data-qtable-open="manual">+ Manual Item</button>'+
-  '<button type="button" data-qtable-open="service">+ Service Fee</button></div></td>';
  const summary=[...body.rows].find(row=>row.cells?.[0]?.textContent?.includes('Sub Total:'));
- if(summary)body.insertBefore(action,summary);else body.appendChild(action);
+ const anchors=matches.length?matches:[{node:null,line:null}];
+ for(const {node,line} of anchors){
+  const key=line?keyFor(line):'';
+  const action=document.createElement('tr');action.className='qtable-action-row';
+  action.dataset.qtableAnchor=key;
+  action.innerHTML='<td colspan="'+cols+'"><button type="button" data-qtable-insert="'+escapeValue(key)+'" aria-label="Insert item after '+escapeValue(line?title(line):'start')+'">+</button></td>';
+  if(node)node.insertAdjacentElement('afterend',action);
+  else if(summary)body.insertBefore(action,summary);else body.appendChild(action);
+  if(inline&&!inline.key&&inline.afterKey===key){
+   action.innerHTML='<td></td><td colspan="'+(cols-1)+'"><div class="qtable-inline-host qtable-new-line">'+
+    '<input data-qtable-inline aria-label="New product name or code" autocomplete="off" maxlength="160" placeholder="Type product code / name, or your own item…" value="'+escapeValue(inline.text)+'">'+
+    '<span class="qtable-kinds"><button type="button" data-qtable-kind="catalog">Product</button><button type="button" data-qtable-kind="manual">Manual</button><button type="button" data-qtable-kind="service">Service fee</button><button type="button" data-qtable-cancel aria-label="Cancel new row">×</button></span><span data-qtable-suggestions></span></div></td>';
+  }
+ }
  if(active){
-  const panel=document.createElement('tr');
-  panel.className='qtable-panel-row';
+  const panel=document.createElement('tr');panel.className='qtable-panel-row';
   panel.innerHTML='<td colspan="'+cols+'">'+rowEditorHtml()+'</td>';
-  action.insertAdjacentElement('afterend',panel);
+  const anchor=matches.find(x=>keyFor(x.line)===(active.kind==='edit'?active.key:active.afterKey))?.node;
+  if(anchor)anchor.insertAdjacentElement('afterend',panel);
+  else if(summary)body.insertBefore(panel,summary);else body.appendChild(panel);
   if(active.kind==='catalog')refreshCatalog();
  }
+ if(inline)refreshSuggestions();
 }
+// Insertion is anchored by stable row ID, so grouped previews and cart order
+// cannot accidentally insert beside a different product.
+function placeAfter(line,afterKey){
+ if(afterKey===null||afterKey===undefined)return;
+ const all=rows(),anchor=rowByKey(afterKey);
+ const i=all.indexOf(line);if(i<0)return;
+ all.splice(i,1);
+ all.splice(anchor?all.indexOf(anchor)+1:all.length,0,line);
+ if(anchor?.documentSections)line.documentSections={...anchor.documentSections};
+ if(anchor&&typeof documentGroupingMode==='function'&&documentGroupingMode()==='discount')line.discount=Number(anchor.discount)||0;
+}
+function startInline(afterKey=''){
+ active=null;inline={afterKey,key:'',kind:'catalog',text:'',choices:[]};
+ decorate();table()?.querySelector('.qtable-new-line input')?.focus({preventScroll:true});
+}
+function inlineHost(){
+ return [...table()?.querySelectorAll('.qtable-inline-host')||[]].find(host=>{
+  const input=host.querySelector('[data-qtable-inline]');
+  return inline?.key?input?.dataset.qtableExisting===inline.key:host.classList.contains('qtable-new-line');
+ });
+}
+function refreshSuggestions(){
+ if(!inline)return;
+ const host=inlineHost(),box=host?.querySelector('[data-qtable-suggestions]');if(!box)return;
+ const q=inline.text.trim().toLowerCase();
+ inline.choices=inline.kind==='catalog'&&q?catalog().filter(p=>p&&p.id!=null&&!p.hidden&&catalogMatch(p,q))
+  .sort((a,b)=>(String(b.code).toLowerCase()===q)-(String(a.code).toLowerCase()===q)).slice(0,5):[];
+ host.querySelectorAll('[data-qtable-kind]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.qtableKind===inline.kind)));
+ box.innerHTML=q?'<span class="qtable-suggestions">'+inline.choices.map((p,i)=>
+  '<button type="button" data-qtable-suggestion="'+i+'">'+escapeValue(p.code||'')+' · '+escapeValue(p.itemName||'Product')+'<small>'+escapeValue(p.brand||'')+' · '+fmt(p.actualSalesPrice??p.price)+' · '+escapeValue(status(p))+'</small></button>').join('')+
+  '<button type="button" data-qtable-use-text>'+escapeValue(inline.key?'Keep text: ':inline.kind==='service'?'Add service: ':'Add manual item: ')+escapeValue(inline.text)+'</button></span>':'';
+}
+function commitInline(choiceIndex){
+ if(!inline||!editorEnabled())return;
+ const state=inline,name=state.text.trim().slice(0,160),old=state.key?rowByKey(state.key):null;
+ if(!name)return;
+ if(state.key&&!old){cancel();return}
+ const product=Number.isInteger(choiceIndex)?state.choices[choiceIndex]:null;
+ if(Number.isInteger(choiceIndex)&&!product)return;
+ if(product?.isSet&&old){notice('Add product sets as a new row.','info');return}
+ let target;
+ if(product){
+  if(product.isSet){
+   if(rows().some(x=>x.type==='set'&&String(x.setId||x.id)===String(product.setId||product.id))){notice('This set is already selected. Adjust its quantity instead.');return}
+   const before=new Set(rows());toggleCartSelection(product.id);target=rows().find(x=>!before.has(x));
+   if(!target)return;
+  }else{
+   target=catalogCartEntry(window.SeasonalPromos?.view?.(product)||product,old?.id,old?.quantity||1);
+   if(old){
+    target.rowHeight=old.rowHeight;
+    if(old.documentSections){target.documentSections={...old.documentSections};target.discount=old.discount}
+    if(old.documentCodes)target.documentCodes={...old.documentCodes};
+    rows().splice(rows().indexOf(old),1,target);
+   }else rows().push(target);
+  }
+ }else if(old){
+  // Renaming an existing catalog line retains its inventory identity.
+  old.item={...old.item,itemName:name};target=old;
+ }else{
+  // Reuse validated manual/service construction and existing stock semantics.
+  inline=null;open(state.kind==='service'?'service':'manual','',state.afterKey);
+  active.values={name,quantity:'1',price:'0',discount:'0'};decorate();commit();return;
+ }
+ if(!old)placeAfter(target,state.afterKey);
+ inline=null;active=null;updateDocument();
+}
+function handleFocus(event){
+ const input=event.target;
+ if(!input.matches?.('[data-qtable-inline]'))return;
+ if(input.dataset.qtableExisting){
+  active=null;inline={key:input.dataset.qtableExisting,kind:isService(rowByKey(input.dataset.qtableExisting))?'service':'catalog',text:input.value,choices:[]};
+ }
+ refreshSuggestions();
+}
+function handleKey(event){
+ if(!event.target.closest?.('.qtable-inline-host'))return;
+ if(event.key==='Escape'){event.preventDefault();cancel();return}
+ if(event.key==='Enter'&&event.target.matches?.('[data-qtable-inline]')&&!event.isComposing){event.preventDefault();commitInline();return}
+ if(event.key==='ArrowDown'&&event.target.matches?.('[data-qtable-inline]')){
+  event.preventDefault();inlineHost()?.querySelector('[data-qtable-suggestion], [data-qtable-use-text]')?.focus();
+ }
+}
+function handleBlur(event){
+ const host=event.target.closest?.('.qtable-inline-host');if(!host||!inline)return;
+ // Clicking a suggestion or kind button must complete before blur can commit.
+ if(event.relatedTarget&&host.contains(event.relatedTarget))return;
+ if(event.target.matches?.('[data-qtable-inline]')&&(!inline.key||inline.text.trim()!==title(rowByKey(inline.key))))commitInline();
+}
+function pointerDown(event){
+ const handle=event.target.closest?.('[data-qtable-drag]');
+ if(!handle||event.isPrimary===false||event.button>0)return;
+ event.preventDefault();drag={key:handle.dataset.qtableDrag,id:event.pointerId,y:event.clientY,handle,target:null};
+ try{handle.setPointerCapture(event.pointerId)}catch(_){}
+}
+function pointerMove(event){
+ if(!drag||event.pointerId!==drag.id||Math.abs(event.clientY-drag.y)<7)return;
+ const row=document.elementFromPoint?.(event.clientX,event.clientY)?.closest('tr[data-qtable-key]');
+ table()?.querySelectorAll('.qtable-drop').forEach(el=>el.classList.remove('qtable-drop'));
+ drag.target=null;
+ if(row&&table()?.contains(row)&&row.dataset.qtableKey!==drag.key){
+  const rect=row.getBoundingClientRect();drag.target={key:row.dataset.qtableKey,after:event.clientY>rect.top+rect.height/2};row.classList.add('qtable-drop');
+ }
+ const scroller=$('quotation-live-paper-container'),rect=scroller?.getBoundingClientRect();
+ if(rect){if(event.clientY>rect.bottom-32)scroller.scrollTop+=16;if(event.clientY<rect.top+32)scroller.scrollTop-=16}
+}
+function pointerEnd(event){
+ if(!drag||event.pointerId!==drag.id)return;
+ const d=drag;drag=null;
+ try{d.handle.releasePointerCapture(d.id)}catch(_){}
+ table()?.querySelectorAll('.qtable-drop').forEach(el=>el.classList.remove('qtable-drop'));
+ if(event.type!=='pointercancel'&&d.target)window.QuotationWorkspace?.moveTo(d.key,d.target.key,d.target.after);
+}
+
 function commit(){
  if(!active||active.kind==='catalog')return;
  const kind=active.kind,editing=kind==='edit',line=editing?rowByKey(active.key):null;
@@ -291,6 +446,7 @@ function commit(){
    target.customPrice=cents(price);
    target.discount=cents(discount);
  }
+ if(!editing)placeAfter(target,active.afterKey);
  active=null;updateDocument();
  notice(editing?'Quotation row updated.':'Item added to quotation.','success');
 }
@@ -326,6 +482,14 @@ function move(key,direction){
 function handleClick(event){
  if(!editorEnabled())return;
  const target=event.target;
+ if(target.closest?.('[data-qtable-inline]'))return;
+ const insert=target.closest?.('[data-qtable-insert]');
+ if(insert){event.preventDefault();startInline(insert.dataset.qtableInsert);return}
+ const kind=target.closest?.('[data-qtable-kind]');
+ if(kind){event.preventDefault();inline.kind=kind.dataset.qtableKind;refreshSuggestions();return}
+ if(target.closest?.('[data-qtable-use-text]')){event.preventDefault();commitInline();return}
+ const suggestion=target.closest?.('[data-qtable-suggestion]');
+ if(suggestion){event.preventDefault();commitInline(Number(suggestion.dataset.qtableSuggestion));return}
  const pick=target.closest?.('[data-qtable-pick]');
  if(pick){event.preventDefault();selectProduct(pick.dataset.qtablePick);return}
  if(target.closest?.('[data-qtable-more]')){
@@ -342,11 +506,12 @@ function handleClick(event){
  const edit=target.closest?.('[data-qtable-edit]');
  if(edit){event.preventDefault();open('edit',edit.dataset.qtableEdit);return}
  const cell=target.closest?.('td.qtable-editable');
- if(cell&&!target.closest?.('.row-resizer-handle')&&!target.closest?.('a')&&!target.closest?.('button')){
+ if(cell&&!target.closest?.('.row-resizer-handle')&&!target.closest?.('a')&&!target.closest?.('button')&&!target.closest?.('input')){
   event.preventDefault();open('edit',cell.dataset.qtableKey);
  }
 }
 function handleInput(event){
+ if(event.target.matches?.('[data-qtable-inline]')){inline.text=event.target.value;refreshSuggestions();return}
  if(!active)return;
  const target=event.target;
  const filter=target.dataset.qtableFilter;
@@ -381,7 +546,7 @@ async function handlePhoto(event){
 }
 function cleanClone(root){
  if(!root)return root;
- root.querySelectorAll('.qtable-action-row,.qtable-panel-row,.qtable-cell-tools').forEach(el=>el.remove());
+ root.querySelectorAll('.qtable-action-row,.qtable-panel-row,.qtable-cell-tools,.qtable-inline-host').forEach(el=>el.remove());
  root.querySelectorAll('.qtable-editable').forEach(el=>el.classList.remove('qtable-editable'));
  return root;
 }
@@ -392,7 +557,15 @@ function install(){
  paper.addEventListener('click',handleClick);
  paper.addEventListener('input',handleInput);
  paper.addEventListener('change',handlePhoto);
+ paper.addEventListener('change',handleNumber);
  paper.addEventListener('submit',handleSubmit);
+ paper.addEventListener('focusin',handleFocus);
+ paper.addEventListener('focusout',handleBlur);
+ paper.addEventListener('keydown',handleKey);
+ paper.addEventListener('pointerdown',pointerDown);
+ paper.addEventListener('pointermove',pointerMove);
+ paper.addEventListener('pointerup',pointerEnd);
+ paper.addEventListener('pointercancel',pointerEnd);
  const original=window.updateQuotationPreview;
  if(typeof original==='function'){
   window.updateQuotationPreview=function(){
@@ -401,7 +574,7 @@ function install(){
    return out;
   };
  }
- window.QuotationTableEditor={decorate,open,cancel,cleanClone,commit,selectProduct,move,getActive:()=>active,
+ window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,decorate,open,cancel,cleanClone,commit,selectProduct,move,getActive:()=>active,
   originalRows,formFields,catalogMatch,refreshCatalog,getCatalogChoices:()=>choices.slice()};
  decorate();
 }

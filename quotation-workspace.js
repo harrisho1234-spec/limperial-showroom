@@ -173,6 +173,8 @@ function refresh(){
   renderSelected();
 }
 function mount(){
+  // The compact builder owns the live table; keep the shared cart helpers only.
+  if($('quotation-live-paper')?.hasAttribute?.('data-compact-quotation'))return;
   if($(ROOT))return;
   const notes=$('quote-items-notes-form');
   const heading=notes?.previousElementSibling;
