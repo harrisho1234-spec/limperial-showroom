@@ -9,7 +9,8 @@ const editorEnabled=()=>typeof documentType!=='undefined'&&['quotation','sales_o
 const rows=()=>typeof cart!=='undefined'&&Array.isArray(cart)?cart:[];
 const catalog=()=>typeof products!=='undefined'&&Array.isArray(products)?products:[];
 const fmt=amount=>'$'+(Number(amount)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-let active=null,choices=[],updateTimer=null,installed=false,inline=null,drag=null;
+let active=null,choices=[],updateTimer=null,installed=false,inline=null,drag=null,addMenuAfter=null;
+const SERVICE_TYPES=['Delivery fee','Installation fee','Transportation fee','Crane / lifting fee','Site measurement fee'];
 const table=()=>$('quotation-live-paper')?.querySelector('table:has(thead)')||$('quotation-live-paper')?.querySelector('table');
 const headerCount=()=>table()?.tHead?.rows?.[0]?.cells?.length||7;
 const rowByKey=key=>rows().find(row=>keyFor(row)===String(key));
@@ -52,7 +53,13 @@ function formFields(kind,row){
  const form=active?.values||{};
  const val=(key,defaultValue)=>Object.prototype.hasOwnProperty.call(form,key)?form[key]:defaultValue;
  let html='';
- html+=addField(set?'Product set (read-only)':'Item name', 'name',val('name',row?title(row):service?'Service Fee':''),{readonly:set,wide:true,maxlength:160});
+ const selectedService=String(val('name',row?title(row):'Delivery fee')).trim();
+ if(service)html+='<label class="qtable-field qtable-wide"><span>Service type</span>'+
+  '<select data-qtable-service-type aria-label="Choose a service fee">'+
+  SERVICE_TYPES.map(name=>'<option value="'+escapeValue(name)+'"'+(name===selectedService?' selected':'')+'>'+escapeValue(name)+'</option>').join('')+
+  '<option value=""'+(!SERVICE_TYPES.includes(selectedService)?' selected':'')+'>Other / custom service</option></select></label>';
+ html+=addField(set?'Product set (read-only)':service?'Service description (editable)':'Item name',
+  'name',val('name',row?title(row):service?'Delivery fee':''),{readonly:set,wide:true,maxlength:160});
  if(!service&&!set){
    html+=addField('Brand','brand',val('brand',item.brand||''),{readonly:!manual,maxlength:100});
    html+=addField('Code','code',val('code',item.code==='MANUAL'?'':item.code||''),{readonly:!manual,maxlength:100});
@@ -113,14 +120,14 @@ function open(kind,key='',afterKey=null){
  if(!editorEnabled())return;
  const current=active?.kind;
  if(current&&current!=='catalog')active.values={...active.values,...readForm()};
- inline=null;
- active={kind,key:String(key),afterKey,values:kind==='catalog'&&current==='catalog'?active.values:{},limit:8,photoData:null};
+ inline=null;addMenuAfter=null;
+ active={kind,key:String(key),afterKey,values:kind==='catalog'&&current==='catalog'?active.values:kind==='service'?{name:'Delivery fee',quantity:'1',price:'0',discount:'0'}:{},limit:8,photoData:null};
  decorate();
  if(kind==='catalog')refreshCatalog();
  const field=table()?.querySelector(kind==='catalog'?'[data-qtable-filter="search"]':'[data-qtable-input="name"]');
  field?.focus({preventScroll:true});
 }
-function cancel(){active=null;inline=null;decorate()}
+function cancel(){active=null;inline=null;addMenuAfter=null;decorate()}
 function catalogMatch(product,query){
  const words=query.toLowerCase().split(/\s+/).filter(Boolean);
  const haystack=[product?.code,product?.itemName,product?.brand,product?.description,product?.keyMaterial,product?.class,product?.subclass]
@@ -263,16 +270,20 @@ function decorate(){
  const anchors=matches.length?matches:[{node:null,line:null}];
  for(const {node,line} of anchors){
   const key=line?keyFor(line):'';
+  const expanded=addMenuAfter===key;
   const action=document.createElement('tr');action.className='qtable-action-row';
   action.dataset.qtableAnchor=key;
-  action.innerHTML='<td colspan="'+cols+'"><button type="button" data-qtable-insert="'+escapeValue(key)+'" aria-label="Insert item after '+escapeValue(line?title(line):'start')+'">+</button></td>';
+  action.innerHTML='<td colspan="'+cols+'"><div class="qtable-add-wrap">'+
+   '<button type="button" class="qtable-add-button" data-qtable-insert="'+escapeValue(key)+'" aria-expanded="'+expanded+'" aria-label="Add an item '+(line?'after '+escapeValue(title(line)):'to quotation')+'">＋ Add item</button>'+
+   (expanded?'<div class="qtable-add-menu" role="group" aria-label="Choose item type">'+
+    '<div class="qtable-add-title"><strong>Add item '+(line?'below this row':'to quotation')+'</strong>'+
+    '<button type="button" data-qtable-menu-close aria-label="Close add item menu">✕</button></div>'+
+    '<button type="button" data-qtable-add-kind="catalog"><b>⌕</b><span><strong>Search existing product</strong><small>Find by code, name, brand or category</small></span></button>'+
+    '<button type="button" data-qtable-add-kind="manual"><b>✎</b><span><strong>Manual item</strong><small>Enter an item not in the catalog</small></span></button>'+
+    '<button type="button" data-qtable-add-kind="service"><b>＋</b><span><strong>Service fee</strong><small>Select delivery, installation or a custom fee</small></span></button>'+
+    '</div>':'')+'</div></td>';
   if(node)node.insertAdjacentElement('afterend',action);
   else if(summary)body.insertBefore(action,summary);else body.appendChild(action);
-  if(inline&&!inline.key&&inline.afterKey===key){
-   action.innerHTML='<td></td><td colspan="'+(cols-1)+'"><div class="qtable-inline-host qtable-new-line">'+
-    '<input data-qtable-inline aria-label="New product name or code" autocomplete="off" maxlength="160" placeholder="Type product code / name, or your own item…" value="'+escapeValue(inline.text)+'">'+
-    '<span class="qtable-kinds"><button type="button" data-qtable-kind="catalog">Product</button><button type="button" data-qtable-kind="manual">Manual</button><button type="button" data-qtable-kind="service">Service fee</button><button type="button" data-qtable-cancel aria-label="Cancel new row">×</button></span><span data-qtable-suggestions></span></div></td>';
-  }
  }
  if(active){
   const panel=document.createElement('tr');panel.className='qtable-panel-row';
@@ -296,8 +307,10 @@ function placeAfter(line,afterKey){
  if(anchor&&typeof documentGroupingMode==='function'&&documentGroupingMode()==='discount')line.discount=Number(anchor.discount)||0;
 }
 function startInline(afterKey=''){
- active=null;inline={afterKey,key:'',kind:'catalog',text:'',choices:[]};
- decorate();table()?.querySelector('.qtable-new-line input')?.focus({preventScroll:true});
+ const key=String(afterKey);
+ if(addMenuAfter===key){addMenuAfter=null;decorate();return}
+ active=null;inline=null;addMenuAfter=key;decorate();
+ table()?.querySelector('.qtable-add-menu [data-qtable-add-kind]')?.focus({preventScroll:true});
 }
 function inlineHost(){
  return [...table()?.querySelectorAll('.qtable-inline-host')||[]].find(host=>{
@@ -359,6 +372,7 @@ function handleFocus(event){
  refreshSuggestions();
 }
 function handleKey(event){
+ if(event.key==='Escape'&&addMenuAfter!==null){event.preventDefault();addMenuAfter=null;decorate();return}
  if(!event.target.closest?.('.qtable-inline-host'))return;
  if(event.key==='Escape'){event.preventDefault();cancel();return}
  if(event.key==='Enter'&&event.target.matches?.('[data-qtable-inline]')&&!event.isComposing){event.preventDefault();commitInline();return}
@@ -460,15 +474,20 @@ function updateDocument(){
 function selectProduct(index){
  const item=choices[Number(index)];
  if(!item)return;
+ let target=null;
  if(item.isSet){
-   const already=rows().some(x=>x.type==='set'&&String(x.setId||x.id)===String(item.setId||item.id));
-   if(already){notice('This set is already selected. Adjust its quantity instead.','info');return}
-   toggleCartSelection(item.id);
+  const already=rows().some(x=>x.type==='set'&&String(x.setId||x.id)===String(item.setId||item.id));
+  if(already){notice('This set is already selected. Adjust its quantity instead.','info');return}
+  const before=new Set(rows());toggleCartSelection(item.id);
+  target=rows().find(x=>!before.has(x))||null;
  }else{
-   const product=window.SeasonalPromos?.view?.(item)||item;
-   rows().push(catalogCartEntry(product));
+  const product=window.SeasonalPromos?.view?.(item)||item;
+  target=catalogCartEntry(product);
+  rows().push(target);
  }
- // Keep picker open to add several catalog items without reopening.
+ if(!target)return;
+ placeAfter(target,active?.afterKey);
+ if(active?.kind==='catalog')active.afterKey=keyFor(target);
  updateDocument();
  notice('Product added to quotation.','success');
 }
@@ -485,8 +504,9 @@ function handleClick(event){
  if(target.closest?.('[data-qtable-inline]'))return;
  const insert=target.closest?.('[data-qtable-insert]');
  if(insert){event.preventDefault();startInline(insert.dataset.qtableInsert);return}
- const kind=target.closest?.('[data-qtable-kind]');
- if(kind){event.preventDefault();inline.kind=kind.dataset.qtableKind;refreshSuggestions();return}
+ const addKind=target.closest?.('[data-qtable-add-kind]');
+ if(addKind){event.preventDefault();open(addKind.dataset.qtableAddKind,'',addMenuAfter);return}
+ if(target.closest?.('[data-qtable-menu-close]')){event.preventDefault();addMenuAfter=null;decorate();return}
  if(target.closest?.('[data-qtable-use-text]')){event.preventDefault();commitInline();return}
  const suggestion=target.closest?.('[data-qtable-suggestion]');
  if(suggestion){event.preventDefault();commitInline(Number(suggestion.dataset.qtableSuggestion));return}
@@ -521,6 +541,18 @@ function handleInput(event){
    clearTimeout(updateTimer);updateTimer=setTimeout(()=>{if(active?.kind==='catalog')refreshCatalog()},90);
   }else if(active.kind==='catalog')refreshCatalog();
  }else if(target.dataset.qtableInput)active.values[target.dataset.qtableInput]=target.value;
+}
+function handleServiceType(event){
+ const select=event.target;
+ if(!select.matches?.('[data-qtable-service-type]')||!active)return;
+ const name=table()?.querySelector('.qtable-edit-panel [data-qtable-input="name"]');
+ if(!name)return;
+ const previous=String(name.value||'');
+ const chosen=select.value;
+ if(chosen)name.value=chosen;
+ else if(SERVICE_TYPES.includes(previous))name.value='';
+ active.values.name=name.value;
+ name.focus({preventScroll:true});
 }
 function handleSubmit(event){
  if(!event.target.matches?.('[data-qtable-form]'))return;
@@ -558,6 +590,7 @@ function install(){
  paper.addEventListener('input',handleInput);
  paper.addEventListener('change',handlePhoto);
  paper.addEventListener('change',handleNumber);
+ paper.addEventListener('change',handleServiceType);
  paper.addEventListener('submit',handleSubmit);
  paper.addEventListener('focusin',handleFocus);
  paper.addEventListener('focusout',handleBlur);
@@ -574,7 +607,7 @@ function install(){
    return out;
   };
  }
- window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,decorate,open,cancel,cleanClone,commit,selectProduct,move,getActive:()=>active,
+ window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,getAddMenuAfter:()=>addMenuAfter,decorate,open,cancel,cleanClone,commit,selectProduct,move,getActive:()=>active,
   originalRows,formFields,catalogMatch,refreshCatalog,getCatalogChoices:()=>choices.slice()};
  decorate();
 }

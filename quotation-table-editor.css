@@ -149,3 +149,67 @@
  #quotation-live-paper .qtable-kinds button,#quotation-live-paper .qtable-suggestions button,#quotation-live-paper [data-qtable-insert]{min-height:40px}
 }
 @media print{#quotation-live-paper .qtable-inline-host{display:none!important}}
+
+
+/* Compact row insertion: menu stays hidden until the staff member taps Add item. */
+#quotation-live-paper .qtable-action-row td{padding:2px 4px!important;background:transparent!important;border:0!important;text-align:left}
+#quotation-live-paper .qtable-add-wrap{position:relative;text-align:left}
+#quotation-live-paper button.qtable-add-button{
+  display:inline-flex;align-items:center;gap:5px;padding:5px 10px;min-height:32px;
+  background:#fff9ec;border:1px dashed #d5b47e;border-radius:7px;
+  font:700 11px Inter,Arial,sans-serif;color:#85581b;cursor:pointer
+}
+#quotation-live-paper button.qtable-add-button:hover,
+#quotation-live-paper button.qtable-add-button[aria-expanded=true]{
+  background:#f8e8c9;border-style:solid
+}
+#quotation-live-paper .qtable-add-menu{
+  width:min(100%,335px);max-width:335px;margin:4px 0 9px;
+  background:#fff;border:1px solid #dfc89f;border-radius:12px;
+  box-shadow:0 14px 32px rgba(20,38,53,.16);padding:8px;z-index:5;
+  font-family:Inter,Arial,sans-serif
+}
+#quotation-live-paper .qtable-add-title{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:5px 8px 9px;color:#273c51;font-size:12px
+}
+#quotation-live-paper .qtable-add-title button{
+  background:transparent;border:0;color:#596779;min-width:32px;min-height:32px;
+  cursor:pointer
+}
+#quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind]{
+  display:flex;align-items:center;gap:11px;text-align:left;width:100%;
+  background:transparent;border:0;border-radius:8px;padding:10px 8px;
+  min-height:56px;color:#203b55;cursor:pointer
+}
+#quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind]:hover,
+#quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind]:focus-visible{
+  background:#fff5e4;outline:2px solid #c8a15e;outline-offset:-2px
+}
+#quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind]>b{
+  flex:0 0 31px;display:grid;place-items:center;border-radius:8px;
+  background:#fcf2df;color:#886024;height:31px;font-size:17px
+}
+#quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind] span{display:block;min-width:0}
+#quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind] strong{display:block;font-size:12px}
+#quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind] small{
+  display:block;margin-top:4px;color:#657284;font-size:10px
+}
+#quotation-live-paper .qtable-field select{
+  width:100%;min-width:0;min-height:40px;padding:8px;border:1px solid #d8be95;
+  border-radius:7px;font:12px Inter,Arial,sans-serif;background:#fff;color:#213346
+}
+@media(max-width:720px){
+  #quotation-live-paper button.qtable-add-button{min-height:40px;padding:7px 12px;font-size:12px}
+  #quotation-live-paper .qtable-add-menu{
+    position:fixed;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));
+    bottom:max(12px,env(safe-area-inset-bottom));width:auto;max-width:none;
+    margin:0;padding:12px;border-radius:16px;max-height:75vh;overflow-y:auto;
+    box-shadow:0 0 0 100vmax rgba(12,21,30,.28),0 15px 40px rgba(12,21,30,.3);
+    z-index:1000
+  }
+  #quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind]{min-height:62px}
+  #quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind] strong{font-size:14px}
+  #quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind] small{font-size:11px}
+  #quotation-live-paper .qtable-field select{font-size:16px}
+}

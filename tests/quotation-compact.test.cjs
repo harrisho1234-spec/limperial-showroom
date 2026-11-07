@@ -19,17 +19,26 @@ function boot(type='quotation'){
  });
  w.eval(workspace);w.eval(editor);w.document.dispatchEvent(new w.Event('DOMContentLoaded'));w.updateQuotationPreview();
  const click=selector=>paper.querySelector(selector).click();
- const typeText=text=>{const input=paper.querySelector('.qtable-new-line input');input.focus();input.value=text;input.dispatchEvent(new w.Event('input',{bubbles:true}));return input;};
- return{w,paper,click,typeText,api:w.QuotationTableEditor,dom};
+ const fillForm=values=>Object.entries(values).forEach(([field,value])=>{
+  const input=paper.querySelector('[data-qtable-input="'+field+'"]');
+  assert.ok(input,'missing form field: '+field);
+  input.value=value;input.dispatchEvent(new w.Event('input',{bubbles:true}));
+ });
+ return{w,paper,click,fillForm,api:w.QuotationTableEditor,dom};
 }
-test('compact builder removes top workspace, inserts real catalog details at exact row, and scrubs exports',()=>{
- const {w,paper,click,typeText,api}=boot();
+test('compact menu inserts existing catalog product at exact row and scrubs exports',()=>{
+ const {w,paper,click,api}=boot();
  assert.equal(w.document.getElementById('quotation-workspace'),null);
  assert.equal(paper.querySelectorAll('[data-qtable-insert]').length,2);
  assert.doesNotMatch(paper.textContent,/Build directly|Build Items Here/);
- click('[data-qtable-insert="a"]');typeText('ABC');
- assert.equal(paper.querySelectorAll('[data-qtable-suggestion]').length,1);
- click('[data-qtable-suggestion="0"]');
+ assert.equal(paper.querySelectorAll('.qtable-new-line').length,0);
+ click('[data-qtable-insert="a"]');
+ assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3);
+ click('[data-qtable-add-kind="catalog"]');
+ const search=paper.querySelector('[data-qtable-filter="search"]');search.value='ABC';
+ search.dispatchEvent(new w.Event('input',{bubbles:true}));api.refreshCatalog();
+ assert.equal(paper.querySelectorAll('[data-qtable-pick]').length,1);
+ click('[data-qtable-pick="0"]');
  assert.deepEqual(Array.from(w.cart,x=>x.id),['a','new-1','b']);
  assert.equal(w.cart[1].item.description,'Real catalog details');
  assert.equal(w.cart[1].item.imgLink,w.products[0].imgLink);
@@ -38,15 +47,25 @@ test('compact builder removes top workspace, inserts real catalog details at exa
  assert.match(clone.textContent,/Crystal lamp/);
  assert.equal(w.products[0].qty,4);
 });
-test('freeform Enter and blur add manual rows; service choice preserves inventory semantics',()=>{
+test('menu adds manual rows and presets a selectable service fee without inventory changes',()=>{
  for(const type of ['quotation','sales_order']){
-  const {w,click,typeText}=boot(type);
-  click('[data-qtable-insert="a"]');const input=typeText('Custom work');
-  input.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
-  assert.equal(w.cart[1].item.itemName,'Custom work');assert.equal(w.cart[1].item.manualItem,true);assert.equal(w.cart[1].type,'service');
-  click('[data-qtable-insert="b"]');click('[data-qtable-kind="service"]');
-  const fee=typeText('Installation');fee.dispatchEvent(new w.FocusEvent('focusout',{bubbles:true}));
-  assert.equal(w.cart[3].item.itemName,'Installation');assert.equal(w.cart[3].type,'service');assert.ok(!w.cart[3].item.manualItem);
+  const {w,paper,click,fillForm}=boot(type);
+  click('[data-qtable-insert="a"]');click('[data-qtable-add-kind="manual"]');
+  fillForm({name:'Custom work',quantity:'1',price:'75',discount:'0'});
+  click('[data-qtable-form] button[type="submit"]');
+  assert.equal(w.cart[1].item.itemName,'Custom work');
+  assert.equal(w.cart[1].item.manualItem,true);
+  assert.equal(w.cart[1].type,'service');
+  click('[data-qtable-insert="b"]');click('[data-qtable-add-kind="service"]');
+  const select=paper.querySelector('[data-qtable-service-type]');
+  assert.ok(select);assert.ok([...select.options].some(x=>x.value==='Installation fee'));
+  select.value='Installation fee';select.dispatchEvent(new w.Event('change',{bubbles:true}));
+  fillForm({quantity:'1',price:'150',discount:'0'});
+  click('[data-qtable-form] button[type="submit"]');
+  assert.equal(w.cart[3].item.itemName,'Installation fee');
+  assert.equal(w.cart[3].customPrice,150);
+  assert.equal(w.cart[3].type,'service');
+  assert.ok(!w.cart[3].item.manualItem);
   assert.equal(w.products[0].qty,4);
  }
 });
@@ -61,13 +80,14 @@ test('existing text edits clone catalog data; replacement keeps row ID, quantity
  assert.equal(api.getInline(),null);
 });
 test('numeric cell updates validate quantity, price and discount; cancel leaves cart intact',()=>{
- const {w,paper,click,typeText}=boot();
+ const {w,paper,click}=boot();
  const change=(field,value)=>{const input=paper.querySelector(`[data-qtable-number="${field}"]`);input.value=value;input.dispatchEvent(new w.Event('change',{bubbles:true}));};
  change('quantity','3');change('price','120.55');change('discount','12.5');
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
  change('quantity','1.5');change('price','-1');change('discount','101');
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
- click('[data-qtable-insert="a"]');const input=typeText('Do not add');input.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(w.cart.length,2);
+ click('[data-qtable-insert="a"]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3);
+ click('[data-qtable-menu-close]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,0);assert.equal(w.cart.length,2);
 });
 test('pointer dragging and arrows reorder table rows for touch and mouse',()=>{
  for(const pointerType of ['touch','mouse']){
@@ -80,10 +100,14 @@ test('pointer dragging and arrows reorder table rows for touch and mouse',()=>{
   click('[data-qtable-move="-1"][data-qtable-key="a"]');assert.deepEqual(Array.from(w.cart,x=>x.id),['a','b']);
  }
 });
-test('empty table supports first insertion and suggestions escape untrusted catalog text',()=>{
- const {w,paper,click,typeText}=boot();w.cart.length=0;w.products[0].itemName='<img src=x onerror=alert(1)>';w.updateQuotationPreview();
- click('[data-qtable-insert=""]');typeText('ABC');
- assert.equal(paper.querySelector('[data-qtable-suggestions] img'),null);click('[data-qtable-suggestion="0"]');assert.equal(w.cart.length,1);
+test('empty table supports first insertion and picker escapes untrusted catalog text',()=>{
+ const {w,paper,click,api}=boot();
+ w.cart.length=0;w.products[0].itemName='<img src=x onerror=alert(1)>';w.updateQuotationPreview();
+ click('[data-qtable-insert=""]');click('[data-qtable-add-kind="catalog"]');
+ const search=paper.querySelector('[data-qtable-filter="search"]');search.value='ABC';
+ search.dispatchEvent(new w.Event('input',{bubbles:true}));api.refreshCatalog();
+ assert.equal(paper.querySelector('[data-qtable-results] img[onerror]'),null);
+ click('[data-qtable-pick="0"]');assert.equal(w.cart.length,1);
 });
 test('real quotation renderer preserves totals, groups, saved line metadata and Sales Order deposit',()=>{
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
@@ -97,7 +121,10 @@ test('real quotation renderer preserves totals, groups, saved line metadata and 
   const paper=w.document.getElementById('quotation-live-paper');
   const keys=vm.runInContext('cart.map(x=>x.id)',ctx);
   paper.querySelector('[data-qtable-insert]').click();
-  const input=paper.querySelector('.qtable-new-line input');input.value='Custom installation';input.dispatchEvent(new w.Event('input',{bubbles:true}));input.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+  paper.querySelector('[data-qtable-add-kind="manual"]').click();
+  const input=paper.querySelector('[data-qtable-input="name"]');input.value='Custom installation';
+  input.dispatchEvent(new w.Event('input',{bubbles:true}));
+  paper.querySelector('[data-qtable-form] button[type="submit"]').click();
   assert.equal(vm.runInContext('cart[1].item.itemName',ctx),'Custom installation');
   assert.equal(vm.runInContext('cart[2].id',ctx),keys[1]);
   const price=paper.querySelectorAll('[data-qtable-number="price"]')[1];price.value='250';price.dispatchEvent(new w.Event('change',{bubbles:true}));
