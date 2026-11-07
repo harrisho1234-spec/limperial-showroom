@@ -9,7 +9,7 @@ const editorEnabled=()=>typeof documentType!=='undefined'&&['quotation','sales_o
 const rows=()=>typeof cart!=='undefined'&&Array.isArray(cart)?cart:[];
 const catalog=()=>typeof products!=='undefined'&&Array.isArray(products)?products:[];
 const fmt=amount=>'$'+(Number(amount)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-let active=null,choices=[],updateTimer=null,installed=false,inline=null,drag=null,addMenuAfter=null,pendingDeleteKey=null;
+let active=null,choices=[],updateTimer=null,installed=false,inline=null,drag=null,addMenuAfter=null,pendingDeleteKey=null,moreMenuKey=null;
 const SERVICE_TYPES=['Service Fee','Maintenance Fee','Cleaning Fee','Delivery/Installation','Other'];
 const table=()=>$('quotation-live-paper')?.querySelector('table:has(thead)')||$('quotation-live-paper')?.querySelector('table');
 const headerCount=()=>table()?.tHead?.rows?.[0]?.cells?.length||7;
@@ -262,38 +262,42 @@ function decorate(){
    const tools=document.createElement('span');
    tools.className='qtable-cell-tools';
    const safe=escapeValue(key);
-   tools.innerHTML='<button type="button" data-qtable-edit="'+safe+'" aria-label="Edit '+escapeValue(title(line))+' in quotation">✎ Edit</button>'+
-    '<button type="button" data-qtable-move="-1" data-qtable-key="'+safe+'" aria-label="Move row up">↑</button>'+
-    '<button type="button" data-qtable-move="1" data-qtable-key="'+safe+'" aria-label="Move row down">↓</button>';
-   tools.innerHTML+='<button type="button" data-qtable-drag="'+safe+'" aria-label="Drag row to reorder">⠿</button>';
-   // Remove only this cart line, never another instance of the same product.
-   tools.innerHTML+='<button type="button" class="qtable-delete" data-qtable-delete="'+safe+
+   // Compact primary controls. All secondary actions remain accessible.
+   tools.innerHTML='<button type="button" data-qtable-edit="'+safe+'" title="Edit product" aria-label="Edit '+escapeValue(title(line))+' in quotation">✎</button>'+
+    '<button type="button" data-qtable-move="-1" data-qtable-key="'+safe+'" title="Move up" aria-label="Move row up">↑</button>'+
+    '<button type="button" data-qtable-move="1" data-qtable-key="'+safe+'" title="Move down" aria-label="Move row down">↓</button>'+
+    '<button type="button" data-qtable-drag="'+safe+'" title="Drag to reorder" aria-label="Drag row to reorder">⠿</button>'+
+    '<button type="button" class="qtable-more-trigger" data-qtable-more-actions="'+safe+'" title="More item actions" aria-label="More actions for '+escapeValue(title(line))+'" aria-expanded="'+(moreMenuKey===key)+'">⋯</button>';
+   const extra=document.createElement('span');
+   extra.className='qtable-more-actions';
+   extra.setAttribute('role','group');
+   extra.setAttribute('aria-label','More actions for '+title(line));
+   if(moreMenuKey!==key)extra.hidden=true;
+   // Deletion remains confirmation-gated and never changes inventory.
+   extra.innerHTML+='<button type="button" class="qtable-delete" data-qtable-delete="'+safe+
     '" aria-label="Remove '+escapeValue(title(line))+' from quotation" aria-expanded="'+(pendingDeleteKey===key)+'" title="Remove this row">✕ Remove</button>';
    if(pendingDeleteKey===key){
-    tools.innerHTML+='<span class="qtable-delete-confirm" role="group" aria-label="Confirm remove quotation row">'+
+    extra.innerHTML+='<span class="qtable-delete-confirm" role="group" aria-label="Confirm remove quotation row">'+
      '<span>Remove this row?</span>'+
      '<button type="button" class="qtable-delete-yes" data-qtable-confirm-delete="'+safe+'">Remove</button>'+
      '<button type="button" data-qtable-cancel-delete>Cancel</button></span>';
    }
-   // Both catalog and manual product rows use the existing forcePreorder flag.
-   // For catalog products, removing the forced flag restores automatic stock-
-   // based pre-order calculation; it never overrides missing inventory.
-   if(!isSet(line)&&!isService(line)||isManual(line)){
+   if((!isSet(line)&&!isService(line))||isManual(line)){
     const marked=line.forcePreorder===true;
     const label=marked?'Remove forced pre-order status':'Mark this product as pre-order';
     const hint=marked&&!isManual(line)?'Automatic stock-based pre-order may still apply.':isManual(line)?'Manual item order status.':'Does not change inventory or availability.';
-    tools.innerHTML+='<button type="button" class="qtable-force-preorder" data-qtable-force-po="'+safe+
+    extra.innerHTML+='<button type="button" class="qtable-force-preorder" data-qtable-force-po="'+safe+
      '" aria-pressed="'+marked+'" aria-label="'+label+'" title="'+label+'. '+hint+'">'+(marked?'✓ Remove PO':'+ Mark PO')+'</button>';
    }
-   // This controls document label visibility only, not stock or pre-order status.
    const hasPreorder=/pre[\s-]*order/i.test(String(cell.textContent||''));
    if((hasPreorder||line.hidePreorderOnDoc===true)&&(!isService(line)||isManual(line))){
     const hidden=line.hidePreorderOnDoc===true;
     const explanation=hidden?'Show pre-order text on this row':'Hide pre-order text on this row';
-    tools.innerHTML+='<button type="button" class="qtable-preorder-toggle" data-qtable-preorder="'+safe+
+    extra.innerHTML+='<button type="button" class="qtable-preorder-toggle" data-qtable-preorder="'+safe+
      '" aria-label="'+explanation+'" aria-pressed="'+hidden+
      '" title="'+explanation+' (display only; stock unchanged)">'+(hidden?'◉ Show PO':'◯ Hide PO')+'</button>';
    }
+   tools.appendChild(extra);
    cell.appendChild(tools);
    if(!isSet(line)){
     const host=document.createElement('span');host.className='qtable-inline-host';
@@ -311,7 +315,7 @@ function decorate(){
   const action=document.createElement('tr');action.className='qtable-action-row';
   action.dataset.qtableAnchor=key;
   action.innerHTML='<td colspan="'+cols+'"><div class="qtable-add-wrap">'+
-   '<button type="button" class="qtable-add-button" data-qtable-insert="'+escapeValue(key)+'" aria-expanded="'+expanded+'" aria-label="Add an item '+(line?'after '+escapeValue(title(line)):'to quotation')+'">＋ Add item</button>'+
+   '<button type="button" class="qtable-add-button" data-qtable-insert="'+escapeValue(key)+'" aria-expanded="'+expanded+'" aria-label="Add an item '+(line?'after '+escapeValue(title(line)):'to quotation')+'">＋ Add</button>'+
    (expanded?'<div class="qtable-add-menu" role="group" aria-label="Choose item type">'+
     '<div class="qtable-add-title"><strong>Add item '+(line?'below this row':'to quotation')+'</strong>'+
     '<button type="button" data-qtable-menu-close aria-label="Close add item menu">✕</button></div>'+
@@ -346,7 +350,7 @@ function placeAfter(line,afterKey){
 function startInline(afterKey=''){
  const key=String(afterKey);
  if(addMenuAfter===key){addMenuAfter=null;decorate();return}
- active=null;inline=null;addMenuAfter=key;decorate();
+ active=null;inline=null;moreMenuKey=null;addMenuAfter=key;decorate();
  table()?.querySelector('.qtable-add-menu [data-qtable-add-kind]')?.focus({preventScroll:true});
 }
 function inlineHost(){
@@ -411,6 +415,7 @@ function handleFocus(event){
 function handleKey(event){
  if(event.key==='Escape'&&pendingDeleteKey!==null){event.preventDefault();cancelDelete();return}
  if(event.key==='Escape'&&addMenuAfter!==null){event.preventDefault();addMenuAfter=null;decorate();return}
+ if(event.key==='Escape'&&moreMenuKey!==null){event.preventDefault();moreMenuKey=null;decorate();return}
  if(!event.target.closest?.('.qtable-inline-host'))return;
  if(event.key==='Escape'){event.preventDefault();cancel();return}
  if(event.key==='Enter'&&event.target.matches?.('[data-qtable-inline]')&&!event.isComposing){event.preventDefault();commitInline();return}
@@ -572,7 +577,7 @@ function selectProduct(index){
 function requestDelete(key){
  if(!editorEnabled()||!rowByKey(key))return;
  // Confirm explicitly before mutating the shared working Interest List.
- pendingDeleteKey=String(key);
+ moreMenuKey=String(key);pendingDeleteKey=String(key);
  active=null;inline=null;addMenuAfter=null;
  decorate();
  table()?.querySelector('.qtable-delete-yes')?.focus({preventScroll:true});
@@ -584,7 +589,7 @@ function cancelDelete(){
 function confirmDelete(key){
  if(!editorEnabled()||pendingDeleteKey!==String(key))return;
  const all=rows(),index=all.findIndex(row=>keyFor(row)===String(key));
- pendingDeleteKey=null;
+ pendingDeleteKey=null;moreMenuKey=null;
  if(index<0){decorate();return}
  all.splice(index,1);
  active=null;inline=null;addMenuAfter=null;
@@ -602,6 +607,16 @@ function handleClick(event){
  if(!editorEnabled())return;
  const target=event.target;
  if(target.closest?.('[data-qtable-inline]'))return;
+ const more=target.closest?.('[data-qtable-more-actions]');
+ if(more){
+  event.preventDefault();
+  const key=String(more.dataset.qtableMoreActions);
+  moreMenuKey=moreMenuKey===key?null:key;
+  pendingDeleteKey=null;addMenuAfter=null;
+  decorate();
+  if(moreMenuKey===key)table()?.querySelector('.qtable-more-actions:not([hidden]) button')?.focus({preventScroll:true});
+  return;
+ }
  const insert=target.closest?.('[data-qtable-insert]');
  if(insert){event.preventDefault();startInline(insert.dataset.qtableInsert);return}
  const addKind=target.closest?.('[data-qtable-add-kind]');
@@ -656,7 +671,7 @@ function handleClick(event){
  const moving=target.closest?.('[data-qtable-move]');
  if(moving){event.preventDefault();move(String(moving.dataset.qtableKey),Number(moving.dataset.qtableMove));return}
  const edit=target.closest?.('[data-qtable-edit]');
- if(edit){event.preventDefault();open('edit',edit.dataset.qtableEdit);return}
+ if(edit){event.preventDefault();moreMenuKey=null;open('edit',edit.dataset.qtableEdit);return}
  const cell=target.closest?.('td.qtable-editable');
  if(cell&&!target.closest?.('.row-resizer-handle')&&!target.closest?.('a')&&!target.closest?.('button')&&!target.closest?.('input')){
   event.preventDefault();open('edit',cell.dataset.qtableKey);
@@ -775,7 +790,7 @@ function install(){
    return out;
   };
  }
- window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,getAddMenuAfter:()=>addMenuAfter,getPendingDeleteKey:()=>pendingDeleteKey,decorate,open,cancel,cleanClone,commit,commitDiscount,commitFooterDiscount,clearDiscount,selectProduct,move,requestDelete,cancelDelete,confirmDelete,getActive:()=>active,
+ window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,getAddMenuAfter:()=>addMenuAfter,getPendingDeleteKey:()=>pendingDeleteKey,getMoreMenuKey:()=>moreMenuKey,decorate,open,cancel,cleanClone,commit,commitDiscount,commitFooterDiscount,clearDiscount,selectProduct,move,requestDelete,cancelDelete,confirmDelete,getActive:()=>active,
   originalRows,formFields,catalogMatch,refreshCatalog,getCatalogChoices:()=>choices.slice()};
  decorate();
 }
