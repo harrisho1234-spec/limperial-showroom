@@ -33,7 +33,7 @@ body.theme-dark #quotation-workspace{
 }
 #quotation-workspace input::placeholder{color:var(--qwb-muted);opacity:.7}
 #quotation-workspace .qwb-filters{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
-#quotation-workspace #qwb-stock{grid-column:1 / -1}
+#quotation-workspace #qwb-sort{font-size:11px}
 #quotation-workspace .qwb-result-heading{
   display:flex;justify-content:space-between;align-items:baseline;gap:8px;
   margin:13px 0 7px;font-size:12px;color:var(--qwb-ink)
