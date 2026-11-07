@@ -1,4 +1,4 @@
-name: Quotation builder, deposit and grouping checks
+name: Quotation table editor, builder and Sales Order checks
 
 on:
   push:
@@ -7,6 +7,9 @@ on:
       - 'index.html'
       - 'quotation-workspace.js'
       - 'quotation-workspace.css'
+      - 'quotation-table-editor.js'
+      - 'quotation-table-editor.css'
+      - 'tests/quotation-table-editor.test.cjs'
       - 'tests/quotation-workspace.test.cjs'
       - 'tests/quotation-grouping.test.cjs'
       - 'tests/quotation-discount-format.test.cjs'
@@ -22,7 +25,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check workspace syntax
-        run: node --check quotation-workspace.js
+      - name: Check workspace and in-table editor syntax
+        run: node --check quotation-workspace.js && node --check quotation-table-editor.js
       - name: Test quotation editor, grouping and Sales Order deposits
-        run: node --test tests/quotation-workspace.test.cjs tests/quotation-grouping.test.cjs tests/quotation-discount-format.test.cjs tests/sales-order-deposit.test.cjs
+        run: node --test tests/quotation-table-editor.test.cjs tests/quotation-workspace.test.cjs tests/quotation-grouping.test.cjs tests/quotation-discount-format.test.cjs tests/sales-order-deposit.test.cjs
