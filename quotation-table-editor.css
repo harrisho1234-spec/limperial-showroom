@@ -259,3 +259,18 @@
  #quotation-live-paper .qtable-cell-tools .qtable-delete-confirm button{min-height:38px;font-size:11px}
  #quotation-live-paper .qtable-cell-tools .qtable-delete-confirm{width:100%;justify-content:flex-start;padding:7px}
 }
+
+
+/* Quotation-wide Discount is a footer adjustment, not another product line. */
+#quotation-live-paper .qtable-discount-tools{display:inline-flex;gap:5px;margin-left:8px;vertical-align:middle}
+#quotation-live-paper .qtable-discount-tools button{
+  padding:4px 8px;min-height:28px;border-radius:6px;border:1px solid #d8a99d;
+  color:#984c43;background:#fff;cursor:pointer;font:600 10px Inter,Arial,sans-serif
+}
+#quotation-live-paper .qtable-discount-tools button:hover{background:#fff0ec}
+#quotation-live-paper .qtable-discount-tools button:focus-visible{outline:2px solid #aa554a;outline-offset:2px}
+#quotation-live-paper .qtable-discount-row td{vertical-align:middle}
+@media(max-width:720px){
+ #quotation-live-paper .qtable-discount-tools{display:flex;justify-content:flex-end;flex-wrap:wrap;margin:6px 0 0}
+ #quotation-live-paper .qtable-discount-tools button{min-height:38px;font-size:11px}
+}
