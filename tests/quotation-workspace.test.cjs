@@ -17,7 +17,7 @@ function harness(options={}){
  nodes['share-modal']=modal;
  nodes['quote-items-notes-form']={previousElementSibling:heading};
  for(const id of ['qwb-results','qwb-search','qwb-brand','qwb-category','qwb-stock',
- 'qwb-count','qwb-more','qwb-selected','qwb-selected-count','qwb-order-note']){
+ 'qwb-count','qwb-more','qwb-sort','qwb-selected','qwb-selected-count','qwb-order-note']){
   nodes[id]=makeElement();
  }
  const doc={
@@ -107,6 +107,10 @@ test('catalog search filters by brand, category, stock and shows catalog photos'
  x.api.refresh();
  assert.match(x.nodes['qwb-results'].innerHTML,/Dining Table/);
  assert.doesNotMatch(x.nodes['qwb-results'].innerHTML,/Gold Chandelier/);
+ x.nodes['qwb-search'].value='';
+ x.nodes['qwb-sort'].value='price-high';
+ x.api.refresh();
+ assert.ok(x.nodes['qwb-results'].innerHTML.indexOf('Dining Table')<x.nodes['qwb-results'].innerHTML.indexOf('Gold Chandelier'));
 });
 test('adding the same catalog product twice creates separately editable quotation rows',()=>{
  const x=harness();
@@ -187,4 +191,11 @@ test('catalog output escapes item names before inserting HTML',()=>{
  x.api.refresh();
  assert.doesNotMatch(x.nodes['qwb-results'].innerHTML,/<img src=x onerror=/);
  assert.match(x.nodes['qwb-results'].innerHTML,/&lt;img src=x/);
+});
+
+
+test('manual and replacement item additions refresh existing document notes and group editors',()=>{
+ assert.match(index,/closeManualInterestItem\(\);updateCartVisuals\(\);renderProductGrid\(\);renderQuoteItemsNotesForm\(\);updateQuotationPreview\(\)/);
+ assert.match(index,/cart\.splice\(index,1,next\);[\s\S]*?renderQuoteItemsNotesForm\(\);[\s\S]*?updateCartVisuals\(\)/);
+ assert.match(index,/window\.dispatchEvent\(new Event\("showroom:products-loaded"\)\)/);
 });
