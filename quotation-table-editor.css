@@ -213,3 +213,8 @@
   #quotation-live-paper .qtable-add-menu>button[data-qtable-add-kind] small{font-size:11px}
   #quotation-live-paper .qtable-field select{font-size:16px}
 }
+
+/* Per-row quotation pre-order label visibility. The label is display-only. */
+#quotation-live-paper .qtable-cell-tools button.qtable-preorder-toggle{font-size:10px;padding:4px 7px;border-color:#d6b681;background:#fffaf1;white-space:nowrap}
+#quotation-live-paper .qtable-cell-tools button.qtable-preorder-toggle[aria-pressed="true"]{color:#2d6653;border-color:#9fc7b1;background:#edf8f1}
+@media(max-width:720px){#quotation-live-paper .qtable-cell-tools button.qtable-preorder-toggle{min-height:34px;padding:6px 9px}}

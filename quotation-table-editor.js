@@ -257,6 +257,15 @@ function decorate(){
     '<button type="button" data-qtable-move="-1" data-qtable-key="'+safe+'" aria-label="Move row up">↑</button>'+
     '<button type="button" data-qtable-move="1" data-qtable-key="'+safe+'" aria-label="Move row down">↓</button>';
    tools.innerHTML+='<button type="button" data-qtable-drag="'+safe+'" aria-label="Drag row to reorder">⠿</button>';
+   // This controls document label visibility only, not stock or pre-order status.
+   const hasPreorder=/pre[\s-]*order/i.test(String(cell.textContent||''));
+   if((hasPreorder||line.hidePreorderOnDoc===true)&&(!isService(line)||isManual(line))){
+    const hidden=line.hidePreorderOnDoc===true;
+    const explanation=hidden?'Show pre-order text on this row':'Hide pre-order text on this row';
+    tools.innerHTML+='<button type="button" class="qtable-preorder-toggle" data-qtable-preorder="'+safe+
+     '" aria-label="'+explanation+'" aria-pressed="'+hidden+
+     '" title="'+explanation+' (display only; stock unchanged)">'+(hidden?'◉ Show PO':'◯ Hide PO')+'</button>';
+   }
    cell.appendChild(tools);
    if(!isSet(line)){
     const host=document.createElement('span');host.className='qtable-inline-host';
@@ -521,6 +530,13 @@ function handleClick(event){
  }
  const action=target.closest?.('[data-qtable-open]');
  if(action){event.preventDefault();open(action.dataset.qtableOpen);return}
+ const preorder=target.closest?.('[data-qtable-preorder]');
+ if(preorder){
+  event.preventDefault();
+  const line=rowByKey(preorder.dataset.qtablePreorder);
+  if(line){line.hidePreorderOnDoc=line.hidePreorderOnDoc!==true;updateDocument()}
+  return;
+ }
  const moving=target.closest?.('[data-qtable-move]');
  if(moving){event.preventDefault();move(String(moving.dataset.qtableKey),Number(moving.dataset.qtableMove));return}
  const edit=target.closest?.('[data-qtable-edit]');
