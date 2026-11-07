@@ -95,13 +95,22 @@ test('existing text edits clone catalog data; replacement keeps row ID, quantity
  assert.equal(w.cart[0].id,'a');assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].documentSections.quotation,'Lobby');
  assert.equal(api.getInline(),null);
 });
-test('numeric cell updates validate quantity, price and discount; cancel leaves cart intact',()=>{
+test('numeric cells validate quantity and price; individual discount remains editable via row form',()=>{
  const {w,paper,click}=boot();
  const change=(field,value)=>{const input=paper.querySelector(`[data-qtable-number="${field}"]`);input.value=value;input.dispatchEvent(new w.Event('change',{bubbles:true}));};
- change('quantity','3');change('price','120.55');change('discount','12.5');
+ const editDiscount=value=>{
+  click('td[data-qtable-field="discount"]');
+  const field=paper.querySelector('[data-qtable-input="discount"]');
+  assert.ok(field,'row editor offers the individual discount');
+  field.value=value;
+  field.dispatchEvent(new w.Event('input',{bubbles:true}));
+  paper.querySelector('[data-qtable-form] button[type="submit"]').click();
+ };
+ change('quantity','3');change('price','120.55');editDiscount('12.5');
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
- change('quantity','1.5');change('price','-1');change('discount','101');
+ change('quantity','1.5');change('price','-1');editDiscount('101');
  assert.equal(w.cart[0].quantity,3);assert.equal(w.cart[0].customPrice,120.55);assert.equal(w.cart[0].discount,12.5);
+ click('[data-qtable-cancel]');
  click('[data-qtable-insert="a"]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,3);
  click('[data-qtable-menu-close]');assert.equal(paper.querySelectorAll('[data-qtable-add-kind]').length,0);assert.equal(w.cart.length,2);
 });
