@@ -314,8 +314,7 @@ function decorate(){
     '<button type="button" data-qtable-menu-close aria-label="Close add item menu">✕</button></div>'+
     '<button type="button" data-qtable-add-kind="catalog"><b>⌕</b><span><strong>Search existing product</strong><small>Find by code, name, brand or category</small></span></button>'+
     '<button type="button" data-qtable-add-kind="manual"><b>✎</b><span><strong>Manual item</strong><small>Enter an item not in the catalog</small></span></button>'+
-    '<button type="button" data-qtable-add-kind="service"><b>＋</b><span><strong>Service fee</strong><small>Maintenance, cleaning, delivery / installation or Other</small></span></button>'+ 
-    '<button type="button" data-qtable-add-kind="discount"><b>−</b><span><strong>Discount</strong><small>Apply a quotation-wide percentage or amount</small></span></button>'+
+    '<button type="button" data-qtable-add-kind="service"><b>＋</b><span><strong>Service fee</strong><small>Maintenance, cleaning, delivery / installation or Other</small></span></button>'+
     '</div>':'')+'</div></td>';
   if(node)node.insertAdjacentElement('afterend',action);
   else if(summary)body.insertBefore(action,summary);else body.appendChild(action);
@@ -454,20 +453,31 @@ function syncDiscountInputs(){
   if(input)input.value=value>0?String(value):'';
  }
 }
-function commitDiscount(){
- if(!active||active.kind!=='discount'||!editorEnabled())return;
- const data={...active.values,...readForm()};
- const pctText=String(data.batchPercent??'').trim(),flatText=String(data.batchAmount??'').trim();
- const pct=pctText===''?0:Number(pctText),flat=flatText===''?0:Number(flatText);
+function applyDiscountValues(pctText,flatText){
+ const pctValue=String(pctText??'').trim(),flatValue=String(flatText??'').trim();
+ const pct=pctValue===''?0:Number(pctValue),flat=flatValue===''?0:Number(flatValue);
  if(!Number.isFinite(pct)||pct<0||pct>100||!Number.isFinite(flat)||flat<0||flat>999999999){
-  notice('Enter a discount from 0–100% and a valid non-negative dollar amount.','error');return;
+  notice('Enter a discount from 0–100% and a valid non-negative dollar amount.','error');return false;
  }
- if((pct>0||flat>0)&&!rows().length){notice('Add at least one product before applying a discount.','error');return;}
+ if((pct>0||flat>0)&&!rows().length){notice('Add at least one product before applying a discount.','error');return false}
  discountPctValue=Math.round(pct*100)/100;
  discountFlatValue=Math.round(flat*100)/100;
  syncDiscountInputs();
  active=null;updateDocument();
  notice(pct||flat?'Discount applied to the full quotation.':'Discount cleared.','success');
+ return true;
+}
+function commitDiscount(){
+ if(!active||active.kind!=='discount'||!editorEnabled())return;
+ const data={...active.values,...readForm()};
+ return applyDiscountValues(data.batchPercent,data.batchAmount);
+}
+function commitFooterDiscount(){
+ if(!editorEnabled())return;
+ const row=table()?.querySelector('.qtable-discount-entry-row');
+ if(!row)return;
+ return applyDiscountValues(row.querySelector('[data-qtable-footer-percent]')?.value,
+  row.querySelector('[data-qtable-footer-amount]')?.value);
 }
 function clearDiscount(){
  if(!editorEnabled())return;
@@ -593,7 +603,13 @@ function handleClick(event){
  if(insert){event.preventDefault();startInline(insert.dataset.qtableInsert);return}
  const addKind=target.closest?.('[data-qtable-add-kind]');
  if(addKind){event.preventDefault();open(addKind.dataset.qtableAddKind,'',addMenuAfter);return}
- if(target.closest?.('[data-qtable-edit-discount]')){event.preventDefault();open('discount');return}
+ if(target.closest?.('[data-qtable-edit-discount]')){
+  event.preventDefault();
+  const input=table()?.querySelector('[data-qtable-footer-percent]');
+  if(input){input.focus({preventScroll:true});input.scrollIntoView?.({block:'nearest'});}
+  else open('discount');
+  return;
+ }
  if(target.closest?.('[data-qtable-clear-discount]')){event.preventDefault();clearDiscount();return}
  if(target.closest?.('[data-qtable-menu-close]')){event.preventDefault();addMenuAfter=null;decorate();return}
  if(target.closest?.('[data-qtable-use-text]')){event.preventDefault();commitInline();return}
@@ -669,6 +685,9 @@ function handleServiceType(event){
  name.focus({preventScroll:true});
 }
 function handleSubmit(event){
+ if(event.target.matches?.('[data-qtable-footer-discount-form]')){
+  event.preventDefault();commitFooterDiscount();return;
+ }
  if(!event.target.matches?.('[data-qtable-form]'))return;
  event.preventDefault();commit();
 }
@@ -692,7 +711,7 @@ async function handlePhoto(event){
 }
 function cleanClone(root){
  if(!root)return root;
- root.querySelectorAll('.qtable-action-row,.qtable-panel-row,.qtable-cell-tools,.qtable-inline-host,.qtable-discount-tools').forEach(el=>el.remove());
+ root.querySelectorAll('.qtable-action-row,.qtable-panel-row,.qtable-cell-tools,.qtable-inline-host,.qtable-discount-tools,.qtable-discount-entry-row').forEach(el=>el.remove());
  root.querySelectorAll('.qtable-editable').forEach(el=>el.classList.remove('qtable-editable'));
  return root;
 }
@@ -721,7 +740,7 @@ function install(){
    return out;
   };
  }
- window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,getAddMenuAfter:()=>addMenuAfter,getPendingDeleteKey:()=>pendingDeleteKey,decorate,open,cancel,cleanClone,commit,commitDiscount,clearDiscount,selectProduct,move,requestDelete,cancelDelete,confirmDelete,getActive:()=>active,
+ window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,getAddMenuAfter:()=>addMenuAfter,getPendingDeleteKey:()=>pendingDeleteKey,decorate,open,cancel,cleanClone,commit,commitDiscount,commitFooterDiscount,clearDiscount,selectProduct,move,requestDelete,cancelDelete,confirmDelete,getActive:()=>active,
   originalRows,formFields,catalogMatch,refreshCatalog,getCatalogChoices:()=>choices.slice()};
  decorate();
 }
