@@ -9,7 +9,7 @@ const index=fs.readFileSync(require.resolve('../index.html'),'utf8');
 function harness(options={}){
  const events={},nodes={},messages=[],calls={notes:0,visuals:0,grid:0,preview:0,service:0,manual:0};
  const makeElement=(obj={})=>({value:'',innerHTML:'',textContent:'',hidden:false,
-  setAttribute(){},addEventListener(){},classList:{contains:()=>false,add(){},remove(){}},
+  setAttribute(){},addEventListener(){},querySelectorAll:()=>[],classList:{contains:()=>false,add(){},remove(){}},
   ...obj});
  const root=makeElement({addEventListener:(name,fn)=>{events[name]=fn},querySelectorAll:()=>[],contains:()=>true});
  const modal=makeElement();
@@ -45,6 +45,7 @@ function harness(options={}){
   getActualSalesPrice:p=>p.price,
   catalogCartEntry:p=>({id:'row-'+(++nextId),item:{...p},quantity:1,discount:0,customPrice:null}),
   newCartLineId:()=>('row-'+(++nextId)),
+  updateQuotationPreview:()=>{calls.preview++},
   renderQuoteItemsNotesForm:()=>{calls.notes++},
   updateCartVisuals:()=>{calls.visuals++},
   renderProductGrid:()=>{calls.grid++},
