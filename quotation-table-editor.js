@@ -9,7 +9,7 @@ const editorEnabled=()=>typeof documentType!=='undefined'&&['quotation','sales_o
 const rows=()=>typeof cart!=='undefined'&&Array.isArray(cart)?cart:[];
 const catalog=()=>typeof products!=='undefined'&&Array.isArray(products)?products:[];
 const fmt=amount=>'$'+(Number(amount)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-let active=null,choices=[],updateTimer=null,installed=false,inline=null,drag=null,addMenuAfter=null;
+let active=null,choices=[],updateTimer=null,installed=false,inline=null,drag=null,addMenuAfter=null,pendingDeleteKey=null;
 const SERVICE_TYPES=['Service Fee','Maintenance Fee','Cleaning Fee','Delivery/Installation','Other'];
 const table=()=>$('quotation-live-paper')?.querySelector('table:has(thead)')||$('quotation-live-paper')?.querySelector('table');
 const headerCount=()=>table()?.tHead?.rows?.[0]?.cells?.length||7;
@@ -257,6 +257,15 @@ function decorate(){
     '<button type="button" data-qtable-move="-1" data-qtable-key="'+safe+'" aria-label="Move row up">↑</button>'+
     '<button type="button" data-qtable-move="1" data-qtable-key="'+safe+'" aria-label="Move row down">↓</button>';
    tools.innerHTML+='<button type="button" data-qtable-drag="'+safe+'" aria-label="Drag row to reorder">⠿</button>';
+   // Remove only this cart line, never another instance of the same product.
+   tools.innerHTML+='<button type="button" class="qtable-delete" data-qtable-delete="'+safe+
+    '" aria-label="Remove '+escapeValue(title(line))+' from quotation" aria-expanded="'+(pendingDeleteKey===key)+'" title="Remove this row">✕ Remove</button>';
+   if(pendingDeleteKey===key){
+    tools.innerHTML+='<span class="qtable-delete-confirm" role="group" aria-label="Confirm remove quotation row">'+
+     '<span>Remove this row?</span>'+
+     '<button type="button" class="qtable-delete-yes" data-qtable-confirm-delete="'+safe+'">Remove</button>'+
+     '<button type="button" data-qtable-cancel-delete>Cancel</button></span>';
+   }
    // Both catalog and manual product rows use the existing forcePreorder flag.
    // For catalog products, removing the forced flag restores automatic stock-
    // based pre-order calculation; it never overrides missing inventory.
@@ -391,6 +400,7 @@ function handleFocus(event){
  refreshSuggestions();
 }
 function handleKey(event){
+ if(event.key==='Escape'&&pendingDeleteKey!==null){event.preventDefault();cancelDelete();return}
  if(event.key==='Escape'&&addMenuAfter!==null){event.preventDefault();addMenuAfter=null;decorate();return}
  if(!event.target.closest?.('.qtable-inline-host'))return;
  if(event.key==='Escape'){event.preventDefault();cancel();return}
@@ -510,6 +520,28 @@ function selectProduct(index){
  updateDocument();
  notice('Product added to quotation.','success');
 }
+function requestDelete(key){
+ if(!editorEnabled()||!rowByKey(key))return;
+ // Confirm explicitly before mutating the shared working Interest List.
+ pendingDeleteKey=String(key);
+ active=null;inline=null;addMenuAfter=null;
+ decorate();
+ table()?.querySelector('.qtable-delete-yes')?.focus({preventScroll:true});
+}
+function cancelDelete(){
+ pendingDeleteKey=null;
+ decorate();
+}
+function confirmDelete(key){
+ if(!editorEnabled()||pendingDeleteKey!==String(key))return;
+ const all=rows(),index=all.findIndex(row=>keyFor(row)===String(key));
+ pendingDeleteKey=null;
+ if(index<0){decorate();return}
+ all.splice(index,1);
+ active=null;inline=null;addMenuAfter=null;
+ updateDocument();
+ notice('Item removed from the current Interest List and quotation.','info');
+}
 function move(key,direction){
  if(window.QuotationWorkspace?.moveBy)return window.QuotationWorkspace.moveBy(key,direction);
  const all=rows(),i=all.findIndex(x=>keyFor(x)===key),j=i+direction;
@@ -540,6 +572,11 @@ function handleClick(event){
  }
  const action=target.closest?.('[data-qtable-open]');
  if(action){event.preventDefault();open(action.dataset.qtableOpen);return}
+ const remove=target.closest?.('[data-qtable-delete]');
+ if(remove){event.preventDefault();requestDelete(remove.dataset.qtableDelete);return}
+ const confirmRemove=target.closest?.('[data-qtable-confirm-delete]');
+ if(confirmRemove){event.preventDefault();confirmDelete(confirmRemove.dataset.qtableConfirmDelete);return}
+ if(target.closest?.('[data-qtable-cancel-delete]')){event.preventDefault();cancelDelete();return}
  const forcePreorder=target.closest?.('[data-qtable-force-po]');
  if(forcePreorder){
   event.preventDefault();
@@ -646,7 +683,7 @@ function install(){
    return out;
   };
  }
- window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,getAddMenuAfter:()=>addMenuAfter,decorate,open,cancel,cleanClone,commit,selectProduct,move,getActive:()=>active,
+ window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,getAddMenuAfter:()=>addMenuAfter,getPendingDeleteKey:()=>pendingDeleteKey,decorate,open,cancel,cleanClone,commit,selectProduct,move,requestDelete,cancelDelete,confirmDelete,getActive:()=>active,
   originalRows,formFields,catalogMatch,refreshCatalog,getCatalogChoices:()=>choices.slice()};
  decorate();
 }

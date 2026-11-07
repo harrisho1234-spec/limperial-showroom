@@ -232,3 +232,30 @@
     min-height:34px;padding:6px 9px
   }
 }
+
+
+/* Row-level removal: separate confirmation, never an immediate destructive click. */
+#quotation-live-paper .qtable-cell-tools button.qtable-delete{
+  border-color:#e4bfb7;background:#fff9f6;color:#9d493e;
+  padding:4px 8px;min-height:27px;font-size:10px;white-space:nowrap
+}
+#quotation-live-paper .qtable-cell-tools button.qtable-delete:hover,
+#quotation-live-paper .qtable-cell-tools button.qtable-delete[aria-expanded="true"]{
+  background:#fcece8;border-color:#ce8d7f
+}
+#quotation-live-paper .qtable-cell-tools .qtable-delete-confirm{
+  display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px;
+  padding:4px 6px;border-radius:7px;border:1px solid #e3b7ad;
+  background:#fff9f6;color:#693c36;font:600 10px Inter,Arial,sans-serif
+}
+#quotation-live-paper .qtable-cell-tools .qtable-delete-confirm button.qtable-delete-yes{
+  background:#b3584a;color:white;border-color:#b3584a
+}
+#quotation-live-paper .qtable-cell-tools .qtable-delete-confirm button:focus-visible{
+  outline:2px solid #ad695e;outline-offset:2px
+}
+@media(max-width:720px){
+ #quotation-live-paper .qtable-cell-tools button.qtable-delete,
+ #quotation-live-paper .qtable-cell-tools .qtable-delete-confirm button{min-height:38px;font-size:11px}
+ #quotation-live-paper .qtable-cell-tools .qtable-delete-confirm{width:100%;justify-content:flex-start;padding:7px}
+}
