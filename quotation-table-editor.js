@@ -98,8 +98,14 @@ function rowEditorHtml(){
  const line=kind==='edit'?rowByKey(active.key):null;
  if(kind==='edit'&&!line)return '';
  const titleText=kind==='edit'?'Edit this quotation row':kind==='catalog'?'Add existing catalog product':
-   kind==='manual'?'Add a manual item':'Add a service fee';
- let content=kind==='catalog'?catalogFields():
+   kind==='manual'?'Add a manual item':kind==='discount'?'Discount':'Add a service fee';
+ let content=kind==='catalog'?catalogFields():kind==='discount'?
+  '<form data-qtable-form><div class="qtable-form-grid">'+
+  addField('Discount (%)','batchPercent',active.values.batchPercent,{type:'number',step:'0.01'})+
+  addField('Discount amount ($)','batchAmount',active.values.batchAmount,{type:'number',step:'0.01'})+
+  '</div><p class="qtable-disclaimer">This is the existing Batch Discount: percentage and amount may be combined. It applies to the full quotation, appears below Sub Total as “Discount”, and does not add a stock item.</p>'+
+  '<div class="qtable-form-buttons"><button type="submit" class="qtable-primary">Apply Discount</button>'+
+  '<button type="button" data-qtable-cancel>Cancel</button></div></form>':
   '<form data-qtable-form><div class="qtable-form-grid">'+formFields(kind,line)+'</div>'+
    '<p class="qtable-disclaimer">Changes affect this quotation / Sales Order only, not master product data or stock.</p>'+
    '<div class="qtable-form-buttons"><button type="submit" class="qtable-primary">'+(kind==='edit'?'Save changes':'Add to table')+'</button>'+
@@ -121,10 +127,10 @@ function open(kind,key='',afterKey=null){
  const current=active?.kind;
  if(current&&current!=='catalog')active.values={...active.values,...readForm()};
  inline=null;addMenuAfter=null;
- active={kind,key:String(key),afterKey,values:kind==='catalog'&&current==='catalog'?active.values:kind==='service'?{name:'Service Fee',quantity:'1',price:'0',discount:'0'}:{},limit:8,photoData:null};
+ active={kind,key:String(key),afterKey,values:kind==='catalog'&&current==='catalog'?active.values:kind==='service'?{name:'Service Fee',quantity:'1',price:'0',discount:'0'}:kind==='discount'?{batchPercent:String(typeof discountPctValue==='undefined'?0:discountPctValue),batchAmount:String(typeof discountFlatValue==='undefined'?0:discountFlatValue)}:{},limit:8,photoData:null};
  decorate();
  if(kind==='catalog')refreshCatalog();
- const field=table()?.querySelector(kind==='catalog'?'[data-qtable-filter="search"]':'[data-qtable-input="name"]');
+ const field=table()?.querySelector(kind==='catalog'?'[data-qtable-filter="search"]':kind==='discount'?'[data-qtable-input="batchPercent"]':'[data-qtable-input="name"]');
  field?.focus({preventScroll:true});
 }
 function cancel(){active=null;inline=null;addMenuAfter=null;decorate()}
@@ -308,7 +314,8 @@ function decorate(){
     '<button type="button" data-qtable-menu-close aria-label="Close add item menu">✕</button></div>'+
     '<button type="button" data-qtable-add-kind="catalog"><b>⌕</b><span><strong>Search existing product</strong><small>Find by code, name, brand or category</small></span></button>'+
     '<button type="button" data-qtable-add-kind="manual"><b>✎</b><span><strong>Manual item</strong><small>Enter an item not in the catalog</small></span></button>'+
-    '<button type="button" data-qtable-add-kind="service"><b>＋</b><span><strong>Service fee</strong><small>Maintenance, cleaning, delivery / installation or Other</small></span></button>'+
+    '<button type="button" data-qtable-add-kind="service"><b>＋</b><span><strong>Service fee</strong><small>Maintenance, cleaning, delivery / installation or Other</small></span></button>'+ 
+    '<button type="button" data-qtable-add-kind="discount"><b>−</b><span><strong>Discount</strong><small>Apply a quotation-wide percentage or amount</small></span></button>'+
     '</div>':'')+'</div></td>';
   if(node)node.insertAdjacentElement('afterend',action);
   else if(summary)body.insertBefore(action,summary);else body.appendChild(action);
@@ -440,8 +447,37 @@ function pointerEnd(event){
  if(event.type!=='pointercancel'&&d.target)window.QuotationWorkspace?.moveTo(d.key,d.target.key,d.target.after);
 }
 
+function syncDiscountInputs(){
+ for(const [id,value] of [['discount-pct',discountPctValue],['discount-flat',discountFlatValue],
+  ['mobile-discount-pct',discountPctValue],['mobile-discount-flat',discountFlatValue]]){
+  const input=$(id);
+  if(input)input.value=value>0?String(value):'';
+ }
+}
+function commitDiscount(){
+ if(!active||active.kind!=='discount'||!editorEnabled())return;
+ const data={...active.values,...readForm()};
+ const pctText=String(data.batchPercent??'').trim(),flatText=String(data.batchAmount??'').trim();
+ const pct=pctText===''?0:Number(pctText),flat=flatText===''?0:Number(flatText);
+ if(!Number.isFinite(pct)||pct<0||pct>100||!Number.isFinite(flat)||flat<0||flat>999999999){
+  notice('Enter a discount from 0–100% and a valid non-negative dollar amount.','error');return;
+ }
+ if((pct>0||flat>0)&&!rows().length){notice('Add at least one product before applying a discount.','error');return;}
+ discountPctValue=Math.round(pct*100)/100;
+ discountFlatValue=Math.round(flat*100)/100;
+ syncDiscountInputs();
+ active=null;updateDocument();
+ notice(pct||flat?'Discount applied to the full quotation.':'Discount cleared.','success');
+}
+function clearDiscount(){
+ if(!editorEnabled())return;
+ discountPctValue=0;discountFlatValue=0;active=null;
+ syncDiscountInputs();updateDocument();
+ notice('Quotation discount removed.','info');
+}
 function commit(){
  if(!active||active.kind==='catalog')return;
+ if(active.kind==='discount'){commitDiscount();return}
  const kind=active.kind,editing=kind==='edit',line=editing?rowByKey(active.key):null;
  if(editing&&!line){notice('The selected line is no longer available.','error');cancel();return}
  const input={...active.values,...readForm()};
@@ -557,6 +593,8 @@ function handleClick(event){
  if(insert){event.preventDefault();startInline(insert.dataset.qtableInsert);return}
  const addKind=target.closest?.('[data-qtable-add-kind]');
  if(addKind){event.preventDefault();open(addKind.dataset.qtableAddKind,'',addMenuAfter);return}
+ if(target.closest?.('[data-qtable-edit-discount]')){event.preventDefault();open('discount');return}
+ if(target.closest?.('[data-qtable-clear-discount]')){event.preventDefault();clearDiscount();return}
  if(target.closest?.('[data-qtable-menu-close]')){event.preventDefault();addMenuAfter=null;decorate();return}
  if(target.closest?.('[data-qtable-use-text]')){event.preventDefault();commitInline();return}
  const suggestion=target.closest?.('[data-qtable-suggestion]');
@@ -654,7 +692,7 @@ async function handlePhoto(event){
 }
 function cleanClone(root){
  if(!root)return root;
- root.querySelectorAll('.qtable-action-row,.qtable-panel-row,.qtable-cell-tools,.qtable-inline-host').forEach(el=>el.remove());
+ root.querySelectorAll('.qtable-action-row,.qtable-panel-row,.qtable-cell-tools,.qtable-inline-host,.qtable-discount-tools').forEach(el=>el.remove());
  root.querySelectorAll('.qtable-editable').forEach(el=>el.classList.remove('qtable-editable'));
  return root;
 }
@@ -683,7 +721,7 @@ function install(){
    return out;
   };
  }
- window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,getAddMenuAfter:()=>addMenuAfter,getPendingDeleteKey:()=>pendingDeleteKey,decorate,open,cancel,cleanClone,commit,selectProduct,move,requestDelete,cancelDelete,confirmDelete,getActive:()=>active,
+ window.QuotationTableEditor={startInline,commitInline,getInline:()=>inline,getAddMenuAfter:()=>addMenuAfter,getPendingDeleteKey:()=>pendingDeleteKey,decorate,open,cancel,cleanClone,commit,commitDiscount,clearDiscount,selectProduct,move,requestDelete,cancelDelete,confirmDelete,getActive:()=>active,
   originalRows,formFields,catalogMatch,refreshCatalog,getCatalogChoices:()=>choices.slice()};
  decorate();
 }
