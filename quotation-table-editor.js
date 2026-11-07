@@ -257,6 +257,15 @@ function decorate(){
     '<button type="button" data-qtable-move="-1" data-qtable-key="'+safe+'" aria-label="Move row up">↑</button>'+
     '<button type="button" data-qtable-move="1" data-qtable-key="'+safe+'" aria-label="Move row down">↓</button>';
    tools.innerHTML+='<button type="button" data-qtable-drag="'+safe+'" aria-label="Drag row to reorder">⠿</button>';
+   // Manual items have no inventory-backed pre-order requirement. Staff may
+   // mark the line as pre-order here, using the same forcePreorder flag as the
+   // existing manual item editor in the Interest List.
+   if(isManual(line)){
+    const marked=line.forcePreorder===true;
+    const label=marked?'Remove pre-order status from manual item':'Mark manual item as pre-order';
+    tools.innerHTML+='<button type="button" class="qtable-manual-preorder" data-qtable-manual-po="'+safe+
+     '" aria-pressed="'+marked+'" aria-label="'+label+'" title="'+label+'">'+(marked?'✓ Remove PO':'+ Mark PO')+'</button>';
+   }
    // This controls document label visibility only, not stock or pre-order status.
    const hasPreorder=/pre[\s-]*order/i.test(String(cell.textContent||''));
    if((hasPreorder||line.hidePreorderOnDoc===true)&&(!isService(line)||isManual(line))){
@@ -530,6 +539,18 @@ function handleClick(event){
  }
  const action=target.closest?.('[data-qtable-open]');
  if(action){event.preventDefault();open(action.dataset.qtableOpen);return}
+ const manualPreorder=target.closest?.('[data-qtable-manual-po]');
+ if(manualPreorder){
+  event.preventDefault();
+  const line=rowByKey(manualPreorder.dataset.qtableManualPo);
+  if(line&&isManual(line)){
+   line.forcePreorder=line.forcePreorder!==true;
+   // When choosing pre-order explicitly, make its text visible on this line.
+   if(line.forcePreorder)line.hidePreorderOnDoc=false;
+   updateDocument();
+  }
+  return;
+ }
  const preorder=target.closest?.('[data-qtable-preorder]');
  if(preorder){
   event.preventDefault();
