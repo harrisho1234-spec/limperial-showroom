@@ -9,6 +9,10 @@ on:
       - 'quotation-workspace.css'
       - 'quotation-table-editor.js'
       - 'quotation-table-editor.css'
+      - 'showroom-price-visibility.js'
+      - 'showroom-price-visibility.css'
+      - 'showroom-phase1.js'
+      - 'tests/showroom-price-visibility.test.cjs'
       - 'app-version.js'
       - 'sw.js'
       - 'scripts/bump-app-version.cjs'
@@ -27,6 +31,10 @@ on:
       - 'quotation-workspace.js'
       - 'quotation-table-editor.js'
       - 'quotation-table-editor.css'
+      - 'showroom-price-visibility.js'
+      - 'showroom-price-visibility.css'
+      - 'showroom-phase1.js'
+      - 'tests/showroom-price-visibility.test.cjs'
       - 'app-version.js'
       - 'sw.js'
       - 'scripts/bump-app-version.cjs'
@@ -44,11 +52,11 @@ jobs:
         with:
           node-version: '22'
       - name: Check workspace and in-table editor syntax
-        run: node --check quotation-workspace.js && node --check quotation-table-editor.js && node --check app-version.js && node --check scripts/bump-app-version.cjs
+        run: node --check quotation-workspace.js && node --check quotation-table-editor.js && node --check app-version.js && node --check scripts/bump-app-version.cjs && node --check showroom-price-visibility.js && node --check showroom-phase1.js
       - uses: pnpm/action-setup@v4
         with:
           version: 11.25.0
       - name: Install test dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Test quotation editor, grouping and Sales Order deposits
-        run: node --test tests/quotation-compact.test.cjs tests/quotation-table-editor.test.cjs tests/quotation-workspace.test.cjs tests/quotation-grouping.test.cjs tests/quotation-discount-format.test.cjs tests/sales-order-deposit.test.cjs tests/app-version.test.cjs
+        run: node --test tests/quotation-compact.test.cjs tests/quotation-table-editor.test.cjs tests/quotation-workspace.test.cjs tests/quotation-grouping.test.cjs tests/quotation-discount-format.test.cjs tests/sales-order-deposit.test.cjs tests/app-version.test.cjs tests/showroom-price-visibility.test.cjs
