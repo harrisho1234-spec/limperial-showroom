@@ -62,8 +62,8 @@ test('saved visibility preference is restored on reopening the device',()=>{
 test('catalog grid/list, detail, replacement picker, favorites and compare have price markers',()=>{
  const index=read('index.html'),phase1=read('showroom-phase1.js');
  assert.match(index,/id="showroom-price-toggle"/);
- assert.match(index,/showroom-price-visibility\.js\?v=V4\.11\.02/);
- assert.match(index,/showroom-price-visibility\.css\?v=V4\.11\.02/);
+ assert.match(index,/showroom-price-visibility\.js\?v=V4\.11\.03/);
+ assert.match(index,/showroom-price-visibility\.css\?v=V4\.11\.03/);
  assert.match(index,/\$\{priceHtml\}<\/div>/);
  assert.ok((index.match(/showroom-sales-price/g)||[]).length>=3);
  assert.match(index,/data-showroom-share-price/);
@@ -72,4 +72,39 @@ test('catalog grid/list, detail, replacement picker, favorites and compare have 
  assert.match(phase1,/if\(k==='Price'\).*showroom-sales-price/);
  assert.match(phase1,/sp1-presentation-price showroom-sales-price/);
  assert.equal(css.includes('#quotation-live-paper'),false,'quotation paper totals intentionally stay visible');
+});
+
+
+
+test('Water Festival promotion cards follow the eye toggle, including after carousel re-render',()=>{
+ const dom=build(),w=dom.window,doc=w.document;
+ try{
+  const banner=doc.createElement('section');
+  banner.id='seasonal-promotions-section';
+  doc.body.append(banner);
+  w.SeasonalCore={
+   today:()=> '2026-11-09',
+   index:()=>new Map([['SB12',{}]]),
+   active:()=>[{name:'Water Festival Promotion'}],
+   project:p=>({...p,_seasonalCampaign:{badge:'Special Offer'}})
+  };
+  w.products=[{id:'promo-1',code:'SB12',itemName:'Sofa promotion',price:553,brand:'DELUXE ART',imgLink:''}];
+  w.eval(read('seasonal-promotions.js'));
+  doc.dispatchEvent(new w.Event('DOMContentLoaded'));
+  w.SeasonalPromos.catalogUpdated();
+  const priceEl=()=>banner.querySelector('.showroom-sales-price');
+  assert.ok(priceEl(),'promotion carousel price has the shared visibility class');
+  assert.match(priceEl().textContent,/\$553/);
+  assert.notEqual(w.getComputedStyle(priceEl()).display,'none');
+  w.ShowroomPriceVisibility.setHidden(true);
+  assert.equal(w.getComputedStyle(priceEl()).display,'none','hide price works on existing promo card');
+  w.SeasonalPromos.catalogUpdated();
+  assert.ok(priceEl(),'promotion cards can be refreshed');
+  assert.equal(w.getComputedStyle(priceEl()).display,'none','newly rendered promo cards stay hidden');
+  assert.match(priceEl().textContent,/\$553/,'underlying promotional selling price is unchanged');
+  assert.ok(banner.textContent.includes('Sofa promotion'),'product identity stays visible');
+  assert.ok(banner.textContent.includes('Special Offer'),'promo badge stays visible');
+  w.ShowroomPriceVisibility.setHidden(false);
+  assert.notEqual(w.getComputedStyle(priceEl()).display,'none','prices reappear on Show Price');
+ }finally{dom.window.close()}
 });

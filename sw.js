@@ -1,12 +1,12 @@
 // Limperial Luxury Showroom Service Worker - V26 Tablet/Laptop Workspace
-const CACHE_NAME = 'limperial-v4-app-4-11-02';
+const CACHE_NAME = 'limperial-v4-app-4-11-03';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './app-version.js?v=V4.11.02',
-  './showroom-price-visibility.js?v=V4.11.02',
-  './showroom-price-visibility.css?v=V4.11.02',
+  './app-version.js?v=V4.11.03',
+  './showroom-price-visibility.js?v=V4.11.03',
+  './showroom-price-visibility.css?v=V4.11.03',
   './customer-shopping-session.js?v=20261023-session1',
   './showroom-scanner.js?v=20261029-photo-crop1',
   './showroom-photo-scan.js?v=20261029-photo-crop1',
@@ -24,7 +24,7 @@ const STATIC_ASSETS = [
   './promotion-config.js?v=20261007-theme6',
   './quotation-registry.js?v=20261008-history-read1',
   './seasonal-core.js?v=20261007-theme6',
-  './seasonal-promotions.js?v=20261026-management-login3',
+  './seasonal-promotions.js?v=20261109-priceeye1',
   './assets/seasonal/international-new-year.webp',
   './assets/seasonal/chinese-new-year.webp',
   './assets/seasonal/khmer-new-year.webp',
