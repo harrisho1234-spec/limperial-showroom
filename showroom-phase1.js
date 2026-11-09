@@ -384,8 +384,9 @@
       row.append(imageNode(item.imgLink,item.itemName||''));
       const info=document.createElement('div');info.className='sp1-row-main';
       const strong=document.createElement('strong');strong.textContent=item.itemName||item.code||'Product';
-      const small=document.createElement('small');small.textContent=(item.code||'')+' · '+money(item.price||0);
-      info.append(strong,small);row.append(info);
+      const small=document.createElement('small');small.textContent=item.code||'';
+      const price=document.createElement('small');price.className='showroom-sales-price';price.textContent=money(item.price||0);
+      info.append(strong,small,price);row.append(info);
       const view=document.createElement('button');view.className='sp1-secondary';view.type='button';view.textContent='View';view.onclick=()=>{dismissModal();openProductDetailModal(id);};
       const add=document.createElement('button');add.className='sp1-primary';add.type='button';add.textContent='Select';add.onclick=()=>{toggleCartSelection(id);dismissModal();};
       if(which==='favorites'){
@@ -415,7 +416,9 @@
       const desc=document.createElement('p');desc.textContent=item.description||'No description';col.append(desc);
       const details=document.createElement('dl');
       [['Code',item.code||'—'],['Price',money(item.price||0)],['Availability',Number(item.qty)>0?String(item.qty)+' in stock':'Out of stock'],['Location',item.location||'—'],['Category',item.class||'—']].forEach(([k,v])=>{
-        const dt=document.createElement('dt');dt.textContent=k;const dd=document.createElement('dd');dd.textContent=v;details.append(dt,dd);
+        const dt=document.createElement('dt');dt.textContent=k;const dd=document.createElement('dd');dd.textContent=v;
+        if(k==='Price'){dt.classList.add('showroom-sales-price');dd.classList.add('showroom-sales-price')}
+        details.append(dt,dd);
       });
       col.append(details);
       const btn=document.createElement('button');btn.className='sp1-primary';btn.type='button';btn.textContent='Select product';btn.onclick=()=>toggleCartSelection(id);
@@ -440,12 +443,12 @@
       const description=document.createElement('p');description.textContent=item.description||item.code;
       const tag=document.createElement('div');tag.className='sp1-presentation-meta';
       tag.textContent=item.code+' · Qty '+item.quantity+(item.stock!==null?(item.stock>0?' · Available':' · Check availability'):'');
-      const bottom=document.createElement('div');bottom.className='sp1-presentation-price';
+      const bottom=document.createElement('div');bottom.className='sp1-presentation-price showroom-sales-price';
       bottom.textContent=money(item.net)+(item.discount>0?' · '+item.discount+'% item discount':'');
       info.append(name,description,tag,bottom);card.append(info);gallery.append(card);
     });
     target.append(gallery);
-    const note=document.createElement('p');note.className='sp1-hint';
+    const note=document.createElement('p');note.className='sp1-hint sp1-presentation-price-note';
     note.textContent='Displayed prices reflect selected item pricing before any overall quotation discount. Confirm the final amount in the quotation.';
     target.append(note);
   }
