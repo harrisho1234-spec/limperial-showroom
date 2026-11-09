@@ -1,0 +1,13 @@
+/* Customer-view price privacy is visual only; it must not change data, exports or amounts. */
+.showroom-hide-sales-prices .showroom-sales-price,
+.showroom-hide-sales-prices #detail-modal-price,
+.showroom-hide-sales-prices [data-showroom-share-price],
+.showroom-hide-sales-prices .sp1-presentation-price,
+.showroom-hide-sales-prices .sp1-presentation-price-note{
+ display:none!important;
+}
+#showroom-price-toggle[aria-pressed="true"]{
+ color:#e3b977;border-color:rgba(223,178,108,.6);background:rgba(223,178,108,.16);
+}
+#showroom-price-toggle{width:28px;height:28px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+@media(max-width:640px){#showroom-price-toggle{width:28px;height:28px}}
