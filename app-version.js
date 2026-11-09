@@ -6,8 +6,8 @@
  const RELEASE = Object.freeze({
   major: 4,
   monthly: 10,
-  update: 1,
-  lastUpdated: '2026-11-07'
+  update: 2,
+  lastUpdated: '2026-11-09'
  });
  const version = 'V'+RELEASE.major+'.'+RELEASE.monthly+'.'+RELEASE.update;
  const date = new Date(RELEASE.lastUpdated+'T12:00:00Z');
