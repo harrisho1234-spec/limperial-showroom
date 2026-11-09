@@ -17,7 +17,7 @@ function releaseMetadata(){
  const monthly=Number(readField('monthly',/\bmonthly:\s*(\d+)/));
  const update=Number(readField('update',/\bupdate:\s*(\d+)/));
  const lastUpdated=readField('lastUpdated',/\blastUpdated:\s*'(\d{4}-\d{2}-\d{2})'/);
- return {major,monthly,update,lastUpdated,version:'V'+major+'.'+monthly+'.'+update};
+ return {major,monthly,update,lastUpdated,version:'V'+major+'.'+monthly+'.'+String(update).padStart(2,'0')};
 }
 
 test('sticky header displays version and last release date, not the date someone visits',()=>{
@@ -52,7 +52,7 @@ test('V4 remains fixed and offline asset versions match the central release',()=
  assert.ok(meta.monthly>=10&&meta.update>=1);
  assert.match(meta.lastUpdated,/^\d{4}-\d{2}-\d{2}$/);
  assert.ok(sw.includes('./app-version.js?v='+meta.version));
- assert.ok(sw.includes("const CACHE_NAME = 'limperial-v4-app-4-"+meta.monthly+'-'+meta.update+"';"));
+ assert.ok(sw.includes("const CACHE_NAME = 'limperial-v4-app-4-"+meta.monthly+'-'+String(meta.update).padStart(2,'0')+"';"));
  assert.ok(html.includes('app-version.js?v='+meta.version));
  assert.doesNotMatch(source,/setInterval|Date\.now\(\).*update/);
 });
@@ -63,8 +63,8 @@ test('update and monthly release previews increment correctly without modifying 
  const originals=watched.map(read);
  const date=meta.lastUpdated>='2026-11-08'?meta.lastUpdated:'2026-11-08';
  const run=kind=>execFileSync(process.execPath,['scripts/bump-app-version.cjs',kind,'--date',date,'--dry-run'],{cwd:root,encoding:'utf8'});
- const nextUpdate='V4.'+meta.monthly+'.'+(meta.update+1);
- const nextMonthly='V4.'+(meta.monthly+1)+'.1';
+ const nextUpdate='V4.'+meta.monthly+'.'+String(meta.update+1).padStart(2,'0');
+ const nextMonthly='V4.'+(meta.monthly+1)+'.01';
  assert.ok(run('update').includes(meta.version+' → '+nextUpdate+' | Last updated '+date+' | dry run'));
  assert.ok(run('monthly').includes(meta.version+' → '+nextMonthly+' | Last updated '+date+' | dry run'));
  assert.deepEqual(watched.map(read),originals,'dry run never writes app files');

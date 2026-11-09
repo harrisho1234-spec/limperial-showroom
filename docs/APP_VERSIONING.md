@@ -1,13 +1,13 @@
 # L'Imperial Showroom app versioning
 
-The sticky header always displays the current release number and the date that release was published. The single metadata source is `app-version.js`, initially **V4.10.1 · Last updated 07 Nov 2026**.
+The sticky header always displays the current release number and the date that release was published. The single metadata source is `app-version.js`, currently **V4.11.02 · Last updated 09 Nov 2026**.
 
 ## Numbering
 
 - **V4** stays fixed for this application.
-- **10** is the current major/monthly release **sequence**, not the calendar month number. This keeps the requested V4.10.1 starting point even though the date is November.
-- **1** is the update count within release 10. Regular releases increment this count: V4.10.2, V4.10.3, …
-- At the next major/monthly release, increment the middle number and reset the update count to 1: V4.11.1.
+- **11** represents the November major/monthly release sequence.
+- **02** is the update count within release 11, always displayed with two digits: V4.11.02, V4.11.03, …
+- At the next major/monthly release, increment the middle number and reset the update count to 01: V4.12.01.
 - The last-updated date changes when the update is actually released; page refreshes never increment it.
 
 ## For the next deployment
@@ -15,8 +15,8 @@ The sticky header always displays the current release number and the date that r
 From the repo root, in the same PR as the app changes, run:
 
 ```bash
-node scripts/bump-app-version.cjs update            # V4.10.1 → V4.10.2
-node scripts/bump-app-version.cjs monthly           # V4.10.1 → V4.11.1
+node scripts/bump-app-version.cjs update            # V4.11.02 → V4.11.03
+node scripts/bump-app-version.cjs monthly           # V4.11.02 → V4.12.01
 ```
 
 These commands set the release date to the current date in Asia/Phnom_Penh, and consistently update `app-version.js`, the cache-busting version URL in `index.html`, and the offline service-worker cache in `sw.js`. Do **not** run both commands for a single release. For a specified date or a preview:

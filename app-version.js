@@ -5,11 +5,11 @@
  'use strict';
  const RELEASE = Object.freeze({
   major: 4,
-  monthly: 10,
+  monthly: 11,
   update: 2,
   lastUpdated: '2026-11-09'
  });
- const version = 'V'+RELEASE.major+'.'+RELEASE.monthly+'.'+RELEASE.update;
+ const version = 'V'+RELEASE.major+'.'+RELEASE.monthly+'.'+String(RELEASE.update).padStart(2,'0');
  const date = new Date(RELEASE.lastUpdated+'T12:00:00Z');
  const displayDate = new Intl.DateTimeFormat('en-GB',{
   day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'

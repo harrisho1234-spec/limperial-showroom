@@ -62,8 +62,8 @@ test('saved visibility preference is restored on reopening the device',()=>{
 test('catalog grid/list, detail, replacement picker, favorites and compare have price markers',()=>{
  const index=read('index.html'),phase1=read('showroom-phase1.js');
  assert.match(index,/id="showroom-price-toggle"/);
- assert.match(index,/showroom-price-visibility\.js\?v=V4\.10\.2/);
- assert.match(index,/showroom-price-visibility\.css\?v=V4\.10\.2/);
+ assert.match(index,/showroom-price-visibility\.js\?v=V4\.11\.02/);
+ assert.match(index,/showroom-price-visibility\.css\?v=V4\.11\.02/);
  assert.match(index,/\$\{priceHtml\}<\/div>/);
  assert.ok((index.match(/showroom-sales-price/g)||[]).length>=3);
  assert.match(index,/data-showroom-share-price/);

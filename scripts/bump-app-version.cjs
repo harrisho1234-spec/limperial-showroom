@@ -2,7 +2,8 @@
 /* Release bump for L'Imperial Showroom.
  * node scripts/bump-app-version.cjs update [--date YYYY-MM-DD] [--dry-run]
  * node scripts/bump-app-version.cjs monthly [--date YYYY-MM-DD] [--dry-run]
- * V4 never changes here. "monthly" is a release cycle, not the calendar month.
+ * V4 stays fixed; the middle number identifies the major/monthly release,
+ * and the last update number is always shown with two digits (01, 02, 03...).
  */
 'use strict';
 const fs=require('node:fs');
@@ -42,8 +43,8 @@ if(major!==4)throw Error('The major version must stay V4');
 if(date<lastUpdated)throw Error('Release date cannot precede the current version date');
 const nextMonthly=kind==='monthly'?monthly+1:monthly;
 const nextUpdate=kind==='monthly'?1:update+1;
-const oldTag='V4.'+monthly+'.'+update;
-const newTag='V4.'+nextMonthly+'.'+nextUpdate;
+const oldTag='V4.'+monthly+'.'+String(update).padStart(2,'0');
+const newTag='V4.'+nextMonthly+'.'+String(nextUpdate).padStart(2,'0');
 function replaceOnce(input,from,to,file){
  const count=input.split(from).length-1;
  if(count!==1)throw Error(file+': expected one '+from+', found '+count);
@@ -58,9 +59,9 @@ let serviceWorker=getFile('sw.js');
 serviceWorker=replaceOnce(serviceWorker,'./app-version.js?v='+oldTag,'./app-version.js?v='+newTag,'sw.js');
 serviceWorker=serviceWorker.replace(
  /const CACHE_NAME = '[^']+';/,
- "const CACHE_NAME = 'limperial-v4-app-4-"+nextMonthly+'-'+nextUpdate+"';"
+ "const CACHE_NAME = 'limperial-v4-app-4-"+nextMonthly+'-'+String(nextUpdate).padStart(2,'0')+"';"
 );
-if(!serviceWorker.includes("const CACHE_NAME = 'limperial-v4-app-4-"+nextMonthly+'-'+nextUpdate+"';")){
+if(!serviceWorker.includes("const CACHE_NAME = 'limperial-v4-app-4-"+nextMonthly+'-'+String(nextUpdate).padStart(2,'0')+"';")){
  throw Error('Missing cache version in sw.js');
 }
 if(!dryRun){
