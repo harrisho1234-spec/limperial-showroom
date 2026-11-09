@@ -1,12 +1,12 @@
 // Limperial Luxury Showroom Service Worker - V26 Tablet/Laptop Workspace
-const CACHE_NAME = 'limperial-v4-app-4-10-2';
+const CACHE_NAME = 'limperial-v4-app-4-11-02';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './app-version.js?v=V4.10.2',
-  './showroom-price-visibility.js?v=V4.10.2',
-  './showroom-price-visibility.css?v=V4.10.2',
+  './app-version.js?v=V4.11.02',
+  './showroom-price-visibility.js?v=V4.11.02',
+  './showroom-price-visibility.css?v=V4.11.02',
   './customer-shopping-session.js?v=20261023-session1',
   './showroom-scanner.js?v=20261029-photo-crop1',
   './showroom-photo-scan.js?v=20261029-photo-crop1',
