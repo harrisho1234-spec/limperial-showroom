@@ -232,7 +232,7 @@
               '<span class="absolute top-1 left-1 bg-amber-100 text-amber-800 px-2 py-0.5 text-[9px] rounded-md font-bold uppercase">'+escapeHtml(prom.badge||'Offer')+'</span>'+
             '</div><div class="p-2"><div class="text-[9px] text-luxury-muted truncate">'+escapeHtml(p.code)+'</div>'+
             '<div class="text-xs text-luxury-text font-semibold truncate">'+escapeHtml(p.itemName)+'</div>'+
-            '<div class="mt-1 text-sm font-bold text-luxury-gold">'+price(p.price)+'</div></div></button>'+
+            '<div class="showroom-sales-price mt-1 text-sm font-bold text-luxury-gold">'+price(p.price)+'</div></div></button>'+
             '<button type="button" data-promo-select="'+escapeHtml(p.id)+'" class="block w-full py-2 border-t border-luxury-gold/15 text-[10px] uppercase font-bold tracking-wide text-luxury-gold hover:bg-luxury-accent/40"><i class="fa-solid fa-plus mr-1"></i>Select</button></div>';
         }).join('')+'</div>');
     ui('seasonal-view-all')?.addEventListener('click',toggleAll);
