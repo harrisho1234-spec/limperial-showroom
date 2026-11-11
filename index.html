@@ -1834,12 +1834,18 @@
         }
 
         function mergeCreatedSets(records) {
+            // The cloud list is the complete source of truth. Do not merge it with
+            // the browser cache, because Sets deleted from Google Sheets would otherwise
+            // remain visible on this device indefinitely.
             const byId = new Map();
-            [...(Array.isArray(createdSets) ? createdSets : []), ...(Array.isArray(records) ? records : [])].forEach(record => {
+            (Array.isArray(records) ? records : []).forEach(record => {
                 const normalized = normalizeCreatedSetRecord(record);
                 if (!normalized) return;
-                if (String(normalized.status || '').toLowerCase() === 'delete') byId.delete(normalized.id);
-                else byId.set(normalized.id, normalized);
+                if (String(normalized.status || '').toLowerCase() === 'delete') {
+                    byId.delete(normalized.id);
+                    return;
+                }
+                byId.set(normalized.id, normalized);
             });
             createdSets = [...byId.values()];
             setLocalCreatedSets(createdSets);
