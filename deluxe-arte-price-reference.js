@@ -7,11 +7,12 @@
   const doc = root.document;
   const DATA_URL = './assets/price-reference/deluxe-arte.json';
   const PHOTOS_URL = './assets/price-reference/deluxe-arte-photo-map.json';
+  const ROW_PHOTOS_URL = './assets/price-reference/deluxe-arte-row-photos.json';
   const GALLERY_URL = 'https://drive.google.com/drive/folders/1dfSR3XctDBuP6c2jwcOwwHg5pbq_hDZ2';
   const PAGE_SIZE = 24;
   const id = name => doc && doc.getElementById(name);
   const state = {
-    items: [], photos: null, open: false, loading: null, error: '',
+    items: [], photos: null, rowPhotos: null, open: false, loading: null, error: '',
     query: '', collection: '', order: 'source', view: 'gallery',
     photoFilter: false, visible: PAGE_SIZE, lastFocus: null, zoomId: '',
     photoUnavailable: false
@@ -62,13 +63,39 @@
     }
     return {files, collection, products};
   }
+  function validateRowPhotos(payload) {
+    if (!payload || payload.kind !== 'deluxe_arte_row_photos' ||
+        typeof payload.images !== 'object' || !payload.images) {
+      throw new Error('Deluxe Arte B-column photo map is invalid');
+    }
+    const images = Object.create(null);
+    for (const [ref, path] of Object.entries(payload.images)) {
+      if (!/^DA-REF-\d{3,}$/.test(ref) ||
+          path !== 'assets/price-reference/deluxe-arte-row-images/' + ref + '.webp') {
+        throw new Error('Invalid B-column photo mapping: ' + ref);
+      }
+      images[ref] = path;
+    }
+    if (Object.keys(images).length !== payload.imageCount) {
+      throw new Error('B-column photo count mismatch');
+    }
+    return images;
+  }
   function price(value) {
     return new Intl.NumberFormat('en-US', {
       style:'currency', currency:'USD', maximumFractionDigits:2
     }).format(value);
   }
-  function resolvePhoto(item, photoMap) {
-    if (!item || !photoMap) return null;
+  function resolvePhoto(item, photoMap, rowPhotos = state.rowPhotos) {
+    if (!item) return null;
+    const exactPath = rowPhotos && rowPhotos[item.id];
+    if (exactPath) {
+      return {
+        url: './' + exactPath, kind: 'row',
+        label: 'Photo from Column B', slide: null
+      };
+    }
+    if (!photoMap) return null;
     // Duplicated name + dimensions = a different design: only show its collection
     // as a labelled example until a verified per-variant image is mapped.
     const exact = !item.designVariant && photoMap.products[item.name];
@@ -96,7 +123,7 @@
   }
   function results() {
     const found = filterItems(state.items,state.query,state.collection,state.order);
-    return state.photoFilter ? found.filter(x=>resolvePhoto(x,state.photos)?.kind==='product') : found;
+    return state.photoFilter ? found.filter(x=>['row','product'].includes(resolvePhoto(x,state.photos)?.kind)) : found;
   }
   function counts() {
     return state.items.reduce((acc,x)=>{
@@ -108,7 +135,7 @@
     if (state.loading) return state.loading;
     state.error = '';
     state.loading = (async()=>{
-      const [reference,photos] = await Promise.allSettled([
+      const [reference,photos,rowPhotos] = await Promise.allSettled([
         fetch(DATA_URL,{cache:'no-cache',credentials:'same-origin'}).then(async r=>{
           if (!r.ok) throw new Error('Could not open the reference price list ('+r.status+').');
           return validateSnapshot(await r.json());
@@ -116,10 +143,15 @@
         fetch(PHOTOS_URL,{cache:'no-cache',credentials:'same-origin'}).then(async r=>{
           if (!r.ok) throw new Error('Photo catalog not found');
           return validatePhotoMap(await r.json());
+        }),
+        fetch(ROW_PHOTOS_URL,{cache:'no-cache',credentials:'same-origin'}).then(async r=>{
+          if (!r.ok) throw new Error('Row-specific photo map not yet imported');
+          return validateRowPhotos(await r.json());
         })
       ]);
       if(reference.status!=='fulfilled') throw reference.reason;
       state.items=reference.value;
+      if(rowPhotos.status==='fulfilled')state.rowPhotos=rowPhotos.value;
       if(photos.status==='fulfilled')state.photos=photos.value;
       else {state.photoUnavailable=true;state.photos=null;}
     })();
@@ -154,9 +186,9 @@
     }
   }
   function imageMarkup(item,photo) {
-    const label=photo?.kind==='product'?'Product example':'Collection photo';
+    const label=photo?.kind==='row'?'Photo from Column B':photo?.kind==='product'?'Product example':'Collection photo';
     const hint=photo?'Photo guide · not a price source':'Photo not available';
-    return '<button type="button" class="da-ref-photo'+(photo?'':' is-missing')+'" aria-label="View photo reference for '+escapeHtml(item.name)+'">'+
+    return '<button type="button" class="da-ref-photo'+(photo?'':' is-missing')+(photo?.kind==='row'?' is-row-photo':'')+'" aria-label="View photo reference for '+escapeHtml(item.name)+'">'+
       (photo?'<img class="da-ref-photo-img" src="'+escapeHtml(photo.url)+'" alt="'+escapeHtml(label+' for '+item.name)+'" loading="lazy" referrerpolicy="no-referrer" decoding="async">':'')+
       '<div class="da-ref-photo-empty"><i class="fa-regular fa-image"></i><span>Photo unavailable</span></div>'+
       (photo?'<span class="da-ref-photo-tag">'+escapeHtml(label)+'</span>':'')+
@@ -208,7 +240,7 @@
     const box=id('da-ref-preview-content');
     if(!box)return;
     box.innerHTML=
-      '<div class="da-ref-preview-stage"><img src="'+escapeHtml(photo.url)+'" alt="'+escapeHtml('Reference photo of '+item.name)+'">'+
+      '<div class="da-ref-preview-stage'+(photo.kind==='row'?' is-row-photo':'')+'"><img src="'+escapeHtml(photo.url)+'" alt="'+escapeHtml('Reference photo of '+item.name)+'">'+
         '<span class="da-ref-photo-tag">'+escapeHtml(photo.label)+'</span></div>'+
       '<div class="da-ref-preview-info">'+
         '<span class="da-ref-collection-label">'+escapeHtml(item.collection)+'</span>'+
@@ -219,6 +251,8 @@
         '<span class="da-price-ref-price-hidden">Price hidden</span><small>USD · Reference only · '+escapeHtml(item.id)+'</small></div>'+
         '<p class="da-ref-preview-disclaimer">'+(photo.kind==='collection'?
         'This is a collection photo, not a confirmed image of this individual item. Confirm the design before offering it to a customer.':
+        photo.kind==='row'?
+        'This photo comes from Column B of the matching price-list row. The selling price still comes only from Column P.':
         'This is a product catalog example. Finishes and design variations should be verified before ordering.')+'</p>'+
       '</div>';
     id('da-ref-preview-close')?.focus();
@@ -378,7 +412,7 @@
     anchor.parentElement.insertBefore(button,anchor.nextSibling);
   }
   root.DeluxeArtePriceReference=Object.freeze({
-    open, close, filterItems, validateSnapshot, validatePhotoMap, resolvePhoto,
+    open, close, filterItems, validateSnapshot, validatePhotoMap, validateRowPhotos, resolvePhoto,
     get loadedCount(){return state.items.length;},
     get photosReady(){return !!state.photos;}
   });
