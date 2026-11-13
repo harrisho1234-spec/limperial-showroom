@@ -1,0 +1,1394 @@
+{
+ "brand": "Deluxe Arte",
+ "currency": "USD",
+ "kind": "reference_only",
+ "updatedAt": "2026-11-13",
+ "items": [
+  {
+   "id": "DA-REF-004",
+   "name": "Rosilnda 4 Seater",
+   "dimensions": "L.290 X W.80 X H.127",
+   "collection": "Roslinda Set",
+   "priceUsd": 19990
+  },
+  {
+   "id": "DA-REF-005",
+   "name": "Roslinda 3 Seater",
+   "dimensions": "L.235 X W.80 X H.127",
+   "collection": "Roslinda Set",
+   "priceUsd": 17900
+  },
+  {
+   "id": "DA-REF-006",
+   "name": "Roslinda 2 Seater",
+   "dimensions": "L.165 X W.80 X H.127",
+   "collection": "Roslinda Set",
+   "priceUsd": 12900
+  },
+  {
+   "id": "DA-REF-007",
+   "name": "Roslinda Armchair",
+   "dimensions": "L.105 X W.80 X H.120",
+   "collection": "Roslinda Set",
+   "priceUsd": 7990
+  },
+  {
+   "id": "DA-REF-008",
+   "name": "Roslinda Coffee Table (Top Solid Wood)",
+   "dimensions": "L.132 X W.132 X H.50",
+   "collection": "Roslinda Set",
+   "priceUsd": 6490
+  },
+  {
+   "id": "DA-REF-009",
+   "name": "Roslinda Side Table",
+   "dimensions": "L.72 X W.54 X H.56",
+   "collection": "Roslinda Set",
+   "priceUsd": 3290
+  },
+  {
+   "id": "DA-REF-011",
+   "name": "Princess 4 Seater",
+   "dimensions": "L.270 X W.90 X H.125",
+   "collection": "Princess Collection",
+   "priceUsd": 17990
+  },
+  {
+   "id": "DA-REF-012",
+   "name": "Princess 3 Seater",
+   "dimensions": "L.215 X W.90 X H.120",
+   "collection": "Princess Collection",
+   "priceUsd": 13990
+  },
+  {
+   "id": "DA-REF-013",
+   "name": "Princess 2 Seater",
+   "dimensions": "L.180 X W.90 X H.120",
+   "collection": "Princess Collection",
+   "priceUsd": 11790
+  },
+  {
+   "id": "DA-REF-014",
+   "name": "Princess Armchair",
+   "dimensions": "L.96 X W.90 X H.115",
+   "collection": "Princess Collection",
+   "priceUsd": 7250
+  },
+  {
+   "id": "DA-REF-015",
+   "name": "Princess Coffee Table (New Design)",
+   "dimensions": "L120 X W120 X H57",
+   "collection": "Princess Collection",
+   "priceUsd": 5990
+  },
+  {
+   "id": "DA-REF-016",
+   "name": "Princess Coffee Table (Top Solid Wood)",
+   "dimensions": "L125 X W.65 X H50",
+   "collection": "Princess Collection",
+   "priceUsd": 4690
+  },
+  {
+   "id": "DA-REF-017",
+   "name": "Princess Coffee table (Top Solid Wood)",
+   "dimensions": "L125 X W125 X H50",
+   "collection": "Princess Collection",
+   "priceUsd": 4190
+  },
+  {
+   "id": "DA-REF-018",
+   "name": "Princess Side Table (New Design)",
+   "dimensions": "",
+   "collection": "Princess Collection",
+   "priceUsd": 3990
+  },
+  {
+   "id": "DA-REF-019",
+   "name": "Princess Side Table (Top Solid Wood)",
+   "dimensions": "",
+   "collection": "Princess Collection",
+   "priceUsd": 3490
+  },
+  {
+   "id": "DA-REF-020",
+   "name": "Princess Dining Table (Top Solid Wood)",
+   "dimensions": "L.240 X W.115 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 22900,
+   "designVariant": "Design 1 of 2"
+  },
+  {
+   "id": "DA-REF-021",
+   "name": "Princess Dining Table (Top Solid Wood)",
+   "dimensions": "L.300 X W.125 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 29900,
+   "designVariant": "Design 1 of 2"
+  },
+  {
+   "id": "DA-REF-022",
+   "name": "Princess Dining Table (Top Solid Wood)",
+   "dimensions": "L.350 X W.127 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 35990,
+   "designVariant": "Design 1 of 2"
+  },
+  {
+   "id": "DA-REF-023",
+   "name": "Princess Dining Table (Top Solid Wood +3 base)",
+   "dimensions": "L.420 X W.129 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 53900,
+   "designVariant": "Design 1 of 2"
+  },
+  {
+   "id": "DA-REF-024",
+   "name": "Princess Dining Table (Top Solid Wood +3 base)",
+   "dimensions": "L.500 X W.129 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 64900,
+   "designVariant": "Design 1 of 2"
+  },
+  {
+   "id": "DA-REF-025",
+   "name": "Princess Dining Table (Top Solid Wood)",
+   "dimensions": "L.240 X W.115 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 21900,
+   "designVariant": "Design 2 of 2"
+  },
+  {
+   "id": "DA-REF-026",
+   "name": "Princess Dining Table (Top Solid Wood)",
+   "dimensions": "L.300 X W.125 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 27900,
+   "designVariant": "Design 2 of 2"
+  },
+  {
+   "id": "DA-REF-027",
+   "name": "Princess Dining Table (Top Solid Wood)",
+   "dimensions": "L.350 X W.127 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 32900,
+   "designVariant": "Design 2 of 2"
+  },
+  {
+   "id": "DA-REF-028",
+   "name": "Princess Dining Table (Top Solid Wood +3 base)",
+   "dimensions": "L.420 X W.129 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 49000,
+   "designVariant": "Design 2 of 2"
+  },
+  {
+   "id": "DA-REF-029",
+   "name": "Princess Dining Table (Top Solid Wood +3 base)",
+   "dimensions": "L.500 X W.129 X H.78",
+   "collection": "Princess Collection",
+   "priceUsd": 58990,
+   "designVariant": "Design 2 of 2"
+  },
+  {
+   "id": "DA-REF-030",
+   "name": "Princess Chair",
+   "dimensions": "L.58 X W.65 X H.118",
+   "collection": "Princess Collection",
+   "priceUsd": 3890
+  },
+  {
+   "id": "DA-REF-031",
+   "name": "Princess Chair (with Arms)",
+   "dimensions": "L.62 X W.70 X H.118",
+   "collection": "Princess Collection",
+   "priceUsd": 4290
+  },
+  {
+   "id": "DA-REF-033",
+   "name": "Elegante 3 Seater",
+   "dimensions": "L.206 X W.85 X H.106",
+   "collection": "Elegante Collection",
+   "priceUsd": 11550
+  },
+  {
+   "id": "DA-REF-034",
+   "name": "Elegante 3 Seater",
+   "dimensions": "L.235 X W.87 X H.106",
+   "collection": "Elegante Collection",
+   "priceUsd": 12990
+  },
+  {
+   "id": "DA-REF-035",
+   "name": "Elegante 2 Seater",
+   "dimensions": "L.173 X W.85 X H.106",
+   "collection": "Elegante Collection",
+   "priceUsd": 8990
+  },
+  {
+   "id": "DA-REF-036",
+   "name": "Elegante Armchair",
+   "dimensions": "L.101 X W.90 X H.95",
+   "collection": "Elegante Collection",
+   "priceUsd": 5990
+  },
+  {
+   "id": "DA-REF-037",
+   "name": "Elegante Coffee Table (Top Solid Wood)",
+   "dimensions": "L.130 X W.70 X H.50",
+   "collection": "Elegante Collection",
+   "priceUsd": 4590
+  },
+  {
+   "id": "DA-REF-038",
+   "name": "Elegante Coffee Table (Top Solid Wood)",
+   "dimensions": "L.127 X W.127 X H.50",
+   "collection": "Elegante Collection",
+   "priceUsd": 5490
+  },
+  {
+   "id": "DA-REF-039",
+   "name": "Elegante Side Table (Top Solid Wood)",
+   "dimensions": "L.70 X W.52 X H.57",
+   "collection": "Elegante Collection",
+   "priceUsd": 3290
+  },
+  {
+   "id": "DA-REF-040",
+   "name": "Elegante Diining Table",
+   "dimensions": "L.240 X W.125 X H.78",
+   "collection": "Elegante Collection",
+   "priceUsd": 21990
+  },
+  {
+   "id": "DA-REF-041",
+   "name": "Elegante Diining Table",
+   "dimensions": "L.300 X W.125 X H.78",
+   "collection": "Elegante Collection",
+   "priceUsd": 27900
+  },
+  {
+   "id": "DA-REF-042",
+   "name": "Elegante Diining Table (2 Base)",
+   "dimensions": "L.350 X W.125 X H.78",
+   "collection": "Elegante Collection",
+   "priceUsd": 34490
+  },
+  {
+   "id": "DA-REF-043",
+   "name": "Elegante Diining Table (3 Base)",
+   "dimensions": "L.420 X W.129 X H.78",
+   "collection": "Elegante Collection",
+   "priceUsd": 49900
+  },
+  {
+   "id": "DA-REF-044",
+   "name": "Elegante Diining Table (3 Base)",
+   "dimensions": "L.500 X W.129 X H.78",
+   "collection": "Elegante Collection",
+   "priceUsd": 59900
+  },
+  {
+   "id": "DA-REF-045",
+   "name": "Elegante Dining Table",
+   "dimensions": "L.190 X W.110 X H.78",
+   "collection": "Elegante Collection",
+   "priceUsd": 11990
+  },
+  {
+   "id": "DA-REF-046",
+   "name": "Elegante Dining Table",
+   "dimensions": "L.240 X W.125 X H.78",
+   "collection": "Elegante Collection",
+   "priceUsd": 15890
+  },
+  {
+   "id": "DA-REF-049",
+   "name": "Shell 3 Seater",
+   "dimensions": "L.205 X W.80 X H.96",
+   "collection": "Shell Collection",
+   "priceUsd": 7790
+  },
+  {
+   "id": "DA-REF-050",
+   "name": "Shell 2 Seater",
+   "dimensions": "L. 165 X W.80 X H.96",
+   "collection": "Shell Collection",
+   "priceUsd": 6590
+  },
+  {
+   "id": "DA-REF-051",
+   "name": "Shell Armchair",
+   "dimensions": "L.90 X W.82 X H.94",
+   "collection": "Shell Collection",
+   "priceUsd": 4790
+  },
+  {
+   "id": "DA-REF-052",
+   "name": "Shell Coffee Table",
+   "dimensions": "L.135 X W.72 X H.50",
+   "collection": "Shell Collection",
+   "priceUsd": 3990
+  },
+  {
+   "id": "DA-REF-053",
+   "name": "Shell Coffee Table",
+   "dimensions": "L.127 X W.127 X H.50",
+   "collection": "Shell Collection",
+   "priceUsd": 5190
+  },
+  {
+   "id": "DA-REF-054",
+   "name": "Shell Side Table",
+   "dimensions": "L.67 X W.67 X H.62",
+   "collection": "Shell Collection",
+   "priceUsd": 2970
+  },
+  {
+   "id": "DA-REF-055",
+   "name": "Shell Dining Table (Top Solid Wood)",
+   "dimensions": "L.185 X W.115 X H.78",
+   "collection": "Shell Collection",
+   "priceUsd": 11200
+  },
+  {
+   "id": "DA-REF-056",
+   "name": "Shell Dining Table (Top Solid Wood)",
+   "dimensions": "L.240 X W.125 X H.78",
+   "collection": "Shell Collection",
+   "priceUsd": 14800
+  },
+  {
+   "id": "DA-REF-058",
+   "name": "Shell Bed (Matress 180 X 200)",
+   "dimensions": "W.212 X L.190 X H.166",
+   "collection": "Shell Collection",
+   "priceUsd": 16300
+  },
+  {
+   "id": "DA-REF-059",
+   "name": "Shell Chair",
+   "dimensions": "L.55 X W.62 X H.108",
+   "collection": "Shell Collection",
+   "priceUsd": 2990
+  },
+  {
+   "id": "DA-REF-060",
+   "name": "Shell Chair (With Arms)",
+   "dimensions": "L.64 X W.62 X H.108",
+   "collection": "Shell Collection",
+   "priceUsd": 3390
+  },
+  {
+   "id": "DA-REF-062",
+   "name": "Marco 3 Seater",
+   "dimensions": "L.215 X W.89 X H.96",
+   "collection": "Marco Collection",
+   "priceUsd": 12590
+  },
+  {
+   "id": "DA-REF-063",
+   "name": "Marco 2 Seater",
+   "dimensions": "L.170 X W.89 X H.96",
+   "collection": "Marco Collection",
+   "priceUsd": 8990
+  },
+  {
+   "id": "DA-REF-064",
+   "name": "Marco Armchair",
+   "dimensions": "L.100 X W.89 X H.96",
+   "collection": "Marco Collection",
+   "priceUsd": 6190
+  },
+  {
+   "id": "DA-REF-065",
+   "name": "Marco Coffee Table",
+   "dimensions": "L.125 X W.125 X H.50",
+   "collection": "Marco Collection",
+   "priceUsd": 5290
+  },
+  {
+   "id": "DA-REF-066",
+   "name": "Marco Coffee Table",
+   "dimensions": "L.130 X W.70 X H.50",
+   "collection": "Marco Collection",
+   "priceUsd": 3990
+  },
+  {
+   "id": "DA-REF-067",
+   "name": "Marco Side Table",
+   "dimensions": "L.70 X W.50 X H.57",
+   "collection": "Marco Collection",
+   "priceUsd": 3190
+  },
+  {
+   "id": "DA-REF-068",
+   "name": "Marco Side Table",
+   "dimensions": "Ø.72 X H.62",
+   "collection": "Marco Collection",
+   "priceUsd": 3190
+  },
+  {
+   "id": "DA-REF-069",
+   "name": "Marco Side Table",
+   "dimensions": "Ø.65 X H.70",
+   "collection": "Marco Collection",
+   "priceUsd": 3290
+  },
+  {
+   "id": "DA-REF-070",
+   "name": "Marco Chair",
+   "dimensions": "L.57 X W.68 X H.105",
+   "collection": "Marco Collection",
+   "priceUsd": 3290
+  },
+  {
+   "id": "DA-REF-071",
+   "name": "Marco Chair (with Arms)",
+   "dimensions": "L.62 X W.68 X H.105",
+   "collection": "Marco Collection",
+   "priceUsd": 3490
+  },
+  {
+   "id": "DA-REF-073",
+   "name": "Leone Dining Table (Top Solid Wood)",
+   "dimensions": "L.320 X W.120 X H.78",
+   "collection": "Leone Collection",
+   "priceUsd": 32900
+  },
+  {
+   "id": "DA-REF-074",
+   "name": "Leone Dining Table (Top Solid Wood)",
+   "dimensions": "L.380 X W.127 X H.78",
+   "collection": "Leone Collection",
+   "priceUsd": 38900
+  },
+  {
+   "id": "DA-REF-075",
+   "name": "Leone Dining Table (Top Solid Wood)",
+   "dimensions": "L.500 X W.129 X H.78",
+   "collection": "Leone Collection",
+   "priceUsd": 69000
+  },
+  {
+   "id": "DA-REF-076",
+   "name": "Leone Side Table",
+   "dimensions": "Ø.70 X H.72",
+   "collection": "Leone Collection",
+   "priceUsd": 5790
+  },
+  {
+   "id": "DA-REF-077",
+   "name": "Leone Table",
+   "dimensions": "Ø.122 X H.83",
+   "collection": "Leone Collection",
+   "priceUsd": 22900
+  },
+  {
+   "id": "DA-REF-079",
+   "name": "Leone Office Desk",
+   "dimensions": "L.225 X W.95 X H.78",
+   "collection": "Leone Collection",
+   "priceUsd": 29900
+  },
+  {
+   "id": "DA-REF-080",
+   "name": "Lincon Office Desk",
+   "dimensions": "L.225 X W.95 X H.78",
+   "collection": "Leone Collection",
+   "priceUsd": 27990
+  },
+  {
+   "id": "DA-REF-082",
+   "name": "Napoleone 3 Seater",
+   "dimensions": "L.208 X W.84 X H.112",
+   "collection": "Napoleone Set",
+   "priceUsd": 12390
+  },
+  {
+   "id": "DA-REF-083",
+   "name": "Napoleone 2 Seater",
+   "dimensions": "L.140 X W.84 X H.112",
+   "collection": "Napoleone Set",
+   "priceUsd": 9590
+  },
+  {
+   "id": "DA-REF-084",
+   "name": "Napoleone Armchair",
+   "dimensions": "L.84 X W.80 X H.112",
+   "collection": "Napoleone Set",
+   "priceUsd": 5990
+  },
+  {
+   "id": "DA-REF-085",
+   "name": "Napoleone Coffee Table",
+   "dimensions": "L.128 X W.72 X H.50",
+   "collection": "Napoleone Set",
+   "priceUsd": 4490
+  },
+  {
+   "id": "DA-REF-086",
+   "name": "Napoleone Side Table",
+   "dimensions": "L.58 X W.58 X H.56",
+   "collection": "Napoleone Set",
+   "priceUsd": 3200
+  },
+  {
+   "id": "DA-REF-087",
+   "name": "Napoleone Pouf",
+   "dimensions": "L.46 X D.46 X H.43",
+   "collection": "Napoleone Set",
+   "priceUsd": 1690
+  },
+  {
+   "id": "DA-REF-088",
+   "name": "Timo Pouf",
+   "dimensions": "L.50 X D.50 X H.44",
+   "collection": "Napoleone Set",
+   "priceUsd": 1500
+  },
+  {
+   "id": "DA-REF-090",
+   "name": "Italy 4 Seater",
+   "dimensions": "L.280 X W.90 X H.120",
+   "collection": "Italy Set",
+   "priceUsd": 18990
+  },
+  {
+   "id": "DA-REF-091",
+   "name": "Italy 3 Seater",
+   "dimensions": "L.208 X W.90 X H.120",
+   "collection": "Italy Set",
+   "priceUsd": 14990
+  },
+  {
+   "id": "DA-REF-092",
+   "name": "Italy 2 Seater",
+   "dimensions": "L.175 X W.90 X H.115",
+   "collection": "Italy Set",
+   "priceUsd": 11790
+  },
+  {
+   "id": "DA-REF-093",
+   "name": "Italy Armchair",
+   "dimensions": "L.100 X W.90 X H.115",
+   "collection": "Italy Set",
+   "priceUsd": 6800
+  },
+  {
+   "id": "DA-REF-094",
+   "name": "Italy Coffee Table",
+   "dimensions": "L.128 X W.70 X H.50",
+   "collection": "Italy Set",
+   "priceUsd": 4700
+  },
+  {
+   "id": "DA-REF-095",
+   "name": "Italy Coffee Table",
+   "dimensions": "L.128 X W.128 X H.50",
+   "collection": "Italy Set",
+   "priceUsd": 5990
+  },
+  {
+   "id": "DA-REF-096",
+   "name": "Italy Side Table",
+   "dimensions": "L.60 X W.60 X H.60",
+   "collection": "Italy Set",
+   "priceUsd": 3390
+  },
+  {
+   "id": "DA-REF-098",
+   "name": "Rococo Armchair (R & L)",
+   "dimensions": "L.65 X W.65 X H.109",
+   "collection": "Chair and Stools",
+   "priceUsd": 4890
+  },
+  {
+   "id": "DA-REF-099",
+   "name": "Fenec Armchair & Foot Rest",
+   "dimensions": "Armchair: L.74 X W.82 X H.130 · Foot Rest: L.58 X W.58 X H.45",
+   "collection": "Chair and Stools",
+   "priceUsd": 7990
+  },
+  {
+   "id": "DA-REF-100",
+   "name": "Siena Armchair",
+   "dimensions": "L.70 X W.65 X H.115",
+   "collection": "Chair and Stools",
+   "priceUsd": 4890,
+   "designVariant": "Design 1 of 2"
+  },
+  {
+   "id": "DA-REF-101",
+   "name": "Siena Armchair",
+   "dimensions": "L.70 X W.65 X H.115",
+   "collection": "Chair and Stools",
+   "priceUsd": 4990,
+   "designVariant": "Design 2 of 2"
+  },
+  {
+   "id": "DA-REF-102",
+   "name": "Mimosa Stool",
+   "dimensions": "L.51 X W.57 X H.100",
+   "collection": "Chair and Stools",
+   "priceUsd": 3290
+  },
+  {
+   "id": "DA-REF-103",
+   "name": "Mimosa Stool",
+   "dimensions": "L.51 X W.60 X H.110",
+   "collection": "Chair and Stools",
+   "priceUsd": 3390
+  },
+  {
+   "id": "DA-REF-104",
+   "name": "Italy Armchair",
+   "dimensions": "L.77 X W.71 X H.105",
+   "collection": "Chair and Stools",
+   "priceUsd": 4790
+  },
+  {
+   "id": "DA-REF-105",
+   "name": "Italy Armchair",
+   "dimensions": "L.81 X W.71 X H.120",
+   "collection": "Chair and Stools",
+   "priceUsd": 5490
+  },
+  {
+   "id": "DA-REF-106",
+   "name": "Italy Chair",
+   "dimensions": "L.60 X W.68 X H.105",
+   "collection": "Chair and Stools",
+   "priceUsd": 3390
+  },
+  {
+   "id": "DA-REF-107",
+   "name": "Italy Chair (with Arms)",
+   "dimensions": "",
+   "collection": "Chair and Stools",
+   "priceUsd": 3690
+  },
+  {
+   "id": "DA-REF-108",
+   "name": "Aster Armchair",
+   "dimensions": "L.80 X W.70 X H.115",
+   "collection": "Chair and Stools",
+   "priceUsd": 5290
+  },
+  {
+   "id": "DA-REF-109",
+   "name": "Italy Swivel Chair",
+   "dimensions": "L.80 X W.88 X H.134",
+   "collection": "Chair and Stools",
+   "priceUsd": 8190
+  },
+  {
+   "id": "DA-REF-110",
+   "name": "Lincon Swivel Chair",
+   "dimensions": "L.75 X D.72 X H.124",
+   "collection": "Chair and Stools",
+   "priceUsd": 7990
+  },
+  {
+   "id": "DA-REF-113",
+   "name": "Timo Chair",
+   "dimensions": "L.53 X W.56 X H.98",
+   "collection": "Chair and Stools",
+   "priceUsd": 2790
+  },
+  {
+   "id": "DA-REF-115",
+   "name": "Valentino Side Table (Top Solid Wood)",
+   "dimensions": "L.43 X W.43 X H.81",
+   "collection": "Coffee & Side Table",
+   "priceUsd": 3290
+  },
+  {
+   "id": "DA-REF-116",
+   "name": "Valentino Side Table (Top Solid Wood)",
+   "dimensions": "Ø.65 X H.62",
+   "collection": "Coffee & Side Table",
+   "priceUsd": 2890
+  },
+  {
+   "id": "DA-REF-117",
+   "name": "Pigna Side Table",
+   "dimensions": "Ø.70 X H.70",
+   "collection": "Coffee & Side Table",
+   "priceUsd": 3690
+  },
+  {
+   "id": "DA-REF-119",
+   "name": "Elisa Side Table",
+   "dimensions": "L.67 X W.46 X H.85",
+   "collection": "Coffee & Side Table",
+   "priceUsd": 2990
+  },
+  {
+   "id": "DA-REF-120",
+   "name": "Siena Side Table",
+   "dimensions": "L.50 X W.50 X H.66",
+   "collection": "Coffee & Side Table",
+   "priceUsd": 2390
+  },
+  {
+   "id": "DA-REF-121",
+   "name": "Siena Side Table",
+   "dimensions": "L.47 X W.47 X H.81",
+   "collection": "Coffee & Side Table",
+   "priceUsd": 2990
+  },
+  {
+   "id": "DA-REF-122",
+   "name": "Vassallo Wine Tray",
+   "dimensions": "L.66 X W.42 X H.63",
+   "collection": "Coffee & Side Table",
+   "priceUsd": 1590
+  },
+  {
+   "id": "DA-REF-124",
+   "name": "Edera Table",
+   "dimensions": "Ø.100 X H.83",
+   "collection": "Table & Side Board",
+   "priceUsd": 7690
+  },
+  {
+   "id": "DA-REF-126",
+   "name": "Felce Table",
+   "dimensions": "Ø.150 X H.78",
+   "collection": "Table & Side Board",
+   "priceUsd": 12900
+  },
+  {
+   "id": "DA-REF-127",
+   "name": "Felce Table",
+   "dimensions": "Ø.180 X H.78",
+   "collection": "Table & Side Board",
+   "priceUsd": 15900
+  },
+  {
+   "id": "DA-REF-128",
+   "name": "Felce Table",
+   "dimensions": "Ø.200 X H.78",
+   "collection": "Table & Side Board",
+   "priceUsd": 18900
+  },
+  {
+   "id": "DA-REF-129",
+   "name": "Rose Showcase (L & R)",
+   "dimensions": "L.108 X W.51 X H.208",
+   "collection": "Table & Side Board",
+   "priceUsd": 14900
+  },
+  {
+   "id": "DA-REF-130",
+   "name": "Luna Showcase",
+   "dimensions": "L.75 X W.50 X H.208",
+   "collection": "Table & Side Board",
+   "priceUsd": 12900
+  },
+  {
+   "id": "DA-REF-131",
+   "name": "Onda Sideboard",
+   "dimensions": "L.80 X W.50 X H.90",
+   "collection": "Table & Side Board",
+   "priceUsd": 7990
+  },
+  {
+   "id": "DA-REF-132",
+   "name": "Onda Sideboard",
+   "dimensions": "L.140 X W.46 X H.86",
+   "collection": "Table & Side Board",
+   "priceUsd": 15990
+  },
+  {
+   "id": "DA-REF-133",
+   "name": "Onda Sideboard",
+   "dimensions": "L.204 X W.47 X H.85",
+   "collection": "Table & Side Board",
+   "priceUsd": 17900
+  },
+  {
+   "id": "DA-REF-134",
+   "name": "Rose Drawer",
+   "dimensions": "L.100 X W.55 X H.120",
+   "collection": "Table & Side Board",
+   "priceUsd": 12990
+  },
+  {
+   "id": "DA-REF-135",
+   "name": "Atena Bookcase",
+   "dimensions": "L.280 X W.60 X H.235",
+   "collection": "Table & Side Board",
+   "priceUsd": 29990
+  },
+  {
+   "id": "DA-REF-136",
+   "name": "Firenze Sideboard",
+   "dimensions": "L.220 X W.53 X H.80",
+   "collection": "Table & Side Board",
+   "priceUsd": 14900
+  },
+  {
+   "id": "DA-REF-137",
+   "name": "Venezia Sideboard",
+   "dimensions": "L.180 X W.41 X H.80",
+   "collection": "Table & Side Board",
+   "priceUsd": 9900
+  },
+  {
+   "id": "DA-REF-138",
+   "name": "Venezia Sideboard",
+   "dimensions": "L.220 X W.41 X H.80",
+   "collection": "Table & Side Board",
+   "priceUsd": 11390
+  },
+  {
+   "id": "DA-REF-139",
+   "name": "Gondola Sideboard",
+   "dimensions": "L.160 X W.50 X H.77",
+   "collection": "Table & Side Board",
+   "priceUsd": 9990
+  },
+  {
+   "id": "DA-REF-140",
+   "name": "Gondola Sideboard",
+   "dimensions": "L.220 X W.50 X H.77",
+   "collection": "Table & Side Board",
+   "priceUsd": 11990
+  },
+  {
+   "id": "DA-REF-141",
+   "name": "Elegante Sideboard",
+   "dimensions": "L.200 X W.48 X H.80",
+   "collection": "Table & Side Board",
+   "priceUsd": 11990
+  },
+  {
+   "id": "DA-REF-142",
+   "name": "Italy Desk",
+   "dimensions": "L.155 X W.80 X H.78",
+   "collection": "Table & Side Board",
+   "priceUsd": 12990
+  },
+  {
+   "id": "DA-REF-143",
+   "name": "Italy Desk",
+   "dimensions": "L.180 X W.90 X H.78",
+   "collection": "Table & Side Board",
+   "priceUsd": 13900
+  },
+  {
+   "id": "DA-REF-144",
+   "name": "Atena Desk",
+   "dimensions": "L.200 X W.100 X H.78",
+   "collection": "Table & Side Board",
+   "priceUsd": 19900
+  },
+  {
+   "id": "DA-REF-145",
+   "name": "Atena Desk",
+   "dimensions": "L.210 X W.100 X H.78",
+   "collection": "Table & Side Board",
+   "priceUsd": 19990
+  },
+  {
+   "id": "DA-REF-146",
+   "name": "Atena Desk",
+   "dimensions": "L.220 X W.100 X H.78",
+   "collection": "Table & Side Board",
+   "priceUsd": 20000
+  },
+  {
+   "id": "DA-REF-147",
+   "name": "Shell Desk",
+   "dimensions": "L.122 X W.62 X H.77",
+   "collection": "Table & Side Board",
+   "priceUsd": 7990
+  },
+  {
+   "id": "DA-REF-149",
+   "name": "Venere Console",
+   "dimensions": "L.173 X W.54 X H.89",
+   "collection": "Console",
+   "priceUsd": 12990
+  },
+  {
+   "id": "DA-REF-150",
+   "name": "Olanda Console",
+   "dimensions": "L.156 X W.70 X H.93",
+   "collection": "Console",
+   "priceUsd": 12990
+  },
+  {
+   "id": "DA-REF-151",
+   "name": "Rose Console Floating",
+   "dimensions": "L.90 X D.40 X H.80",
+   "collection": "Console",
+   "priceUsd": 4290
+  },
+  {
+   "id": "DA-REF-152",
+   "name": "Rose Console",
+   "dimensions": "L.85 X W.40 X H.81",
+   "collection": "Console",
+   "priceUsd": 4190
+  },
+  {
+   "id": "DA-REF-153",
+   "name": "Rose Console",
+   "dimensions": "L.115 X W.45 X H.83",
+   "collection": "Console",
+   "priceUsd": 6400
+  },
+  {
+   "id": "DA-REF-154",
+   "name": "Rose Console",
+   "dimensions": "L.160 X W.52 X H.83",
+   "collection": "Console",
+   "priceUsd": 7990
+  },
+  {
+   "id": "DA-REF-155",
+   "name": "Rose Console",
+   "dimensions": "L.190 X W.60 X H.90",
+   "collection": "Console",
+   "priceUsd": 8990
+  },
+  {
+   "id": "DA-REF-156",
+   "name": "Viola Console",
+   "dimensions": "L.120 X W.40 X H.83",
+   "collection": "Console",
+   "priceUsd": 6500
+  },
+  {
+   "id": "DA-REF-157",
+   "name": "Viola Console",
+   "dimensions": "L.150 X W.45 X H.83",
+   "collection": "Console",
+   "priceUsd": 7290
+  },
+  {
+   "id": "DA-REF-158",
+   "name": "Milano Console",
+   "dimensions": "L.125 X W.45 X H.83",
+   "collection": "Console",
+   "priceUsd": 6590
+  },
+  {
+   "id": "DA-REF-159",
+   "name": "Milano Console",
+   "dimensions": "L.160 X W.45 X H.83",
+   "collection": "Console",
+   "priceUsd": 7790
+  },
+  {
+   "id": "DA-REF-160",
+   "name": "Tornado Console",
+   "dimensions": "L.160 X W.45 X H.83",
+   "collection": "Console",
+   "priceUsd": 7790
+  },
+  {
+   "id": "DA-REF-161",
+   "name": "Tornado Console",
+   "dimensions": "L.125 X W.45 X H.83",
+   "collection": "Console",
+   "priceUsd": 6590
+  },
+  {
+   "id": "DA-REF-163",
+   "name": "Firenze Bed",
+   "dimensions": "W.220 X L.220 X H.171",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 27990
+  },
+  {
+   "id": "DA-REF-164",
+   "name": "Firenze Bed",
+   "dimensions": "W.237 X L.234 X H.171",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 28990
+  },
+  {
+   "id": "DA-REF-165",
+   "name": "Firenze Bed (Flat Foot Board)",
+   "dimensions": "W.220 X L.220 X H.171",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 27200
+  },
+  {
+   "id": "DA-REF-166",
+   "name": "Firenze Bed (Flat Foot Board)",
+   "dimensions": "W.237 X L.234 X H.171",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 27700
+  },
+  {
+   "id": "DA-REF-168",
+   "name": "Firenze Night Table",
+   "dimensions": "L.65 X W.45 X H.70",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 5790
+  },
+  {
+   "id": "DA-REF-169",
+   "name": "Firenze Dressing Table",
+   "dimensions": "L.170 X D.50 X H.78",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 12390
+  },
+  {
+   "id": "DA-REF-170",
+   "name": "Firenze Mirror",
+   "dimensions": "L.135 X H.113",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 4290
+  },
+  {
+   "id": "DA-REF-171",
+   "name": "Roma Bed Curved Foot",
+   "dimensions": "W.200 X L.215 X H.152",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 18990
+  },
+  {
+   "id": "DA-REF-172",
+   "name": "Roma Bed Flat Foot",
+   "dimensions": "W.200 X L.215 X H.152",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 18490
+  },
+  {
+   "id": "DA-REF-173",
+   "name": "Roma Night Table",
+   "dimensions": "L.61 X W.42 X H.61",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 4490
+  },
+  {
+   "id": "DA-REF-174",
+   "name": "Roma Dressing Table",
+   "dimensions": "L.168 X W.50 X H.78",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 8900
+  },
+  {
+   "id": "DA-REF-175",
+   "name": "Roma Pouf",
+   "dimensions": "L.45 X W.45 X H.50",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 1890
+  },
+  {
+   "id": "DA-REF-176",
+   "name": "Roma Mirror",
+   "dimensions": "L.107 X H.124",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 2490
+  },
+  {
+   "id": "DA-REF-177",
+   "name": "Venezia Bed",
+   "dimensions": "W.192 X L.212 X H.142",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 19990
+  },
+  {
+   "id": "DA-REF-178",
+   "name": "Venezia Bed",
+   "dimensions": "W.117 X L.212 X H.133",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 8590
+  },
+  {
+   "id": "DA-REF-179",
+   "name": "Venezia Night Table",
+   "dimensions": "L.53 X W.42 X H.61",
+   "collection": "Beds & Night Tables",
+   "priceUsd": 4900
+  },
+  {
+   "id": "DA-REF-181",
+   "name": "Victoria Bench",
+   "dimensions": "L.170 X W.71 X H.92",
+   "collection": "Chaise & Bench",
+   "priceUsd": 8400
+  },
+  {
+   "id": "DA-REF-182",
+   "name": "Victoria Bench",
+   "dimensions": "L.155 X W.71 X H.88",
+   "collection": "Chaise & Bench",
+   "priceUsd": 8167.5
+  },
+  {
+   "id": "DA-REF-183",
+   "name": "Queen Bench",
+   "dimensions": "L.175 X W.52 X H.87",
+   "collection": "Chaise & Bench",
+   "priceUsd": 5790
+  },
+  {
+   "id": "DA-REF-184",
+   "name": "Queen Bench",
+   "dimensions": "L.145 X W.52 X H.87",
+   "collection": "Chaise & Bench",
+   "priceUsd": 4900
+  },
+  {
+   "id": "DA-REF-185",
+   "name": "Regina Chaise (L&R)",
+   "dimensions": "L.220 X W.70 X H.100",
+   "collection": "Chaise & Bench",
+   "priceUsd": 9200
+  },
+  {
+   "id": "DA-REF-186",
+   "name": "Divina Chaise (L&R)",
+   "dimensions": "L.230 X W.78 X H.87",
+   "collection": "Chaise & Bench",
+   "priceUsd": 11390
+  },
+  {
+   "id": "DA-REF-187",
+   "name": "Toscana Bench",
+   "dimensions": "L.93 X W.58 X H.77",
+   "collection": "Chaise & Bench",
+   "priceUsd": 3200
+  },
+  {
+   "id": "DA-REF-188",
+   "name": "Napoleone Stool",
+   "dimensions": "L.145 X W.50 X H.43",
+   "collection": "Chaise & Bench",
+   "priceUsd": 3200
+  },
+  {
+   "id": "DA-REF-189",
+   "name": "Marco Stool",
+   "dimensions": "L.160 X W.55 X H.50",
+   "collection": "Chaise & Bench",
+   "priceUsd": 3490
+  },
+  {
+   "id": "DA-REF-191",
+   "name": "Angelo Mirror",
+   "dimensions": "L.120 X H.158",
+   "collection": "Mirrors",
+   "priceUsd": 7900
+  },
+  {
+   "id": "DA-REF-192",
+   "name": "Venus Mirror (Portrait)",
+   "dimensions": "L.110 X H.175",
+   "collection": "Mirrors",
+   "priceUsd": 8900
+  },
+  {
+   "id": "DA-REF-193",
+   "name": "Venus Mirror (Horizontal)",
+   "dimensions": "L.200 X H.148",
+   "collection": "Mirrors",
+   "priceUsd": 9790
+  },
+  {
+   "id": "DA-REF-194",
+   "name": "Camelia Mirror",
+   "dimensions": "L.90 X H.170",
+   "collection": "Mirrors",
+   "priceUsd": 6490
+  },
+  {
+   "id": "DA-REF-195",
+   "name": "Georgia Mirror",
+   "dimensions": "L.133 X H.103",
+   "collection": "Mirrors",
+   "priceUsd": 3690
+  },
+  {
+   "id": "DA-REF-196",
+   "name": "Greta Mirror",
+   "dimensions": "L.50 X H.102",
+   "collection": "Mirrors",
+   "priceUsd": 2390
+  },
+  {
+   "id": "DA-REF-197",
+   "name": "Cleopatra Mirror",
+   "dimensions": "L.100 X H.134",
+   "collection": "Mirrors",
+   "priceUsd": 6500
+  },
+  {
+   "id": "DA-REF-198",
+   "name": "Fiorita Mirror",
+   "dimensions": "W.171 X H.126",
+   "collection": "Mirrors",
+   "priceUsd": 4600
+  },
+  {
+   "id": "DA-REF-199",
+   "name": "Ginevra Standing Mirror",
+   "dimensions": "L.92 X W.50 X H.195",
+   "collection": "Mirrors",
+   "priceUsd": 5775
+  },
+  {
+   "id": "DA-REF-200",
+   "name": "Dalia Mirror",
+   "dimensions": "W.121 X H.95",
+   "collection": "Mirrors",
+   "priceUsd": 3490
+  },
+  {
+   "id": "DA-REF-201",
+   "name": "Torino Mirror",
+   "dimensions": "W.90 X H.120",
+   "collection": "Mirrors",
+   "priceUsd": 3600
+  },
+  {
+   "id": "DA-REF-202",
+   "name": "Alice Mirror",
+   "dimensions": "W.56 X H.111",
+   "collection": "Mirrors",
+   "priceUsd": 2800
+  },
+  {
+   "id": "DA-REF-203",
+   "name": "Calla Mirror",
+   "dimensions": "W.75 X H.105",
+   "collection": "Mirrors",
+   "priceUsd": 3220
+  },
+  {
+   "id": "DA-REF-204",
+   "name": "Gloria Mirror",
+   "dimensions": "W.67 X H.109",
+   "collection": "Mirrors",
+   "priceUsd": 2970
+  },
+  {
+   "id": "DA-REF-205",
+   "name": "Roselina Mirror",
+   "dimensions": "W.46 X H.73",
+   "collection": "Mirrors",
+   "priceUsd": 2200
+  },
+  {
+   "id": "DA-REF-206",
+   "name": "Verona Mirror",
+   "dimensions": "L.90 X H.173",
+   "collection": "Mirrors",
+   "priceUsd": 5990
+  },
+  {
+   "id": "DA-REF-207",
+   "name": "Verona Mirror",
+   "dimensions": "L.135 X H.180",
+   "collection": "Mirrors",
+   "priceUsd": 6350
+  },
+  {
+   "id": "DA-REF-208",
+   "name": "Ghirlanda Mirror",
+   "dimensions": "Ø.108",
+   "collection": "Mirrors",
+   "priceUsd": 5445
+  },
+  {
+   "id": "DA-REF-210",
+   "name": "Dione Column",
+   "dimensions": "L.46 X W.46 X H.120",
+   "collection": "Decorations",
+   "priceUsd": 4200
+  },
+  {
+   "id": "DA-REF-211",
+   "name": "Atena Column",
+   "dimensions": "L.46 X L.46 X H.120",
+   "collection": "Decorations",
+   "priceUsd": 4890
+  },
+  {
+   "id": "DA-REF-212",
+   "name": "Torneo Vase",
+   "dimensions": "L.50 X W.32 X H.55",
+   "collection": "Decorations",
+   "priceUsd": 2990
+  },
+  {
+   "id": "DA-REF-213",
+   "name": "Aquila",
+   "dimensions": "L.20 X W.12 X H.20",
+   "collection": "Decorations",
+   "priceUsd": 1285
+  },
+  {
+   "id": "DA-REF-214",
+   "name": "Mora Ornament",
+   "dimensions": "L.26 X H.15",
+   "collection": "Decorations",
+   "priceUsd": 529
+  },
+  {
+   "id": "DA-REF-215",
+   "name": "Puma Tissue Box",
+   "dimensions": "L.30 X W.17 X H.14",
+   "collection": "Decorations",
+   "priceUsd": 480,
+   "designVariant": "Design 1 of 2"
+  },
+  {
+   "id": "DA-REF-216",
+   "name": "Puma Tissue Box",
+   "dimensions": "L.30 X W.17 X H.14",
+   "collection": "Decorations",
+   "priceUsd": 480,
+   "designVariant": "Design 2 of 2"
+  },
+  {
+   "id": "DA-REF-217",
+   "name": "Potos Candle Holder (L&R)",
+   "dimensions": "L.35 X W.13 X H.48",
+   "collection": "Decorations",
+   "priceUsd": 595
+  },
+  {
+   "id": "DA-REF-218",
+   "name": "Barolo Wine Cart",
+   "dimensions": "L.96 X W.61 X H.80",
+   "collection": "Decorations",
+   "priceUsd": 4785
+  },
+  {
+   "id": "DA-REF-219",
+   "name": "Firenze Cloth Valet",
+   "dimensions": "L.63 X W.48 X H.130",
+   "collection": "Decorations",
+   "priceUsd": 5945
+  },
+  {
+   "id": "DA-REF-220",
+   "name": "Cushion",
+   "dimensions": "W.45 X H.45",
+   "collection": "Decorations",
+   "priceUsd": 299
+  },
+  {
+   "id": "DA-REF-221",
+   "name": "Cushion",
+   "dimensions": "W.35 X H.35",
+   "collection": "Decorations",
+   "priceUsd": 250
+  },
+  {
+   "id": "DA-REF-222",
+   "name": "Cushion (Cylindrical)",
+   "dimensions": "Ø.22 X H.65",
+   "collection": "Decorations",
+   "priceUsd": 330
+  }
+ ]
+}
