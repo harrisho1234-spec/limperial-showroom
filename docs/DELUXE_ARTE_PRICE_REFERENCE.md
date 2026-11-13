@@ -35,6 +35,53 @@ The photo-first reference uses a **publicly shared, existing Deluxe Arte Google 
 
 The gallery remains **reference-only**: not a product, inventory, purchase, shopping-cart, or quotation data source. Importing another photo source requires explicit matching by source reference ID, never just matching sizes.
 
+## Exact photos from Excel Column B (import prepared, pending execution)
+
+The owner provided `Deluxe Arte (Price Structure)(1).xlsx` to replace the approximate
+collection images with **actual photos anchored to Column B** in the sheet
+`Deluxe Update Price (2025)`. The picture importer has been prepared in:
+`scripts/extract-deluxe-arte-column-b.py`.
+
+The current development environment was unable to mount or inspect the uploaded
+~196 MB workbook, so the imported photos have **NOT yet been generated, verified,
+or released**. Do not describe the replacement as live until the extraction
+manifest and image assets are committed and tested.
+
+When file-processing is available, complete these steps **without uploading any
+full costing workbook to GitHub**:
+
+1. Open the checked-out L'Imperial Showroom repository locally or in a private
+   execution environment.
+2. Install Pillow: `python -m pip install Pillow`.
+3. Dry-run the importer to confirm matching anchored images:
+   `python scripts/extract-deluxe-arte-column-b.py "/path/to/Deluxe Arte (Price Structure)(1).xlsx" --dry-run`.
+4. If it reports enough *unambiguous Column B* photos anchored to exact rows,
+   run the same command without `--dry-run`.
+5. It creates only resized WebP item photos in
+   `assets/price-reference/deluxe-arte-row-images/` and a strictly
+   whitelisted `assets/price-reference/deluxe-arte-row-photos.json` mapping,
+   keyed by existing source-row IDs like `DA-REF-004`.
+6. Review the number of missing/ambiguous rows. If there are too many missing
+   photos, **stop and investigate source picture anchors**; never guess by
+   name or dimensions, and never shift photos between rows.
+7. Run `python -m unittest discover -s tests -p 'test_deluxe_arte_column_b.py' -v`
+   and `node --test tests/deluxe-arte-price-reference.test.cjs`, then inspect
+   visual samples including repeated-size different-design Princess tables.
+8. Commit **only** the generated WebP files and map. Never commit the
+   original workbook, costs, or other worksheets. Bump the app release from
+   V4.11.05 to V4.11.06 and update the service-worker cache so staff receive it.
+
+The Showroom price-reference code now supports an optional, strictly validated
+row-photo manifest. Once installed, each `DA-REF-###` uses its exact image
+from the corresponding **Column B row**. If the manifest exists but a row is
+not mapped, that item will show **Photo unavailable**, not a potentially
+incorrect collection image. Without the manifest, the current gallery examples
+remain visible and remain clearly labeled.
+
+Existing USD reference prices stay sourced from the selling-price-only JSON
+created from **Column P**, not from image files. This import does not modify
+Stock, SKU/catalog records, reservations, procurement, quotations, or orders.
+
 ## Updates
 
 This first implementation uses a sanitized, **static selling-price snapshot** for immediate use and offline PWA access. Updating Column P in the owner's Google Sheet **does not automatically refresh the Showroom**. An authorized editor must re-read the latest Column A and P values, regenerate the whitelist-only JSON, validate the row IDs and separate design variants, and commit a new Showroom release/version.
