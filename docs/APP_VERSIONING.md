@@ -1,6 +1,6 @@
 # L'Imperial Showroom app versioning
 
-The sticky header always displays the current release number and the date that release was published. The single metadata source is `app-version.js`, currently **V4.11.06 · Last updated 13 Nov 2026**.
+The sticky header always displays the current release number and the date that release was published. The single metadata source is `app-version.js`, currently **V4.11.07 · Last updated 13 Nov 2026**.
 
 ## Numbering
 
@@ -15,8 +15,8 @@ The sticky header always displays the current release number and the date that r
 From the repo root, in the same PR as the app changes, run:
 
 ```bash
-node scripts/bump-app-version.cjs update            # V4.11.06 → V4.11.07
-node scripts/bump-app-version.cjs monthly           # V4.11.06 → V4.12.01
+node scripts/bump-app-version.cjs update            # V4.11.07 → V4.11.08
+node scripts/bump-app-version.cjs monthly           # V4.11.07 → V4.12.01
 ```
 
 These commands set the release date to the current date in Asia/Phnom_Penh, and consistently update `app-version.js`, the cache-busting version URL in `index.html`, and the offline service-worker cache in `sw.js`. Do **not** run both commands for a single release. For a specified date or a preview:
