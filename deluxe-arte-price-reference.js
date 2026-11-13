@@ -1,247 +1,342 @@
-/* Deluxe Arte selling-price reference only — independent of catalog, stock, cart and quotations.
- * DATA CONTRACT: assets/price-reference/deluxe-arte.json contains ONLY sale-facing fields.
- * Never read the confidential costing workbook in the browser.
- */
+/* Deluxe Arte Price Reference — photo-first, read-only.
+   Separate from official catalog, stock, reservations, quotation and cart.
+   Only USD selling prices from the curated retail snapshot are rendered.
+   Product imagery is sourced from the owner's publicly shared Deluxe Arte gallery. */
 (function (root) {
   'use strict';
-  const DATA_URL = './assets/price-reference/deluxe-arte.json';
-  const PAGE_SIZE = 24;
-  const IDS = Object.freeze({
-    trigger: 'da-price-reference-button',
-    dialog: 'da-price-reference-dialog',
-    search: 'da-price-reference-search',
-    collection: 'da-price-reference-collection',
-    order: 'da-price-reference-order',
-    results: 'da-price-reference-results',
-    count: 'da-price-reference-count',
-    more: 'da-price-reference-more',
-    loading: 'da-price-reference-loading'
-  });
-  const state = { items: [], loading: null, error: '', search: '', collection: '', order: 'collection', visible: PAGE_SIZE, open: false, lastFocus: null };
   const doc = root.document;
-
-  function escapeHtml(value) {
-    return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
-  }
-  function safeNumber(x) {
-    return typeof x === 'number' && Number.isFinite(x) && x > 0 && x < 10000000;
-  }
+  const DATA_URL = './assets/price-reference/deluxe-arte.json';
+  const PHOTOS_URL = './assets/price-reference/deluxe-arte-photo-map.json';
+  const GALLERY_URL = 'https://drive.google.com/drive/folders/1dfSR3XctDBuP6c2jwcOwwHg5pbq_hDZ2';
+  const PAGE_SIZE = 24;
+  const id = name => doc && doc.getElementById(name);
+  const state = {
+    items: [], photos: null, open: false, loading: null, error: '',
+    query: '', collection: '', order: 'source', view: 'gallery',
+    photoFilter: false, visible: PAGE_SIZE, lastFocus: null, zoomId: '',
+    photoUnavailable: false
+  };
+  const escapeHtml = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
   function normalizeRecord(raw) {
     if (!raw || typeof raw !== 'object' || !/^DA-REF-\d{3,}$/.test(String(raw.id || ''))) return null;
-    if (!safeNumber(raw.priceUsd) || !String(raw.name || '').trim()) return null;
+    if (!Number.isFinite(raw.priceUsd) || raw.priceUsd <= 0 || !String(raw.name || '').trim()) return null;
     return {
-      id: String(raw.id),
-      name: String(raw.name).trim().slice(0, 180),
-      dimensions: String(raw.dimensions || '').trim().slice(0, 250),
-      collection: String(raw.collection || 'Other').trim().slice(0, 80),
-      priceUsd: raw.priceUsd,
-      designVariant: String(raw.designVariant || '').trim().slice(0, 40)
+      id: String(raw.id), name: String(raw.name).trim().slice(0,180),
+      dimensions: String(raw.dimensions || '').trim().slice(0,240),
+      collection: String(raw.collection || 'Other').trim().slice(0,90),
+      priceUsd: Number(raw.priceUsd), designVariant: String(raw.designVariant || '').trim().slice(0,50)
     };
   }
   function validateSnapshot(payload) {
-    if (!payload || payload.brand !== 'Deluxe Arte' || payload.currency !== 'USD' || payload.kind !== 'reference_only' || !Array.isArray(payload.items)) {
-      throw new Error('Price reference is not in the expected selling-price-only format.');
+    if (!payload || payload.kind !== 'reference_only' || payload.brand !== 'Deluxe Arte' ||
+        payload.currency !== 'USD' || !Array.isArray(payload.items)) {
+      throw new Error('The selling-price reference is not in the approved format.');
     }
     const items = payload.items.map(normalizeRecord);
-    if (items.length === 0 || items.some(x => !x)) throw new Error('Price reference contains invalid items.');
-    const refs = new Set(items.map(x => x.id));
-    if (refs.size !== items.length) throw new Error('Price reference contains repeated row identifiers.');
-    // Explicit whitelist: no costs, stock quantities or quotation fields are materialized in the UI.
+    if (!items.length || items.some(x => !x) || new Set(items.map(x => x.id)).size !== items.length)
+      throw new Error('Invalid or repeated Deluxe Arte reference items.');
     return items;
   }
-  function price(x) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(x);
-  }
-  function byId(id) { return doc.getElementById(id); }
-  function close() {
-    const dialog = byId(IDS.dialog);
-    if (!dialog || !state.open) return;
-    dialog.hidden = true;
-    doc.body.classList.remove('da-price-reference-open');
-    state.open = false;
-    if (state.lastFocus && typeof state.lastFocus.focus === 'function') state.lastFocus.focus();
-  }
-  function frame() {
-    if (byId(IDS.dialog)) return byId(IDS.dialog);
-    const dialog = doc.createElement('div');
-    dialog.id = IDS.dialog;
-    dialog.className = 'da-ref-overlay';
-    dialog.hidden = true;
-    dialog.setAttribute('role', 'dialog');
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('aria-label', 'Deluxe Arte Price Reference');
-    dialog.innerHTML =
-      '<div class="da-ref-panel" role="document">' +
-        '<div class="da-ref-top">' +
-          '<div class="da-ref-title-wrap">' +
-            '<span class="da-ref-eyebrow">GENERAL PRICE REFERENCE · DELUXE ARTE</span>' +
-            '<h2 class="da-ref-title">Deluxe Arte Price Reference</h2>' +
-            '<p class="da-ref-note">Selling prices only · Reference items · No stock or quotation changes</p>' +
-          '</div>' +
-          '<button class="da-ref-close" type="button" aria-label="Close price reference" title="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>' +
-        '</div>' +
-        '<div class="da-ref-controls">' +
-          '<label class="da-ref-search-wrap"><span class="sr-only">Search item, size or reference</span>' +
-            '<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>' +
-            '<input id="' + IDS.search + '" type="search" autocomplete="off" placeholder="Search collection, item or dimensions…" aria-label="Search Deluxe Arte reference items"></label>' +
-          '<label class="da-ref-select-wrap"><span class="sr-only">Filter collection</span><select id="' + IDS.collection + '" aria-label="Filter by collection"><option value="">All collections</option></select></label>' +
-          '<label class="da-ref-select-wrap"><span class="sr-only">Sort items</span><select id="' + IDS.order + '" aria-label="Sort price reference"><option value="collection">Collection / source order</option><option value="priceAsc">Lowest price</option><option value="priceDesc">Highest price</option><option value="name">Item name</option></select></label>' +
-        '</div>' +
-        '<div class="da-ref-results-header"><span id="' + IDS.count + '" aria-live="polite">Loading…</span><span>USD selling price</span></div>' +
-        '<div class="da-ref-scroll" tabindex="-1"><div id="' + IDS.loading + '" class="da-ref-message">Loading selling-price reference…</div>' +
-          '<div id="' + IDS.results + '" class="da-ref-grid"></div>' +
-          '<button id="' + IDS.more + '" class="da-ref-more" type="button" hidden>Load more items</button>' +
-        '</div>' +
-        '<div class="da-ref-bottom"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>' +
-          '<p>Reference prices only. Items here are not stock products, cannot be reserved, and are not added to quotations. Designs sharing dimensions remain separate entries.</p></div>' +
-      '</div>';
-    dialog.querySelector('.da-ref-close').addEventListener('click', close);
-    dialog.addEventListener('mousedown', e => { if (e.target === dialog) close(); });
-    dialog.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
-      if (e.key !== 'Tab') return;
-      const controls = [...dialog.querySelectorAll('button:not([hidden]),input,select')].filter(x => !x.disabled && x.offsetParent !== null);
-      if (!controls.length) return;
-      const first = controls[0], last = controls[controls.length - 1];
-      if (e.shiftKey && doc.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && doc.activeElement === last) { e.preventDefault(); first.focus(); }
-    });
-    doc.body.appendChild(dialog);
-    byId(IDS.search).addEventListener('input', e => {
-      state.search = e.target.value.trim().toLowerCase();
-      state.visible = PAGE_SIZE;
-      render();
-    });
-    byId(IDS.collection).addEventListener('change', e => {
-      state.collection = e.target.value;
-      state.visible = PAGE_SIZE;
-      render();
-    });
-    byId(IDS.order).addEventListener('change', e => {
-      state.order = e.target.value;
-      state.visible = PAGE_SIZE;
-      render();
-    });
-    byId(IDS.more).addEventListener('click', () => {
-      state.visible += PAGE_SIZE;
-      render();
-    });
-    return dialog;
-  }
-  async function load() {
-    if (state.items.length) return state.items;
-    if (state.loading) return state.loading;
-    state.error = '';
-    state.loading = (async () => {
-      const res = await fetch(DATA_URL, { cache: 'no-cache', credentials: 'same-origin' });
-      if (!res.ok) throw new Error('Price reference is unavailable (' + res.status + ').');
-      const payload = await res.json();
-      const items = validateSnapshot(payload);
-      state.items = items;
-      return items;
-    })();
-    try { return await state.loading; }
-    catch (err) {
-      state.error = err && err.message || 'Could not load price reference';
-      throw err;
-    } finally {
-      state.loading = null;
+  function validatePhotoMap(payload) {
+    if (!payload || payload.kind !== 'deluxe_arte_public_gallery' ||
+      typeof payload.files !== 'object' || !payload.files ||
+      typeof payload.collections !== 'object' || !payload.collections ||
+      typeof payload.items !== 'object' || !payload.items) {
+      throw new Error('Photo gallery mapping is invalid.');
     }
+    const files = {};
+    for (const [name, rawId] of Object.entries(payload.files)) {
+      if (!/^Slide\d+$/.test(name) || !/^[a-zA-Z0-9_-]{20,70}$/.test(String(rawId)))
+        throw new Error('Invalid gallery photo reference.');
+      files[name] = String(rawId);
+    }
+    const collection = {};
+    const products = {};
+    for (const [name, key] of Object.entries(payload.collections)) {
+      if (files[key]) collection[name] = key;
+    }
+    for (const [name, key] of Object.entries(payload.items)) {
+      if (files[key]) products[name] = key;
+    }
+    return {files, collection, products};
+  }
+  function price(value) {
+    return new Intl.NumberFormat('en-US', {
+      style:'currency', currency:'USD', maximumFractionDigits:2
+    }).format(value);
+  }
+  function resolvePhoto(item, photoMap) {
+    if (!item || !photoMap) return null;
+    // Duplicated name + dimensions = a different design: only show its collection
+    // as a labelled example until a verified per-variant image is mapped.
+    const exact = !item.designVariant && photoMap.products[item.name];
+    const key = exact || photoMap.collection[item.collection];
+    const fileId = key && photoMap.files[key];
+    if (!fileId || !/^[a-zA-Z0-9_-]{20,70}$/.test(fileId)) return null;
+    return {
+      url:'https://drive.google.com/thumbnail?id='+fileId+'&sz=w1200',
+      kind:exact?'product':'collection',
+      label:exact?'Product photo':'Collection photo',
+      slide:key
+    };
   }
   function filterItems(items, query, collection, order) {
-    const words = String(query || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
-    const filtered = items.filter(item => {
+    const words = String(query || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const result = items.filter(item => {
       if (collection && item.collection !== collection) return false;
-      const target = [item.name, item.dimensions, item.collection, item.id, item.designVariant].join(' ').toLowerCase();
-      return words.every(w => target.includes(w));
+      const searchable = [item.name,item.dimensions,item.collection,item.id,item.designVariant].join(' ').toLowerCase();
+      return words.every(w => searchable.includes(w));
     });
-    if (order === 'priceAsc') return filtered.sort((a, b) => a.priceUsd - b.priceUsd || a.id.localeCompare(b.id));
-    if (order === 'priceDesc') return filtered.sort((a, b) => b.priceUsd - a.priceUsd || a.id.localeCompare(b.id));
-    if (order === 'name') return filtered.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
-    // Stable source-row reference is the identity: never collapse equal names/sizes.
-    return filtered;
+    if (order === 'priceAsc') return result.sort((a,b)=>a.priceUsd-b.priceUsd || a.id.localeCompare(b.id));
+    if (order === 'priceDesc') return result.sort((a,b)=>b.priceUsd-a.priceUsd || a.id.localeCompare(b.id));
+    if (order === 'name') return result.sort((a,b)=>a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+    return result;
+  }
+  function results() {
+    const found = filterItems(state.items,state.query,state.collection,state.order);
+    return state.photoFilter ? found.filter(x=>resolvePhoto(x,state.photos)?.kind==='product') : found;
+  }
+  function counts() {
+    return state.items.reduce((acc,x)=>{
+      acc.set(x.collection,(acc.get(x.collection)||0)+1);return acc;
+    },new Map());
+  }
+  async function load() {
+    if (state.items.length) return;
+    if (state.loading) return state.loading;
+    state.error = '';
+    state.loading = (async()=>{
+      const [reference,photos] = await Promise.allSettled([
+        fetch(DATA_URL,{cache:'no-cache',credentials:'same-origin'}).then(async r=>{
+          if (!r.ok) throw new Error('Could not open the reference price list ('+r.status+').');
+          return validateSnapshot(await r.json());
+        }),
+        fetch(PHOTOS_URL,{cache:'no-cache',credentials:'same-origin'}).then(async r=>{
+          if (!r.ok) throw new Error('Photo catalog not found');
+          return validatePhotoMap(await r.json());
+        })
+      ]);
+      if(reference.status!=='fulfilled') throw reference.reason;
+      state.items=reference.value;
+      if(photos.status==='fulfilled')state.photos=photos.value;
+      else {state.photoUnavailable=true;state.photos=null;}
+    })();
+    try{await state.loading;}
+    catch(e){state.error=e&&e.message || 'Could not load reference prices';}
+    finally{state.loading=null;}
+  }
+  function renderCollections() {
+    const node=id('da-ref-collections');if(!node)return;
+    node.replaceChildren();
+    const make=(label,name,count)=>{
+      const button=doc.createElement('button');
+      button.type='button';
+      button.className='da-ref-chip'+(state.collection===name?' is-active':'');
+      button.dataset.collection=name;
+      button.setAttribute('aria-pressed',String(state.collection===name));
+      button.textContent=label+' · '+count;
+      node.appendChild(button);
+    };
+    make('All','',state.items.length);
+    for(const [name,count] of counts())make(name.replace(' Collection','').replace(' Set',''),name,count);
+  }
+  function updateSelectionControls() {
+    const select=id('da-ref-collection');
+    if(select){
+      select.replaceChildren();
+      const all=doc.createElement('option');all.value='';all.textContent='All collections';select.appendChild(all);
+      for(const [name,count] of counts()){
+        const opt=doc.createElement('option');opt.value=name;opt.textContent=name+' ('+count+')';select.appendChild(opt);
+      }
+      select.value=state.collection;
+    }
+  }
+  function imageMarkup(item,photo) {
+    const label=photo?.kind==='product'?'Product photo':'Collection photo';
+    const hint=photo?'Photo guide · not a price source':'Photo not available';
+    return '<div class="da-ref-photo'+(photo?'':' is-missing')+'">'+
+      (photo?'<img class="da-ref-photo-img" src="'+escapeHtml(photo.url)+'" alt="'+escapeHtml(label+' for '+item.name)+'" loading="lazy" referrerpolicy="no-referrer" decoding="async">':'')+
+      '<div class="da-ref-photo-empty"><i class="fa-regular fa-image"></i><span>Photo unavailable</span></div>'+
+      (photo?'<span class="da-ref-photo-tag">'+escapeHtml(label)+'</span>':'')+
+      '<span class="da-ref-photo-hint">'+escapeHtml(hint)+'</span>'+
+      '</div>';
+  }
+  function itemCard(item) {
+    const photo=resolvePhoto(item,state.photos);
+    const el=doc.createElement('article');
+    el.className='da-ref-card';
+    el.dataset.referenceId=item.id;
+    el.innerHTML=
+      imageMarkup(item,photo)+
+      '<div class="da-ref-card-body">'+
+        '<div class="da-ref-collection-label">'+escapeHtml(item.collection)+'</div>'+
+        '<div class="da-ref-card-row"><h3 class="da-ref-card-name">'+escapeHtml(item.name)+'</h3>'+
+          '<div class="da-ref-card-price"><strong class="da-price-ref-price">'+escapeHtml(price(item.priceUsd))+'</strong>'+
+            '<span class="da-price-ref-price-hidden">Hidden</span></div></div>'+
+        '<p class="da-ref-card-size">'+escapeHtml(item.dimensions || 'Dimensions not specified')+'</p>'+
+        '<div class="da-ref-card-footer">'+
+          (item.designVariant?'<span class="da-ref-variant">'+escapeHtml(item.designVariant)+' · Different design</span>':'')+
+          '<span class="da-ref-ref">'+escapeHtml(item.id)+'</span>'+
+        '</div>'+
+      '</div>';
+    const img=el.querySelector('.da-ref-photo-img');
+    if(img){
+      img.addEventListener('error',()=>{
+        const photoBox=img.closest('.da-ref-photo');
+        if(photoBox)photoBox.classList.add('is-missing');
+      },{once:true});
+    }
+    return el;
   }
   function render() {
-    if (!state.open) return;
-    const results = byId(IDS.results), loading = byId(IDS.loading), more = byId(IDS.more), count = byId(IDS.count);
-    if (!results || !loading || !more || !count) return;
-    results.innerHTML = '';
-    const list = filterItems(state.items, state.search, state.collection, state.order);
-    count.textContent = list.length + ' distinct reference items';
-    if (state.error) { loading.textContent = state.error; loading.hidden = false; more.hidden = true; return; }
-    if (state.loading && !state.items.length) { loading.textContent = 'Loading selling-price reference…'; loading.hidden = false; more.hidden = true; return; }
-    if (!list.length) { loading.textContent = 'No matching prices. Try another name, collection or size.'; loading.hidden = false; more.hidden = true; return; }
-    loading.hidden = true;
-    const fragment = doc.createDocumentFragment();
-    for (const item of list.slice(0, state.visible)) {
-      const card = doc.createElement('article');
-      card.className = 'da-ref-card';
-      card.dataset.referenceId = item.id;
-      card.innerHTML =
-        '<div class="da-ref-card-info">' +
-          '<div class="da-ref-card-collection">' + escapeHtml(item.collection) + '</div>' +
-          '<h3 class="da-ref-card-name">' + escapeHtml(item.name) + '</h3>' +
-          (item.dimensions ? '<p class="da-ref-card-size">' + escapeHtml(item.dimensions) + '</p>' : '') +
-          '<div class="da-ref-card-meta">' +
-            (item.designVariant ? '<span class="da-ref-variant">' + escapeHtml(item.designVariant) + '</span>' : '') +
-            '<span class="da-ref-code">' + escapeHtml(item.id) + '</span>' +
-          '</div>' +
-        '</div>' +
-        '<div class="da-ref-card-price">' +
-          '<strong class="da-price-ref-price">' + escapeHtml(price(item.priceUsd)) + '</strong>' +
-          '<span class="da-price-ref-price-hidden">Price hidden</span>' +
-          '<small>Reference only</small>' +
-        '</div>';
-      fragment.appendChild(card);
+    if(!state.open)return;
+    const list=id('da-ref-results'),msg=id('da-ref-message'),more=id('da-ref-more');
+    if(!list||!msg||!more)return;
+    list.replaceChildren();
+    list.className='da-ref-grid'+(state.view==='list'?' as-list':'');
+    const filtered=results();
+    const count=id('da-ref-count');
+    if(count)count.textContent=filtered.length+' items'+(state.photoFilter?' with matched product photos':'');
+    const allCount=id('da-ref-total');
+    if(allCount)allCount.textContent=state.items.length+' price references';
+    id('da-ref-clear-search')?.classList.toggle('is-hidden',!state.query);
+    id('da-ref-view-gallery')?.setAttribute('aria-pressed',String(state.view==='gallery'));
+    id('da-ref-view-list')?.setAttribute('aria-pressed',String(state.view==='list'));
+    const photosOnly=id('da-ref-exact-only');
+    if(photosOnly)photosOnly.checked=state.photoFilter;
+    if(state.error){
+      msg.hidden=false;msg.textContent=state.error;more.hidden=true;return;
     }
-    results.appendChild(fragment);
-    more.hidden = state.visible >= list.length;
-    if (!more.hidden) more.textContent = 'Load more (' + Math.min(PAGE_SIZE, list.length - state.visible) + ' of ' + (list.length - state.visible) + ' remaining)';
+    if(state.loading&&!state.items.length){
+      msg.hidden=false;msg.textContent='Loading Deluxe Arte prices and photos…';more.hidden=true;return;
+    }
+    if(!filtered.length){
+      msg.hidden=false;msg.textContent=state.items.length?'No matching items. Clear the search or choose another collection.':'The price list is empty.';
+      more.hidden=true;return;
+    }
+    msg.hidden=true;
+    const fragment=doc.createDocumentFragment();
+    filtered.slice(0,state.visible).forEach(item=>fragment.appendChild(itemCard(item)));
+    list.appendChild(fragment);
+    const remaining=filtered.length-state.visible;
+    more.hidden=remaining<=0;
+    if(!more.hidden) more.textContent='Show '+Math.min(remaining,PAGE_SIZE)+' more items · '+remaining+' remaining';
   }
-  function collections() {
-    const select = byId(IDS.collection);
-    if (!select) return;
-    select.replaceChildren();
-    const all = doc.createElement('option'); all.value = ''; all.textContent = 'All collections'; select.appendChild(all);
-    [...new Set(state.items.map(x => x.collection))].forEach(value => {
-      const option = doc.createElement('option'); option.value = value; option.textContent = value; select.appendChild(option);
+  function frame() {
+    if(!doc)return null;
+    if(id('da-ref-overlay'))return id('da-ref-overlay');
+    const overlay=doc.createElement('div');
+    overlay.id='da-ref-overlay';
+    overlay.hidden=true;
+    overlay.className='da-ref-overlay';
+    overlay.setAttribute('role','dialog');
+    overlay.setAttribute('aria-modal','true');
+    overlay.setAttribute('aria-labelledby','da-ref-title');
+    overlay.innerHTML=
+      '<div class="da-ref-panel">'+
+        '<header class="da-ref-header">'+
+          '<div class="da-ref-heading"><span class="da-ref-kicker"><i class="fa-solid fa-gem"></i> GENERAL PRICE REFERENCE</span>'+
+            '<h2 id="da-ref-title">Deluxe Arte</h2>'+
+            '<p>Browse selling prices with photos · Separate from Stock & quotations</p></div>'+
+          '<button id="da-ref-close" type="button" class="da-ref-close" aria-label="Close price reference"><i class="fa-solid fa-xmark"></i></button>'+
+        '</header>'+
+        '<div class="da-ref-toolbar">'+
+          '<div class="da-ref-search-box"><i class="fa-solid fa-magnifying-glass"></i>'+
+            '<input id="da-ref-search" type="search" aria-label="Search Deluxe Arte products" placeholder="Search product name, size or reference code…" autocomplete="off">'+
+            '<button id="da-ref-clear-search" type="button" class="da-ref-clear is-hidden" aria-label="Clear search"><i class="fa-solid fa-xmark"></i></button></div>'+
+          '<label class="da-ref-field"><span>Collection</span><select id="da-ref-collection" aria-label="Filter collection"><option value="">All collections</option></select></label>'+
+          '<label class="da-ref-field"><span>Sort</span><select id="da-ref-sort" aria-label="Sort prices">'+
+            '<option value="source">Collection / original order</option><option value="name">Product name</option>'+
+            '<option value="priceAsc">Price: Low to high</option><option value="priceDesc">Price: High to low</option>'+
+          '</select></label>'+
+        '</div>'+
+        '<div id="da-ref-collections" class="da-ref-collections" aria-label="Browse collections"></div>'+
+        '<div class="da-ref-results-bar">'+
+          '<div><strong id="da-ref-count">Loading prices…</strong><span class="da-ref-count-muted" id="da-ref-total"></span></div>'+
+          '<div class="da-ref-results-options"><label class="da-ref-photo-filter"><input id="da-ref-exact-only" type="checkbox"> Matched product photos</label>'+
+            '<div class="da-ref-view-switch" role="group" aria-label="Display layout">'+
+              '<button id="da-ref-view-gallery" type="button" aria-pressed="true" title="Photo gallery" aria-label="Photo gallery"><i class="fa-solid fa-grip"></i> <span>Photos</span></button>'+
+              '<button id="da-ref-view-list" type="button" aria-pressed="false" title="Compact list" aria-label="Compact list"><i class="fa-solid fa-list"></i> <span>List</span></button>'+
+            '</div></div></div>'+
+        '<div class="da-ref-scroll"><div id="da-ref-message" class="da-ref-message">Loading…</div><div id="da-ref-results" class="da-ref-grid"></div>'+
+        '<button id="da-ref-more" class="da-ref-more" type="button" hidden>Load more</button></div>'+
+        '<footer class="da-ref-bottom"><span><i class="fa-solid fa-circle-info"></i> Photos are references from the Deluxe Arte catalog. A "Collection photo" may show another item or design. Only the USD price displayed here is used.</span>'+
+          '<span class="da-ref-bottom-secondary">Not in Stock · No automatic quotation changes</span></footer>'+
+      '</div>';
+    overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)close();});
+    overlay.addEventListener('keydown',e=>{
+      if(e.key==='Escape'){e.preventDefault();close();return;}
+      if(e.key!=='Tab')return;
+      const selectors='button:not([hidden]),input,select';
+      const controls=Array.from(overlay.querySelectorAll(selectors)).filter(el=>el.offsetParent!==null && !el.disabled);
+      if(!controls.length)return;
+      if(e.shiftKey&&doc.activeElement===controls[0]){e.preventDefault();controls[controls.length-1].focus();}
+      else if(!e.shiftKey&&doc.activeElement===controls[controls.length-1]){e.preventDefault();controls[0].focus();}
     });
-    select.value = state.collection;
+    doc.body.appendChild(overlay);
+    id('da-ref-close').addEventListener('click',close);
+    id('da-ref-search').addEventListener('input',e=>{state.query=e.target.value.trim().toLowerCase();state.visible=PAGE_SIZE;render();});
+    id('da-ref-clear-search').addEventListener('click',()=>{
+      state.query='';id('da-ref-search').value='';id('da-ref-search').focus();state.visible=PAGE_SIZE;render();
+    });
+    id('da-ref-collection').addEventListener('change',e=>{state.collection=e.target.value;state.visible=PAGE_SIZE;renderCollections();render();});
+    id('da-ref-sort').addEventListener('change',e=>{state.order=e.target.value;state.visible=PAGE_SIZE;render();});
+    id('da-ref-collections').addEventListener('click',e=>{
+      const button=e.target.closest('button[data-collection]');
+      if(!button)return;
+      state.collection=button.dataset.collection;state.visible=PAGE_SIZE;
+      id('da-ref-collection').value=state.collection;
+      renderCollections();render();
+    });
+    id('da-ref-exact-only').addEventListener('change',e=>{state.photoFilter=e.target.checked;state.visible=PAGE_SIZE;render();});
+    id('da-ref-view-gallery').addEventListener('click',()=>{state.view='gallery';render();});
+    id('da-ref-view-list').addEventListener('click',()=>{state.view='list';render();});
+    id('da-ref-more').addEventListener('click',()=>{state.visible+=PAGE_SIZE;render();});
+    return overlay;
+  }
+  function close() {
+    if(!state.open)return;
+    state.open=false;
+    const overlay=id('da-ref-overlay');
+    if(overlay)overlay.hidden=true;
+    doc?.body.classList.remove('da-price-reference-open');
+    if(state.lastFocus&&typeof state.lastFocus.focus==='function')state.lastFocus.focus();
   }
   async function open() {
-    const dialog = frame();
-    if (state.open) return;
-    state.lastFocus = doc.activeElement;
-    state.open = true;
-    dialog.hidden = false;
-    doc.body.classList.add('da-price-reference-open');
+    if(!doc)return;
+    const overlay=frame();
+    if(!overlay||state.open)return;
+    state.lastFocus=doc.activeElement;
+    state.open=true;overlay.hidden=false;doc.body.classList.add('da-price-reference-open');
+    if(state.items.length){updateSelectionControls();renderCollections();}
     render();
-    byId(IDS.search).focus();
-    try {
-      await load();
-      if (state.open) { collections(); render(); }
-    } catch (_) { if (state.open) render(); }
+    id('da-ref-search').focus();
+    await load();
+    if(state.open){updateSelectionControls();renderCollections();render();}
   }
   function install() {
-    if (!doc || byId(IDS.trigger)) return;
-    const anchor = byId('showroom-price-toggle');
-    if (!anchor || !anchor.parentElement) return;
-    const button = doc.createElement('button');
-    button.id = IDS.trigger;
-    button.type = 'button';
-    button.className = 'da-ref-trigger';
-    button.title = 'Deluxe Arte General Price Reference (no stock)';
-    button.setAttribute('aria-label', 'Open Deluxe Arte Price Reference');
-    button.innerHTML = '<i class="fa-solid fa-book-open" aria-hidden="true"></i><span>Price Reference</span>';
-    button.addEventListener('click', open);
-    // Keep the existing catalog, stock, shopping cart, promotion and quotation code untouched.
-    anchor.parentElement.insertBefore(button, anchor.nextSibling);
+    if(!doc||id('da-price-reference-button'))return;
+    const anchor=id('showroom-price-toggle');
+    if(!anchor||!anchor.parentElement)return;
+    const button=doc.createElement('button');
+    button.id='da-price-reference-button';
+    button.type='button';
+    button.className='da-ref-trigger';
+    button.title='Deluxe Arte selling prices with photos — not part of Stock';
+    button.setAttribute('aria-label','Open Deluxe Arte Price Reference');
+    button.innerHTML='<i class="fa-solid fa-images" aria-hidden="true"></i><span>Price Reference</span>';
+    button.addEventListener('click',open);
+    anchor.parentElement.insertBefore(button,anchor.nextSibling);
   }
-  root.DeluxeArtePriceReference = Object.freeze({ open, close, filterItems, validateSnapshot, get loadedCount() { return state.items.length; } });
-  if (doc) {
-    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', install, { once: true });
+  root.DeluxeArtePriceReference=Object.freeze({
+    open, close, filterItems, validateSnapshot, validatePhotoMap, resolvePhoto,
+    get loadedCount(){return state.items.length;},
+    get photosReady(){return !!state.photos;}
+  });
+  if(doc){
+    if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',install,{once:true});
     else install();
   }
 })(typeof window !== 'undefined' ? window : globalThis);
