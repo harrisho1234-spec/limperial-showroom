@@ -95,3 +95,9 @@ Do **not** publish the full costing workbook, expose a `gviz` link to its entire
 - Only 24 results appear initially. Search, filter by collection, sort by source order/name/price and Load More are available on desktop and mobile.
 - If an item has no known selling price, it does not appear in the reference.
 - Test: `node --test tests/deluxe-arte-price-reference.test.cjs`; then open Showroom, search two same-size Princess Dining Tables, verify that they display as two separate designs, and toggle Hide prices.
+
+## V4.11.06 verified photo release (13 Nov 2026)
+
+The owner extracted and committed **193 row-matched product photos** from Column B of the Deluxe Arte workbook in Codespaces. All 193 `.webp` files and `deluxe-arte-row-photos.json` are now present in the public repository. The main product list continues to use the original price-only column P JSON. Image rows **92, 95, and 164** have no row-specific photo and show a **Photo unavailable** placeholder, never an incorrect collection image. The original confidential `.xlsx` workbook was not committed. The Sales & Stock inventories, SKU catalog, procurement, orders and quotations remain unchanged.
+
+This supersedes the earlier pending-extraction notice above. Node price reference tests and Python extraction tests passed in the owner's Codespaces before publication. The Showroom service worker and asset URLs are bumped for V4.11.06. Future source image changes require re-extraction and a fresh version bump; editing the price sheet does not auto-refresh this static snapshot.
