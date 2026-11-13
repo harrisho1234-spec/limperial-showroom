@@ -151,8 +151,8 @@ def extract(source: Path, repo: Path, min_count: int, dry_run: bool):
     if len(expected) != len(sales_data["items"]):
         raise ValueError("Duplicate reference row IDs")
     with zipfile.ZipFile(source) as zf:
-        if zf.testzip() is not None:
-            raise ValueError("Excel ZIP has a corrupt entry")
+        # Read only the selected worksheet's drawing parts and referenced B images.
+        # Avoid testzip(): it inflates every other (possibly private) workbook part.
         sheet = find_target_sheet(zf)
         anchors = pictures_by_row(zf, sheet)
         matches = {row: parts for row, parts in anchors.items() if row in expected}
