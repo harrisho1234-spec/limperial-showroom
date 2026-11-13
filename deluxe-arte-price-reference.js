@@ -88,8 +88,9 @@
   }
   function resolvePhoto(item, photoMap, rowPhotos = state.rowPhotos) {
     if (!item) return null;
-    const exactPath = rowPhotos && rowPhotos[item.id];
-    if (exactPath) {
+    if (rowPhotos) {
+      const exactPath = rowPhotos[item.id];
+      if (!exactPath) return null; // never substitute a different design once B-row photos are installed
       return {
         url: './' + exactPath, kind: 'row',
         label: 'Photo from Column B', slide: null
