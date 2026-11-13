@@ -52,10 +52,11 @@ test('search, filters, sorting do not modify reference records', () => {
   assert.equal(JSON.stringify(snapshot),before);
 });
 test('reference is a separate module; honor price-visibility privacy switch', () => {
-  assert.match(index,/deluxe-arte-price-reference\.js\?v=V4\.11\.05/);
-  assert.match(index,/deluxe-arte-price-reference\.css\?v=V4\.11\.05/);
+  assert.match(index,/deluxe-arte-price-reference\.js\?v=V4\.11\.06/);
+  assert.match(index,/deluxe-arte-price-reference\.css\?v=V4\.11\.06/);
   assert.match(sw,/assets\/price-reference\/deluxe-arte\.json/);
   assert.match(sw,/assets\/price-reference\/deluxe-arte-photo-map\.json/);
+  assert.match(sw,/assets\/price-reference\/deluxe-arte-row-photos\.json/);
   assert.match(css,/\.theme-dark \.da-ref-field select option/);
   assert.match(css,/\.da-ref-grid\.as-list/);
   assert.match(css,/\.showroom-hide-sales-prices \.da-price-ref-price\{display:none!important\}/);
