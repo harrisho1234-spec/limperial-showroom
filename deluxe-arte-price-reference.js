@@ -93,7 +93,7 @@
       if (!exactPath) return null; // never substitute a different design once B-row photos are installed
       return {
         url: './' + exactPath, kind: 'row',
-        label: 'Photo from Column B', slide: null
+        label: 'Product photo', slide: null
       };
     }
     if (!photoMap) return null;
@@ -187,12 +187,12 @@
     }
   }
   function imageMarkup(item,photo) {
-    const label=photo?.kind==='row'?'Photo from Column B':photo?.kind==='product'?'Product example':'Collection photo';
+    const label=photo?.kind==='product'?'Product example':photo?.kind==='collection'?'Collection photo':'Product photo';
     const hint=photo?'Photo guide · not a price source':'Photo not available';
     return '<button type="button" class="da-ref-photo'+(photo?'':' is-missing')+(photo?.kind==='row'?' is-row-photo':'')+'" aria-label="View photo reference for '+escapeHtml(item.name)+'">'+
       (photo?'<img class="da-ref-photo-img" src="'+escapeHtml(photo.url)+'" alt="'+escapeHtml(label+' for '+item.name)+'" loading="lazy" referrerpolicy="no-referrer" decoding="async">':'')+
       '<div class="da-ref-photo-empty"><i class="fa-regular fa-image"></i><span>Photo unavailable</span></div>'+
-      (photo?'<span class="da-ref-photo-tag">'+escapeHtml(label)+'</span>':'')+
+      (photo && photo.kind!=='row'?'<span class="da-ref-photo-tag">'+escapeHtml(label)+'</span>':'')+
       '<span class="da-ref-photo-hint">'+escapeHtml(hint)+'</span>'+
       '</button>';
   }
@@ -242,7 +242,7 @@
     if(!box)return;
     box.innerHTML=
       '<div class="da-ref-preview-stage'+(photo.kind==='row'?' is-row-photo':'')+'"><img src="'+escapeHtml(photo.url)+'" alt="'+escapeHtml('Reference photo of '+item.name)+'">'+
-        '<span class="da-ref-photo-tag">'+escapeHtml(photo.label)+'</span></div>'+
+        (photo.kind==='row'?'':'<span class="da-ref-photo-tag">'+escapeHtml(photo.label)+'</span>')+'</div>'+
       '<div class="da-ref-preview-info">'+
         '<span class="da-ref-collection-label">'+escapeHtml(item.collection)+'</span>'+
         '<h3>'+escapeHtml(item.name)+'</h3>'+
@@ -253,7 +253,7 @@
         '<p class="da-ref-preview-disclaimer">'+(photo.kind==='collection'?
         'This is a collection photo, not a confirmed image of this individual item. Confirm the design before offering it to a customer.':
         photo.kind==='row'?
-        'This photo comes from Column B of the matching price-list row. The selling price still comes only from Column P.':
+        'This photo matches the individual product reference. Selling prices are for reference only.':
         'This is a product catalog example. Finishes and design variations should be verified before ordering.')+'</p>'+
       '</div>';
     id('da-ref-preview-close')?.focus();
