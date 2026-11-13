@@ -1,0 +1,60 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+
+const snapshot = JSON.parse(fs.readFileSync('assets/price-reference/deluxe-arte.json', 'utf8'));
+const moduleCode = fs.readFileSync('deluxe-arte-price-reference.js', 'utf8');
+const css = fs.readFileSync('deluxe-arte-price-reference.css', 'utf8');
+const index = fs.readFileSync('index.html', 'utf8');
+const sw = fs.readFileSync('sw.js', 'utf8');
+const runtime = { window: { document: null } };
+vm.runInNewContext(moduleCode, runtime, { filename: 'deluxe-arte-price-reference.js' });
+const service = runtime.window.DeluxeArtePriceReference;
+
+test('static snapshot contains only selling-price reference fields, never stock or costing', () => {
+  assert.equal(snapshot.kind, 'reference_only');
+  assert.equal(snapshot.brand, 'Deluxe Arte');
+  assert.equal(snapshot.currency, 'USD');
+  assert.equal(snapshot.items.length, 196);
+  const permitted = new Set(['id','name','dimensions','collection','priceUsd','designVariant']);
+  for (const item of snapshot.items) {
+    assert.deepEqual(Object.keys(item).filter(k => !permitted.has(k)), []);
+    assert.match(item.id, /^DA-REF-\d{3,}$/);
+    assert.ok(item.priceUsd > 0);
+    assert.ok(item.name.length);
+  }
+  assert.equal(new Set(snapshot.items.map(x => x.id)).size, snapshot.items.length);
+  assert.doesNotMatch(JSON.stringify(snapshot), /"costing"|"euroCost"|"stock"|"inventory"|"shipping"|"margin"|"reservedQty"|"quotationPrice"/i);
+  assert.equal(service.validateSnapshot(snapshot).length, snapshot.items.length);
+});
+test('same-size separate design rows stay distinct and keep their own prices', () => {
+  const a = snapshot.items.find(x => x.id === 'DA-REF-020');
+  const b = snapshot.items.find(x => x.id === 'DA-REF-025');
+  assert.equal(a.name, b.name);
+  assert.equal(a.dimensions, b.dimensions);
+  assert.notEqual(a.id,b.id);
+  assert.notEqual(a.priceUsd,b.priceUsd);
+  assert.equal(a.designVariant,'Design 1 of 2');
+  assert.equal(b.designVariant,'Design 2 of 2');
+  const matches = service.filterItems(snapshot.items,'princess dining table','Princess Collection','collection');
+  assert.ok(matches.some(x => x.id === a.id));
+  assert.ok(matches.some(x => x.id === b.id));
+});
+test('search, filters, sorting do not modify reference records', () => {
+  const before = JSON.stringify(snapshot);
+  const selected = service.filterItems(snapshot.items,'Roslinda Seater','Roslinda Set','priceDesc');
+  assert.ok(selected.length>=2);
+  assert.ok(selected.every(x => x.collection === 'Roslinda Set'));
+  assert.ok(selected.every((x,i) => i === 0 || selected[i-1].priceUsd >= x.priceUsd));
+  assert.equal(JSON.stringify(snapshot),before);
+});
+test('reference is a separate module; honor price-visibility privacy switch', () => {
+  assert.match(index,/deluxe-arte-price-reference\.js\?v=V4\.11\.04/);
+  assert.match(index,/deluxe-arte-price-reference\.css\?v=V4\.11\.04/);
+  assert.match(sw,/assets\/price-reference\/deluxe-arte\.json/);
+  assert.match(css,/\.showroom-hide-sales-prices \.da-price-ref-price\{display:none!important\}/);
+  assert.doesNotMatch(moduleCode,/\b(?:products|cart|stockMovements|supplierPOs)\s*\.\s*(?:push|splice|unshift)\s*\(/);
+  assert.doesNotMatch(index,/Deluxe Arte Price Reference 2025/);
+});
