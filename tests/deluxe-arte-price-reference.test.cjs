@@ -81,3 +81,39 @@ test('new photo UI has readable search and real gallery/list toggle', () => {
   assert.match(css,/background:#fffdf9!important;color:#25221f!important/);
   assert.match(css,/\.da-ref-photo-img/);
 });
+
+test('verified Column B photos override gallery examples by exact source row, not by size', () => {
+  const map = service.validatePhotoMap(photoMap);
+  const first = snapshot.items.find(x => x.id === 'DA-REF-020');
+  const second = snapshot.items.find(x => x.id === 'DA-REF-025');
+  const rowMap = service.validateRowPhotos({
+    kind:'deluxe_arte_row_photos', version:1, imageCount:2,
+    images:{
+      'DA-REF-020':'assets/price-reference/deluxe-arte-row-images/DA-REF-020.webp',
+      'DA-REF-025':'assets/price-reference/deluxe-arte-row-images/DA-REF-025.webp'
+    }
+  });
+  const photoA = service.resolvePhoto(first,map,rowMap);
+  const photoB = service.resolvePhoto(second,map,rowMap);
+  assert.equal(photoA.kind,'row');
+  assert.equal(photoB.kind,'row');
+  assert.notEqual(photoA.url,photoB.url);
+  assert.match(photoA.url,/DA-REF-020\.webp$/);
+  assert.match(photoB.url,/DA-REF-025\.webp$/);
+  // Once the exact-row manifest is present, unmatched rows never get a wrong collection picture.
+  assert.equal(service.resolvePhoto(snapshot.items.find(x=>x.id==='DA-REF-019'),map,rowMap),null);
+});
+test('Column B photo manifest rejects external URLs, traversal and mismatched reference codes', () => {
+  assert.throws(()=>service.validateRowPhotos({
+    kind:'deluxe_arte_row_photos',imageCount:1,
+    images:{'DA-REF-004':'https://example.com/photo.png'}
+  }));
+  assert.throws(()=>service.validateRowPhotos({
+    kind:'deluxe_arte_row_photos',imageCount:1,
+    images:{'DA-REF-004':'assets/price-reference/deluxe-arte-row-images/../foo.webp'}
+  }));
+  assert.throws(()=>service.validateRowPhotos({
+    kind:'deluxe_arte_row_photos',imageCount:2,
+    images:{'DA-REF-004':'assets/price-reference/deluxe-arte-row-images/DA-REF-004.webp'}
+  }));
+});
