@@ -1,0 +1,28 @@
+name: Deluxe Arte Price Reference Tests
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/price-reference/deluxe-arte.json'
+      - 'deluxe-arte-price-reference.js'
+      - 'deluxe-arte-price-reference.css'
+      - 'tests/deluxe-arte-price-reference.test.cjs'
+      - '.github/workflows/deluxe-arte-price-reference-tests.yml'
+  pull_request:
+    paths:
+      - 'assets/price-reference/deluxe-arte.json'
+      - 'deluxe-arte-price-reference.js'
+      - 'deluxe-arte-price-reference.css'
+      - 'tests/deluxe-arte-price-reference.test.cjs'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify JavaScript syntax
+        run: node --check deluxe-arte-price-reference.js
+      - name: Verify source is sales-price only, distinct designs and privacy switch
+        run: node --test tests/deluxe-arte-price-reference.test.cjs
