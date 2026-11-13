@@ -6,9 +6,9 @@
     <title>Limperial V4</title>
     <link rel="stylesheet" href="showroom-price-visibility.css?v=V4.11.03">
     <script defer src="showroom-price-visibility.js?v=V4.11.03"></script>
-    <script defer src="app-version.js?v=V4.11.05"></script>
-    <link rel="stylesheet" href="deluxe-arte-price-reference.css?v=V4.11.05">
-    <script defer src="deluxe-arte-price-reference.js?v=V4.11.05"></script>
+    <script defer src="app-version.js?v=V4.11.06"></script>
+    <link rel="stylesheet" href="deluxe-arte-price-reference.css?v=V4.11.06">
+    <script defer src="deluxe-arte-price-reference.js?v=V4.11.06"></script>
     
     <!-- PWA Web App Manifest and Theme Configuration -->
     <link rel="manifest" href="manifest.json">
@@ -7113,7 +7113,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=20261102-quotation-sections1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=20261113-deluxe-rowphotos1', { updateViaCache: 'none' })
                     .then((reg) => {
                         console.log('[Limperial PWA] Service Worker active with scope:', reg.scope);
                         reg.update().catch(() => {});
