@@ -21,6 +21,20 @@ The released dataset has only these sale-facing fields:
 
 There are seven groups of repeated descriptions/sizes. They **represent different designs** and MUST NOT be merged, matched to stock codes or overwritten based on the name. The IDs preserve the separate source rows. Embedded floating images in the sheet did not expose URLs via cell values, so this version does not pretend that different designs have verified matching photos. Actual design photos can be added in a later explicitly verified mapping pass.
 
+## Photos and easier browsing (V4.11.05)
+
+The photo-first reference uses a **publicly shared, existing Deluxe Arte Google Drive image folder**, with a curated name/collection mapping in `assets/price-reference/deluxe-arte-photo-map.json`. It DOES NOT read the confidential costing sheet to fetch images.
+
+- All 196 priced items have a product or collection image reference. At initial matching, 48 records use a named product example and 148 use a representative collection photo.
+- A **Product example** is mapped from a catalog slide whose product name matches. It may still show another finish or minor variant.
+- A **Collection photo** is a visual example of the collection and must NOT be treated as a confirmed picture of that exact item.
+- Identical-size different-design entries continue to show separate stable row IDs; they intentionally use collection photos until unique per-design images are positively matched.
+- The original catalog slides often contain their **historical prices** below the image. The UI crops this lower caption from the photo preview. **Only the current USD selling price in the reference card is authoritative**.
+- The panel has a large search field, readable collection and sort selectors, collection chips, photo-grid/compact-list modes, a matched-photo filter, load more, tap-to-preview, and light/dark contrast fixes.
+- Photo links are the original Google Drive public gallery thumbnails. If the owner changes the Drive file's sharing permissions, the photo can stop rendering; the product price remains visible with a placeholder. Photos are not saved as stock images and are not quotation attachments.
+
+The gallery remains **reference-only**: not a product, inventory, purchase, shopping-cart, or quotation data source. Importing another photo source requires explicit matching by source reference ID, never just matching sizes.
+
 ## Updates
 
 This first implementation uses a sanitized, **static selling-price snapshot** for immediate use and offline PWA access. Updating Column P in the owner's Google Sheet **does not automatically refresh the Showroom**. An authorized editor must re-read the latest Column A and P values, regenerate the whitelist-only JSON, validate the row IDs and separate design variants, and commit a new Showroom release/version.
