@@ -78,7 +78,7 @@
     return {
       url:'https://drive.google.com/thumbnail?id='+fileId+'&sz=w1200',
       kind:exact?'product':'collection',
-      label:exact?'Product photo':'Collection photo',
+      label:exact?'Product example':'Collection photo',
       slide:key
     };
   }
@@ -154,14 +154,14 @@
     }
   }
   function imageMarkup(item,photo) {
-    const label=photo?.kind==='product'?'Product photo':'Collection photo';
+    const label=photo?.kind==='product'?'Product example':'Collection photo';
     const hint=photo?'Photo guide · not a price source':'Photo not available';
-    return '<div class="da-ref-photo'+(photo?'':' is-missing')+'">'+
+    return '<button type="button" class="da-ref-photo'+(photo?'':' is-missing')+'" aria-label="View photo reference for '+escapeHtml(item.name)+'">'+
       (photo?'<img class="da-ref-photo-img" src="'+escapeHtml(photo.url)+'" alt="'+escapeHtml(label+' for '+item.name)+'" loading="lazy" referrerpolicy="no-referrer" decoding="async">':'')+
       '<div class="da-ref-photo-empty"><i class="fa-regular fa-image"></i><span>Photo unavailable</span></div>'+
       (photo?'<span class="da-ref-photo-tag">'+escapeHtml(label)+'</span>':'')+
       '<span class="da-ref-photo-hint">'+escapeHtml(hint)+'</span>'+
-      '</div>';
+      '</button>';
   }
   function itemCard(item) {
     const photo=resolvePhoto(item,state.photos);
@@ -189,6 +189,39 @@
       },{once:true});
     }
     return el;
+  }
+  function closePreview(){
+    state.zoomId='';
+    const panel=id('da-ref-preview');
+    if(panel)panel.hidden=true;
+    id('da-ref-close')?.focus();
+  }
+  function openPreview(itemId){
+    const item=state.items.find(x=>x.id===itemId);
+    if(!item)return;
+    const photo=resolvePhoto(item,state.photos);
+    if(!photo)return;
+    const panel=id('da-ref-preview');
+    if(!panel)return;
+    state.zoomId=item.id;
+    panel.hidden=false;
+    const box=id('da-ref-preview-content');
+    if(!box)return;
+    box.innerHTML=
+      '<div class="da-ref-preview-stage"><img src="'+escapeHtml(photo.url)+'" alt="'+escapeHtml('Reference photo of '+item.name)+'">'+
+        '<span class="da-ref-photo-tag">'+escapeHtml(photo.label)+'</span></div>'+
+      '<div class="da-ref-preview-info">'+
+        '<span class="da-ref-collection-label">'+escapeHtml(item.collection)+'</span>'+
+        '<h3>'+escapeHtml(item.name)+'</h3>'+
+        '<p>'+escapeHtml(item.dimensions||'Dimensions not specified')+'</p>'+
+        (item.designVariant?'<p class="da-ref-preview-variant">'+escapeHtml(item.designVariant)+' · Confirm the exact design</p>':'')+
+        '<div class="da-ref-preview-price"><b class="da-price-ref-price">'+escapeHtml(price(item.priceUsd))+'</b>'+
+        '<span class="da-price-ref-price-hidden">Price hidden</span><small>USD · Reference only · '+escapeHtml(item.id)+'</small></div>'+
+        '<p class="da-ref-preview-disclaimer">'+(photo.kind==='collection'?
+        'This is a collection photo, not a confirmed image of this individual item. Confirm the design before offering it to a customer.':
+        'This is a product catalog example. Finishes and design variations should be verified before ordering.')+'</p>'+
+      '</div>';
+    id('da-ref-preview-close')?.focus();
   }
   function render() {
     if(!state.open)return;
@@ -262,12 +295,15 @@
             '</div></div></div>'+
         '<div class="da-ref-scroll"><div id="da-ref-message" class="da-ref-message">Loading…</div><div id="da-ref-results" class="da-ref-grid"></div>'+
         '<button id="da-ref-more" class="da-ref-more" type="button" hidden>Load more</button></div>'+
+        '<div id="da-ref-preview" class="da-ref-preview" hidden role="region" aria-label="Enlarged Deluxe Arte photo">'+
+          '<div class="da-ref-preview-dialog"><button type="button" id="da-ref-preview-close" class="da-ref-preview-close" aria-label="Close photo preview"><i class="fa-solid fa-xmark"></i></button>'+
+           '<div id="da-ref-preview-content" class="da-ref-preview-content"></div></div></div>'+
         '<footer class="da-ref-bottom"><span><i class="fa-solid fa-circle-info"></i> Photos are references from the Deluxe Arte catalog. A "Collection photo" may show another item or design. Only the USD price displayed here is used.</span>'+
           '<span class="da-ref-bottom-secondary">Not in Stock · No automatic quotation changes</span></footer>'+
       '</div>';
     overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)close();});
     overlay.addEventListener('keydown',e=>{
-      if(e.key==='Escape'){e.preventDefault();close();return;}
+      if(e.key==='Escape'){e.preventDefault();if(state.zoomId)closePreview();else close();return;}
       if(e.key!=='Tab')return;
       const selectors='button:not([hidden]),input,select';
       const controls=Array.from(overlay.querySelectorAll(selectors)).filter(el=>el.offsetParent!==null && !el.disabled);
@@ -277,6 +313,16 @@
     });
     doc.body.appendChild(overlay);
     id('da-ref-close').addEventListener('click',close);
+    id('da-ref-preview-close').addEventListener('click',closePreview);
+    id('da-ref-preview').addEventListener('pointerdown',e=>{
+      if(e.target===id('da-ref-preview'))closePreview();
+    });
+    id('da-ref-results').addEventListener('click',e=>{
+      const photo=e.target.closest('.da-ref-photo');
+      if(!photo)return;
+      const itemId=photo.closest('[data-reference-id]')?.dataset.referenceId;
+      if(itemId)openPreview(itemId);
+    });
     id('da-ref-search').addEventListener('input',e=>{state.query=e.target.value.trim().toLowerCase();state.visible=PAGE_SIZE;render();});
     id('da-ref-clear-search').addEventListener('click',()=>{
       state.query='';id('da-ref-search').value='';id('da-ref-search').focus();state.visible=PAGE_SIZE;render();
@@ -298,6 +344,7 @@
   }
   function close() {
     if(!state.open)return;
+    if(state.zoomId)closePreview();
     state.open=false;
     const overlay=id('da-ref-overlay');
     if(overlay)overlay.hidden=true;
