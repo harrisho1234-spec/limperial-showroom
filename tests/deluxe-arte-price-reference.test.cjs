@@ -52,8 +52,8 @@ test('search, filters, sorting do not modify reference records', () => {
   assert.equal(JSON.stringify(snapshot),before);
 });
 test('reference is a separate module; honor price-visibility privacy switch', () => {
-  assert.match(index,/deluxe-arte-price-reference\.js\?v=V4\.11\.06/);
-  assert.match(index,/deluxe-arte-price-reference\.css\?v=V4\.11\.06/);
+  assert.match(index,/deluxe-arte-price-reference\.js\?v=V4\.11\.07/);
+  assert.match(index,/deluxe-arte-price-reference\.css\?v=V4\.11\.07/);
   assert.match(sw,/assets\/price-reference\/deluxe-arte\.json/);
   assert.match(sw,/assets\/price-reference\/deluxe-arte-photo-map\.json/);
   assert.match(sw,/assets\/price-reference\/deluxe-arte-row-photos\.json/);
@@ -117,4 +117,12 @@ test('Column B photo manifest rejects external URLs, traversal and mismatched re
     kind:'deluxe_arte_row_photos',imageCount:2,
     images:{'DA-REF-004':'assets/price-reference/deluxe-arte-row-images/DA-REF-004.webp'}
   }));
+});
+
+test('verified product photos show no Column B badge in list or preview', () => {
+  assert.doesNotMatch(moduleCode, /Photo from Column B/);
+  assert.match(moduleCode, /photo && photo\.kind!=='row'/);
+  assert.match(moduleCode, /photo\.kind==='row'\?'':'<span class/);
+  assert.match(moduleCode, /This photo matches the individual product reference/);
+  assert.match(moduleCode, /Product example/); // non-exact fallback remains labeled
 });
