@@ -6,6 +6,7 @@ const vm = require('node:vm');
 
 const snapshot = JSON.parse(fs.readFileSync('assets/price-reference/deluxe-arte.json', 'utf8'));
 const moduleCode = fs.readFileSync('deluxe-arte-price-reference.js', 'utf8');
+const photoMap = JSON.parse(fs.readFileSync('assets/price-reference/deluxe-arte-photo-map.json', 'utf8'));
 const css = fs.readFileSync('deluxe-arte-price-reference.css', 'utf8');
 const index = fs.readFileSync('index.html', 'utf8');
 const sw = fs.readFileSync('sw.js', 'utf8');
@@ -51,10 +52,32 @@ test('search, filters, sorting do not modify reference records', () => {
   assert.equal(JSON.stringify(snapshot),before);
 });
 test('reference is a separate module; honor price-visibility privacy switch', () => {
-  assert.match(index,/deluxe-arte-price-reference\.js\?v=V4\.11\.04/);
-  assert.match(index,/deluxe-arte-price-reference\.css\?v=V4\.11\.04/);
+  assert.match(index,/deluxe-arte-price-reference\.js\?v=V4\.11\.05/);
+  assert.match(index,/deluxe-arte-price-reference\.css\?v=V4\.11\.05/);
   assert.match(sw,/assets\/price-reference\/deluxe-arte\.json/);
+  assert.match(sw,/assets\/price-reference\/deluxe-arte-photo-map\.json/);
+  assert.match(css,/\.theme-dark \.da-ref-field select option/);
+  assert.match(css,/\.da-ref-grid\.as-list/);
   assert.match(css,/\.showroom-hide-sales-prices \.da-price-ref-price\{display:none!important\}/);
   assert.doesNotMatch(moduleCode,/\b(?:products|cart|stockMovements|supplierPOs)\s*\.\s*(?:push|splice|unshift)\s*\(/);
   assert.doesNotMatch(index,/Deluxe Arte Price Reference 2025/);
+});
+
+test('gallery maps all collections to public Drive reference photos without touching stock', () => {
+  const map = service.validatePhotoMap(photoMap);
+  const photoResults = snapshot.items.map(item => service.resolvePhoto(item,map));
+  assert.equal(photoResults.filter(Boolean).length,196);
+  assert.equal(new Set(snapshot.items.map(x=>x.collection)).size,16);
+  assert.ok(photoResults.every(p=>/^https:\/\/drive\.google\.com\/thumbnail\?id=[A-Za-z0-9_-]+&sz=w1200$/.test(p.url)));
+  assert.ok(photoResults.some(p=>p.kind==='product'));
+  assert.ok(photoResults.some(p=>p.kind==='collection'));
+  assert.ok(snapshot.items.filter(x=>x.designVariant).every(x=>service.resolvePhoto(x,map).kind==='collection'));
+});
+test('new photo UI has readable search and real gallery/list toggle', () => {
+  assert.match(moduleCode,/da-ref-view-gallery/);
+  assert.match(moduleCode,/da-ref-view-list/);
+  assert.match(moduleCode,/da-ref-collections/);
+  assert.match(moduleCode,/da-ref-exact-only/);
+  assert.match(css,/background:#fffdf9!important;color:#25221f!important/);
+  assert.match(css,/\.da-ref-photo-img/);
 });
