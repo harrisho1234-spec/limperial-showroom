@@ -1029,7 +1029,7 @@
     syncManagementControlVisibility();
     client.auth.onAuthStateChange(()=>{setTimeout(syncManagementControlVisibility,0);});
     // Refresh at least every five minutes; date changes are checked in Cambodia time.
-    ticker=setInterval(()=>{if(liveDay!==today())redraw();if(Date.now()-lastRefresh>270000)refresh();},60000);
+    ticker=setInterval(()=>{if(liveDay!==today())redraw();},60000);
     window.addEventListener('online',()=>{refresh();syncManagementControlVisibility();});
     window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(applyTheme,120);});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden){redraw();refresh();syncManagementControlVisibility();}});
