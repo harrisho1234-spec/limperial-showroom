@@ -32,8 +32,13 @@ function doGet(e){
         priceUsd:price,photoUrl:/^https:\/\//i.test(photo)?photo:''
       });
     }
-    return ContentService.createTextOutput(JSON.stringify({version:1,items:output,updatedAt:new Date().toISOString()}))
-      .setMimeType(ContentService.MimeType.JSON);
+    // Apps Script ContentService redirects commonly prevent CORS fetches.
+    // JSONP is intentionally fixed to one callback and only approved rows.
+    const json=JSON.stringify({version:1,items:output,updatedAt:new Date().toISOString()});
+    if(String(e&&e.parameter&&e.parameter.callback||'')==='__LimperialAsfourPriceReceive')
+      return ContentService.createTextOutput('window.__LimperialAsfourPriceReceive('+json+');')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
   }catch(err){
     return ContentService.createTextOutput(JSON.stringify({version:1,items:[],error:'Reference unavailable'}))
       .setMimeType(ContentService.MimeType.JSON);
