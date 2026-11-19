@@ -6,7 +6,7 @@
  * Deployment: execute as the sheet owner, access "Anyone" only if the
  * showroom price reference is intended to be accessible without sign-in.
  */
-const ASFOUR_SHEET_ID='1n1aAO0V6lmz9z6dWVX33Tnn0OGxMzJDODywJ-YhUmQo';
+const ASFOUR_SHEET_ID='1ucAj39V5auDG0B0v0H_jCZOWtT3qnkvv6ZII8i3USY4';
 const ASFOUR_TAB='Asfour Retail Prices';
 function doGet(e){
   try{
@@ -18,17 +18,17 @@ function doGet(e){
     for(let i=1;i<rows.length;i++){
       const r=rows[i]||[];
       const code=String(r[0]||'').trim();
-      const price=Number(r[7]);
+      const price=Number(r[8]);
       if(String(r[9]||'').trim()!=='Approved'||!/^\d{4,5}\/\d{1,4}\/\d{1,3}\/\d{1,3}$/.test(code)||
          !Number.isFinite(price)||price<=0||price>100000000||seen.has(code))continue;
       seen.add(code);
-      const photo=String(r[8]||'').trim();
+      const photo=String(r[10]||'').trim();
       // Restrict image URL scheme. No supplier costs or internal approval
       // metadata are returned in this public-facing projection.
       output.push({
-        code,name:String(r[1]||'').slice(0,160),family:String(r[2]||'').slice(0,90),
-        type:String(r[3]||'').slice(0,80),size:String(r[4]||'').slice(0,100),
-        finish:String(r[5]||'').slice(0,80),crystal:String(r[6]||'').slice(0,80),
+        code,name:String(r[2]||'').slice(0,160),family:String(r[3]||'').slice(0,90),
+        type:String(r[4]||'').slice(0,80),size:String(r[5]||'').slice(0,100),
+        finish:String(r[6]||'').slice(0,80),crystal:String(r[7]||'').slice(0,80),
         priceUsd:price,photoUrl:/^https:\/\//i.test(photo)?photo:''
       });
     }
