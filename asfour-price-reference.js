@@ -14,7 +14,17 @@
  const safeUrl=value=>{
    const raw=clean(value);
    if(!/^https:\/\//i.test(raw))return '';
-   try{const u=new URL(raw);return u.protocol==='https:'?u.href:''}catch(_){return ''}
+   try{
+     const u=new URL(raw);
+     if(u.protocol!=='https:')return '';
+     // Support exact-item Google Drive links maintained by showroom staff.
+     if(u.hostname==='drive.google.com'){
+       const id=u.pathname.match(/\/file\/d\/([A-Za-z0-9_-]+)/)?.[1]||u.searchParams.get('id');
+       if(id&&/^[A-Za-z0-9_-]{10,}$/.test(id))
+         return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1200';
+     }
+     return u.href;
+   }catch(_){return ''}
  };
  function normalize(input){
    if(!input||typeof input!=='object')return null;
