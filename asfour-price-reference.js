@@ -4,7 +4,7 @@
  'use strict';
  const doc=root.document;
  // Set after the separate Google Apps Script price publisher is deployed.
- const ENDPOINT='';
+ const ENDPOINT=clean(root.LImperialAsfourPriceFeedUrl||'');
  const PAGE_SIZE=24;
  const state={items:[],open:false,loading:false,error:'',query:'',family:'',type:'',sort:'default',view:'gallery',visible:PAGE_SIZE,sourceUpdated:'',lastFocus:null};
  const el=id=>doc.getElementById(id);
