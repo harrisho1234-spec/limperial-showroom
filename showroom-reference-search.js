@@ -7,6 +7,7 @@
  const ASFOUR='./assets/price-reference/asfour-actual-sales-2026-11-20.json';
  const DESCRIPTIONS='./assets/price-reference/asfour-supplier-descriptions.json';
  const DELUXE='./assets/price-reference/deluxe-arte.json';
+ const ARREDOLUCE='./assets/price-reference/arredoluce-actual-sales-2026-11-20.json';
  let rows=[],loading=null,lastQuery='',requestId=0;
  const byId=id=>doc.getElementById(id);
  const text=v=>String(v==null?'':v);
@@ -15,10 +16,11 @@
  async function load(){
    if(loading)return loading;
    loading=(async()=>{
-     const [da,af,desc]=await Promise.allSettled([
+     const [da,af,desc,arredo]=await Promise.allSettled([
        fetch(DELUXE).then(r=>{if(!r.ok)throw Error('Deluxe Arte unavailable');return r.json()}),
        fetch(ASFOUR).then(r=>{if(!r.ok)throw Error('Asfour unavailable');return r.json()}),
-       fetch(DESCRIPTIONS).then(r=>{if(!r.ok)throw Error('Descriptions unavailable');return r.json()})
+       fetch(DESCRIPTIONS).then(r=>{if(!r.ok)throw Error('Descriptions unavailable');return r.json()}),
+       fetch(ARREDOLUCE).then(r=>{if(!r.ok)throw Error('Arredoluce unavailable');return r.json()})
      ]);
      const results=[];
      if(da.status==='fulfilled'&&da.value.kind==='reference_only'&&da.value.brand==='Deluxe Arte'&&Array.isArray(da.value.items)){
@@ -40,6 +42,12 @@
            results.push({brand:'Asfour',code,name:text(descriptions[code]||fallback),details:'Series '+family,price:amount});
          }
        }catch(err){console.warn('Read-only Asfour search unavailable',err)}
+     }
+     if(arredo.status==='fulfilled'&&arredo.value.brand==='Arredoluce'&&arredo.value.kind==='reference_only'&&arredo.value.currency==='USD'&&Array.isArray(arredo.value.items)){
+       for(const x of arredo.value.items){
+         if(!x||typeof x.code!=='string'||!Number.isFinite(x.priceUsd)||x.priceUsd<=0)continue;
+         results.push({brand:'Arredoluce',code:x.code,name:x.name||'Arredoluce lighting',details:[x.variant,x.series,x.dimensions,x.type].filter(Boolean).join(' '),price:x.priceUsd});
+       }
      }
      rows=results;
      return results;
@@ -72,11 +80,11 @@
      button.innerHTML='<span class="reference-search-name">'+safe(item.name)+'</span><span class="reference-search-meta">'+safe(item.brand)+' · '+safe(item.code)+'</span><span class="reference-search-price">'+safe(price(item.price))+'</span><span class="reference-search-view">View reference ↗</span>';
      button.setAttribute('aria-label','View '+item.brand+' price reference '+item.code);
      button.addEventListener('click',()=>{
-       const key=item.brand==='Asfour'?'asfour':'deluxe';
+       const key=item.brand==='Asfour'?'asfour':item.brand==='Arredoluce'?'arredoluce':'deluxe';
        const api=root.LImperialUnifiedPriceReference;
        if(!api?.open)return;
        api.open(key);
-       const input=byId(key==='asfour'?'asfour-ref-search':'da-ref-search');
+       const input=byId(key==='asfour'?'asfour-ref-search':key==='arredoluce'?'arredo-ref-search':'da-ref-search');
        if(input){input.value=item.code;input.dispatchEvent(new Event('input',{bubbles:true}))}
      });
      list.appendChild(button);
