@@ -6,7 +6,7 @@
  const RELEASE = Object.freeze({
   major: 4,
   monthly: 11,
-  update: 20,
+  update: 21,
   lastUpdated: '2026-11-20'
  });
  const version = 'V'+RELEASE.major+'.'+RELEASE.monthly+'.'+String(RELEASE.update).padStart(2,'0');
