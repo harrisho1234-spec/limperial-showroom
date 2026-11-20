@@ -6,6 +6,7 @@
  if(!doc)return;
  const ASFOUR='./assets/price-reference/asfour-actual-sales-2026-11-20.json';
  const DESCRIPTIONS='./assets/price-reference/asfour-supplier-descriptions.json';
+ const ASFOUR_DIMENSIONS='./assets/price-reference/asfour-dimensions-by-code.json';
  const DELUXE='./assets/price-reference/deluxe-arte.json';
  const ARREDOLUCE='./assets/price-reference/arredoluce-actual-sales-2026-11-20.json';
  let rows=[],loading=null,lastQuery='',requestId=0;
@@ -16,11 +17,12 @@
  async function load(){
    if(loading)return loading;
    loading=(async()=>{
-     const [da,af,desc,arredo]=await Promise.allSettled([
+     const [da,af,desc,arredo,asfourDimensions]=await Promise.allSettled([
        fetch(DELUXE).then(r=>{if(!r.ok)throw Error('Deluxe Arte unavailable');return r.json()}),
        fetch(ASFOUR).then(r=>{if(!r.ok)throw Error('Asfour unavailable');return r.json()}),
        fetch(DESCRIPTIONS).then(r=>{if(!r.ok)throw Error('Descriptions unavailable');return r.json()}),
-       fetch(ARREDOLUCE).then(r=>{if(!r.ok)throw Error('Arredoluce unavailable');return r.json()})
+       fetch(ARREDOLUCE).then(r=>{if(!r.ok)throw Error('Arredoluce unavailable');return r.json()}),
+       fetch(ASFOUR_DIMENSIONS).then(r=>{if(!r.ok)throw Error('Asfour dimensions unavailable');return r.json()})
      ]);
      const results=[];
      if(da.status==='fulfilled'&&da.value.kind==='reference_only'&&da.value.brand==='Deluxe Arte'&&Array.isArray(da.value.items)){
@@ -35,11 +37,12 @@
          const stream=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
          const dictionary=JSON.parse(await new Response(stream).text());
          const descriptions=desc.status==='fulfilled'&&desc.value.kind==='asfour_supplier_descriptions'?desc.value.descriptions||{}:{};
+         const sizes=asfourDimensions.status==='fulfilled'&&asfourDimensions.value.kind==='asfour_exact_code_dimensions'?asfourDimensions.value.dimensions||{}:{};
          const labels={'31111':'Maria Theresa Chandelier','31113':'Maria Theresa Linear / Ceiling','31114':'Maria Theresa Wall Lamp','31611':'Brass Chandelier','31614':'Brass Wall Lamp'};
          for(const [code,amount] of Object.entries(dictionary)){
            if(!/^\d{4,5}\/\d{1,4}\/\d{1,3}\/\d{1,3}$/.test(code)||!Number.isFinite(amount)||amount<=0)continue;
            const bits=code.split('/'),family=bits[0],fallback=(labels[family]||'Asfour Lighting')+' — Design '+bits[1];
-           results.push({brand:'Asfour',code,name:text(descriptions[code]||fallback),details:'Series '+family,price:amount});
+           results.push({brand:'Asfour',code,name:text(descriptions[code]||fallback),details:['Series '+family,sizes[code]||''].filter(Boolean).join(' · '),price:amount});
          }
        }catch(err){console.warn('Read-only Asfour search unavailable',err)}
      }
