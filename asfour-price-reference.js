@@ -8,6 +8,7 @@
  const SNAPSHOT_URL='./assets/price-reference/asfour-actual-sales-2026-11-20.json';
  const PHOTO_MANIFEST_URL='./assets/price-reference/asfour-photo-manifest.json';
  const DESCRIPTIONS_URL='./assets/price-reference/asfour-supplier-descriptions.json';
+ const DIMENSIONS_URL='./assets/price-reference/asfour-dimensions-by-code.json';
  const PHOTO_BASE='./assets/price-reference/asfour-photos/';
  const PHOTO_ZIP_URL='./assets/price-reference/asfour_photo_assets_only.zip';
  const PHOTO_PACK_BASE='./assets/price-reference/asfour-photo-pack/';
@@ -162,6 +163,18 @@
          }
        }
      }catch(e){console.warn('Asfour description reference unavailable',e)}
+     try{
+       const response=await fetch(DIMENSIONS_URL,{cache:'no-store'});
+       if(response.ok){
+         const payload=await response.json();
+         if(payload.kind==='asfour_exact_code_dimensions'&&payload.dimensions&&typeof payload.dimensions==='object'){
+           for(const item of state.items){
+             const size=payload.dimensions[item.code];
+             if(typeof size==='string'&&size.trim()&&!item.size)item.size=size.trim().slice(0,100);
+           }
+         }
+       }
+     }catch(e){console.warn('Asfour size reference unavailable',e)}
      state.sourceUpdated=data.updatedAt||'';
    }catch(e){state.error=e.message||'Unable to load Asfour prices';state.items=[]}
    finally{state.loading=false;render()}
@@ -216,7 +229,8 @@
      card.innerHTML='<div class="asfour-ref-image">'+image+'</div><div class="asfour-ref-info">'+
        '<div class="asfour-ref-family">'+h(item.family)+(item.type?' · '+h(item.type):'')+'</div>'+
        '<div class="asfour-ref-name">'+h(item.description||item.name)+'</div><div class="asfour-ref-code">'+h(item.code)+'</div>'+
-       '<div class="asfour-ref-spec">'+[item.size,item.finish,item.crystal].filter(Boolean).map(h).join(' · ')+'</div>'+ 
+       (item.size?'<div class="asfour-ref-size"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> '+h(item.size)+'</div>':'')+
+       '<div class="asfour-ref-spec">'+[item.finish,item.crystal].filter(Boolean).map(h).join(' · ')+'</div>'+ 
        ((bundledPhoto||zipFile)&&!exactPhoto?'<div class="asfour-ref-photo-warning">Design reference photo · finish may vary</div>':'')+
        '<div class="asfour-ref-price"><strong class="asfour-sales-price">'+h(p(item.priceUsd))+'</strong><span class="asfour-hidden-price">Hidden</span></div>'+
        '</div>';
@@ -259,7 +273,7 @@
    zoom.querySelector('.asfour-preview-family').textContent=[item.family,item.type].filter(Boolean).join(' · ');
    zoom.querySelector('.asfour-preview-name').textContent=item.description||item.name;
    zoom.querySelector('.asfour-preview-code').textContent=item.code;
-   const specs=[item.size,item.finish,item.crystal].filter(Boolean);
+   const specs=[item.size?'Size: '+item.size:'',item.finish,item.crystal].filter(Boolean);
    const details=zoom.querySelector('.asfour-preview-specs');
    details.textContent=specs.join(' · ');
    details.hidden=!specs.length;
