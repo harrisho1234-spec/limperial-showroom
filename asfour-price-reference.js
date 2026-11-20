@@ -5,6 +5,7 @@
  const doc=root.document;
  // Set after the separate Google Apps Script price publisher is deployed.
  const ENDPOINT=String(root.LImperialAsfourPriceFeedUrl||'').trim();
+ const SNAPSHOT_URL='./assets/price-reference/asfour-actual-sales-2026-11-20.json';
  const PAGE_SIZE=24;
  const state={items:[],open:false,loading:false,error:'',query:'',family:'',type:'',sort:'default',view:'gallery',visible:PAGE_SIZE,sourceUpdated:'',lastFocus:null};
  const el=id=>doc.getElementById(id);
@@ -43,7 +44,35 @@
  root.__LimperialAsfourPriceReceive=function(data){
    if(resolver){const cb=resolver;resolver=null;cb(data)}
  };
+ async function snapshotFeed(){
+   const response=await fetch(SNAPSHOT_URL,{cache:'no-store'});
+   if(!response.ok)throw Error('Asfour selling-price snapshot is unavailable');
+   const snapshot=await response.json();
+   if(snapshot.format!=='gzip-json-price-map-v1'||snapshot.count!==1363||
+      !/^[A-Za-z0-9+/]+={0,2}$/.test(snapshot.data||''))
+       throw Error('Invalid Asfour selling-price snapshot');
+   if(typeof DecompressionStream!=='function')
+     throw Error('This browser cannot load the compressed price reference. Update Chrome.');
+   const binary=Uint8Array.from(atob(snapshot.data),c=>c.charCodeAt(0));
+   const decompressed=new Blob([binary]).stream().pipeThrough(new DecompressionStream('gzip'));
+   const records=JSON.parse(await new Response(decompressed).text());
+   const entries=Object.entries(records);
+   if(entries.length!==snapshot.count)throw Error('Asfour price count mismatch');
+   const names={31111:'Maria Theresa Chandelier',31113:'Maria Theresa Linear / Ceiling',
+                31114:'Maria Theresa Wall Lamp',31611:'Brass Chandelier',31614:'Brass Wall Lamp'};
+   const finishNames={'119':'Gold','121':'Chrome','110':'Gold Oxidized'};
+   const crystalNames={'105':'Pendeloque','106':'Honey Pendeloque','215':'Golden Shadow Pendeloque'};
+   const items=entries.map(([code,value])=>{
+     const parts=code.split('/'),series=parts[0]||'',model=parts[1]||'';
+     const type=names[series]||(/14$/.test(series)?'Wall Lamp':/11$/.test(series)?'Chandelier':'Asfour Lighting');
+     return{code,name:type+' — Design '+model,family:series,type,
+       finish:finishNames[parts[2]]||'',crystal:crystalNames[parts[3]]||'',
+       priceUsd:value,photoUrl:''};
+   });
+   return{version:1,items,updatedAt:snapshot.date,retailSnapshot:true};
+ }
  function feed(){
+   if(!ENDPOINT)return snapshotFeed();
    return new Promise((resolve,reject)=>{
      const url=safeUrl(ENDPOINT);
      if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)){
@@ -96,17 +125,18 @@
    refreshFilters();
    target.replaceChildren();
    const rows=filtered(),count=el('asfour-ref-count');
-   if(count)count.textContent=rows.length+' approved price'+(rows.length===1?'':'s');
+   if(count)count.textContent=rows.length+' actual sale price'+(rows.length===1?'':'s');
    const view=state.view==='list';
    target.className='asfour-ref-grid'+(view?' is-list':'');
-   if(state.loading){status.hidden=false;status.textContent='Loading approved Asfour USD prices…';more.hidden=true;return}
+   if(state.loading){status.hidden=false;status.textContent='Loading Asfour actual USD selling prices…';more.hidden=true;return}
    if(state.error){status.hidden=false;status.textContent=state.error;more.hidden=true;return}
-   if(!rows.length){status.hidden=false;status.textContent='No approved Asfour selling prices match these filters. Only rows with Status = Approved and a valid USD price are displayed.';more.hidden=true;return}
+   if(!rows.length){status.hidden=false;status.textContent='No Asfour actual selling prices match these filters. Five items without an actual USD selling price are excluded.';more.hidden=true;return}
    status.hidden=true;
    const fragment=doc.createDocumentFragment();
    for(const item of rows.slice(0,state.visible)){
      const card=doc.createElement('article');card.className='asfour-ref-item';
-     const image=item.photo?'<img src="'+h(item.photo)+'" loading="lazy" alt="Asfour '+h(item.code)+' photo" referrerpolicy="no-referrer">':
+     const matchingPhoto=item.photo||safeUrl(root.LImperialAsfourExactPhotos?.[item.code]);
+     const image=matchingPhoto?'<img src="'+h(matchingPhoto)+'" loading="lazy" alt="Asfour '+h(item.code)+' photo" referrerpolicy="no-referrer">':
        '<div class="asfour-ref-missing"><i class="fa-solid fa-image" aria-hidden="true"></i><span>No verified item photo</span></div>';
      card.innerHTML='<div class="asfour-ref-image">'+image+'</div><div class="asfour-ref-info">'+
        '<div class="asfour-ref-family">'+h(item.family)+(item.type?' · '+h(item.type):'')+'</div>'+
@@ -114,7 +144,7 @@
        '<div class="asfour-ref-spec">'+[item.size,item.finish,item.crystal].filter(Boolean).map(h).join(' · ')+'</div>'+
        '<div class="asfour-ref-price"><strong class="asfour-sales-price">'+h(p(item.priceUsd))+'</strong><span class="asfour-hidden-price">Hidden</span></div>'+
        '</div>';
-     if(item.photo){card.querySelector('img')?.addEventListener('click',()=>showPhoto(item))}
+     if(matchingPhoto){card.querySelector('img')?.addEventListener('click',()=>showPhoto({...item,photo:matchingPhoto}))}
      fragment.appendChild(card);
    }
    target.appendChild(fragment);
@@ -141,7 +171,7 @@
    modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Asfour Price Reference');
    modal.innerHTML='<div class="da-ref-panel asfour-ref-panel">'+
      '<header class="da-ref-header"><div class="da-ref-heading"><span class="da-ref-kicker"><i class="fa-solid fa-gem"></i> GENERAL PRICE REFERENCE</span>'+
-     '<h2>Asfour</h2><p>Approved USD selling prices only · Separate from Stock and quotations</p></div>'+
+     '<h2>Asfour</h2><p>Actual USD selling prices · Separate from Stock and quotations</p></div>'+
      '<button type="button" id="asfour-ref-close" class="da-ref-close" aria-label="Close reference">×</button></header>'+
      '<div class="asfour-ref-controls"><input id="asfour-ref-search" type="search" placeholder="Search code, design, finish, crystal or size…" aria-label="Search Asfour">'+
      '<select id="asfour-ref-family" aria-label="Family"></select><select id="asfour-ref-type" aria-label="Type"></select>'+
@@ -151,7 +181,7 @@
      '<div class="asfour-ref-counter"><b id="asfour-ref-count">0 approved prices</b><button type="button" id="asfour-ref-refresh">Refresh prices</button></div>'+
      '<div class="asfour-ref-scroll"><div id="asfour-ref-status" class="asfour-ref-status"></div>'+
      '<div id="asfour-ref-results" class="asfour-ref-grid"></div><button type="button" id="asfour-ref-more" class="da-ref-more" hidden>Load more</button></div>'+
-     '<footer class="da-ref-bottom"><span>Approved selling-price reference only. Exact photos required for visual matching. No supplier cost or stock quantity.</span>'+
+     '<footer class="da-ref-bottom"><span>Actual retail prices from the uploaded workbook (20 Nov 2026). Exact photos only when available. No supplier costs or stock quantities.</span>'+
      '<span class="da-ref-bottom-secondary">Not in Stock · No automatic quotation changes</span></footer>'+
      '<div id="asfour-ref-photo-preview" class="asfour-ref-photo-preview" hidden><button type="button" aria-label="Close photo">×</button><img alt="Asfour reference">'+
      '<div class="asfour-ref-photo-label"></div></div></div>';
@@ -181,11 +211,12 @@
    if(!anchor||el('asfour-price-reference-button'))return;
    const button=doc.createElement('button');
    button.id='asfour-price-reference-button';button.type='button';button.className='da-ref-trigger';
-   button.title='Asfour approved USD selling price reference — separate from stock';
+   button.title='Asfour actual USD selling price reference — separate from stock';
    button.innerHTML='<i class="fa-solid fa-gem" aria-hidden="true"></i><span>Asfour Prices</span>';
    button.addEventListener('click',open);
    anchor.after(button);
  }
  root.AsfourPriceReference=Object.freeze({open,close,validate,normalize,get loadedCount(){return state.items.length}});
+ if(root.addEventListener)root.addEventListener('showroom:products-loaded',()=>{if(state.open)render()});
  if(doc){if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',install,{once:true});else install();}
 })(typeof window!=='undefined'?window:globalThis);
