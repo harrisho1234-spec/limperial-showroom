@@ -32,3 +32,36 @@
 .arredo-preview-stage img{position:static!important;transform:none!important;min-width:0!important;max-width:100%!important;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important}
 @media(max-width:900px){.arredo-ref-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.arredo-ref-grid{grid-template-columns:1fr}.arredo-ref-photo{height:190px}.arredo-ref-grid.as-list .arredo-ref-card{grid-template-columns:105px minmax(0,1fr)}}
+
+/* Compact product-code grouped list: one photo and summary per distinct model. */
+.arredo-ref-group-list{display:flex;flex-direction:column;gap:8px}
+.arredo-group{border:1px solid rgba(166,138,99,.25);border-radius:12px;background:var(--luxury-card,#fff);overflow:hidden}
+.arredo-group-summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:8px 12px;min-height:86px}
+.arredo-group-summary::-webkit-details-marker{display:none}
+.arredo-group-summary:hover{background:rgba(188,148,88,.06)}
+.arredo-group-image{width:68px;height:68px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#f2ece4;border-radius:8px;overflow:hidden;font-size:10px;color:#8d8071}
+.arredo-group-image img{display:block;width:100%;height:100%;object-fit:contain}
+.arredo-group-info{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
+.arredo-group-info strong{font-size:13px;line-height:1.3;color:var(--luxury-text,#28211d)}
+.arredo-group-info small{font-size:10px;line-height:1.35;color:var(--luxury-text-soft,#72675e);overflow-wrap:anywhere}
+.arredo-group-right{display:flex;align-items:flex-end;flex-direction:column;gap:5px;flex-shrink:0;max-width:40%;text-align:right}
+.arredo-group-right strong{font-size:15px;color:#a66a1b;white-space:normal}
+.arredo-group-right small{font-size:10px;color:var(--luxury-text-soft,#72675e)}
+.arredo-group-variants{padding:6px 12px 12px 94px;border-top:1px solid rgba(166,138,99,.16);background:var(--luxury-accent,#faf7f2)}
+.arredo-group-variant{display:flex;align-items:center;gap:12px;width:100%;border:0;border-bottom:1px solid rgba(166,138,99,.16);padding:10px 0;background:transparent;color:var(--luxury-text,#28211d);text-align:left;cursor:pointer}
+.arredo-group-variant span:first-child{flex:1;font-size:12px}
+.arredo-group-variant strong{font-size:13px;color:#a66a1b;white-space:nowrap}
+.arredo-group-variant:hover{background:rgba(186,139,78,.09)}
+.arredo-group-action{font-size:10px;color:#94671f;white-space:nowrap}
+.arredo-group-warning{padding:10px 0 0;font-size:10px;color:var(--luxury-text-soft,#72675e)}
+.arredo-group-price-hidden{font-size:11px}
+@media(max-width:650px){
+ .arredo-group-summary{gap:9px;padding:8px;min-height:72px}
+ .arredo-group-image{width:56px;height:56px}
+ .arredo-group-info strong{font-size:12px}
+ .arredo-group-right{max-width:40%}
+ .arredo-group-right strong{font-size:12px}
+ .arredo-group-variants{padding:6px 10px 12px}
+ .arredo-group-variant{gap:8px;flex-wrap:wrap}
+ .arredo-group-action{width:100%}
+}
