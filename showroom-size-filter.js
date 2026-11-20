@@ -5,7 +5,6 @@
  const doc=root.document;
  if(!doc)return;
  const id=name=>doc.getElementById(name);
- const escape=s=>String(s||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  const num=s=>Number(String(s).replace(',','.'));
  const normalizeUnit=(v,unit)=>unit==='mm'?v/10:unit==='m'?v*100:v;
  function dimensions(raw){
