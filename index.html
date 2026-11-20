@@ -6,7 +6,7 @@
     <title>Limperial V4</title>
     <link rel="stylesheet" href="showroom-price-visibility.css?v=V4.11.03">
     <script defer src="showroom-price-visibility.js?v=V4.11.03"></script>
-    <script defer src="app-version.js?v=V4.11.15"></script>
+    <script defer src="app-version.js?v=V4.11.16"></script>
     <link rel="stylesheet" href="deluxe-arte-price-reference.css?v=V4.11.07">
     <script defer src="deluxe-arte-price-reference.js?v=V4.11.07"></script>
     <link rel="stylesheet" href="asfour-price-reference.css?v=V4.11.13">
@@ -15,7 +15,9 @@
     <link rel="stylesheet" href="unified-price-reference.css?v=V4.11.11">
     <script defer src="unified-price-reference.js?v=V4.11.11"></script>
     <link rel="stylesheet" href="showroom-reference-search.css?v=V4.11.15">
-    <script defer src="showroom-reference-search.js?v=V4.11.15"></script>
+    <script defer src="showroom-reference-search.js?v=V4.11.16"></script>
+    <link rel="stylesheet" href="showroom-size-filter.css?v=V4.11.16">
+    <script defer src="showroom-size-filter.js?v=V4.11.16"></script>
     
     <!-- PWA Web App Manifest and Theme Configuration -->
     <link rel="manifest" href="manifest.json">
@@ -2630,7 +2632,8 @@
                     ? componentItems.some(item => String(item.keyMaterial || '').trim().toLowerCase() === String(currentKeyMaterialFilter).trim().toLowerCase())
                     : String(product.keyMaterial || '').trim().toLowerCase() === String(currentKeyMaterialFilter).trim().toLowerCase());
                 const matchesSetsOnly = !showSetsOnly || !!product.isSet;
-                return (!window.SeasonalPromos?.showingAll || window.SeasonalPromos.isFeatured(product)) && matchesSearch && matchesSetsOnly && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesKeyMaterial && matchesPromo;
+                const matchesSize = !window.LImperialSizeFilter || window.LImperialSizeFilter.matchesProduct(product,componentItems);
+                return matchesSize && (!window.SeasonalPromos?.showingAll || window.SeasonalPromos.isFeatured(product)) && matchesSearch && matchesSetsOnly && matchesBrand && matchesClass && matchesSubclass && matchesLocation && matchesKeyMaterial && matchesPromo;
             });
 
             // Relevance outranks arrival age when searching; Newest First
@@ -2658,6 +2661,8 @@
         function clearSearch() { const searchInput = document.getElementById('search-input'); if (searchInput) searchInput.value = ''; executeSearchFilter(); }
 
         function resetFilters() {
+            const sizeValue = document.getElementById('showroom-size-value');
+            if (sizeValue) sizeValue.value = '';
             window.SeasonalPromos?.reset();
             const searchInput = document.getElementById('search-input'); if (searchInput) searchInput.value = '';
             currentBrandFilter = ''; currentClassFilter = ''; currentSubclassFilter = ''; currentLocFilter = ''; currentKeyMaterialFilter = ''; showPromoOnly = false; sortNewArrival = false; showSetsOnly = false;
