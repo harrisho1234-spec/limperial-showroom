@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - assets/price-reference/asfour_photo_assets_only.zip
+      - assets/price-reference/asfour-photo-pack/**
+      - .github/workflows/install-asfour-reference-photos.yml
   workflow_dispatch:
 
 permissions:
@@ -27,7 +29,17 @@ jobs:
           import json, re
           archive=Path('assets/price-reference/asfour_photo_assets_only.zip')
           if not archive.is_file():
-              raise SystemExit('Upload asfour_photo_assets_only.zip to assets/price-reference/ first')
+              import hashlib
+              parts=Path('assets/price-reference/asfour-photo-pack')
+              manifest=json.loads((parts/'manifest.json').read_text())
+              if manifest.get('parts')!=10 or manifest.get('bytes')!=3656956 or manifest.get('photoCount')!=1368:
+                  raise SystemExit('Asfour photo asset manifest invalid')
+              image_zip=b''.join((parts/('part'+str(i).zfill(2)+'.bin')).read_bytes()
+                                 for i in range(1,11))
+              if len(image_zip)!=manifest['bytes'] or hashlib.sha256(image_zip).hexdigest()!=manifest['sha256']:
+                  raise SystemExit('Asfour image archive checksum mismatch')
+              archive=Path('/tmp/asfour_photo_assets_only.zip')
+              archive.write_bytes(image_zip)
           folder=Path('assets/price-reference/asfour-photos')
           folder.mkdir(parents=True,exist_ok=True)
           with ZipFile(archive) as z:
