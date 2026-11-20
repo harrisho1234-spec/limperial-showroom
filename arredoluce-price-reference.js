@@ -8,7 +8,42 @@ const PAGE_SIZE=24;
 const $=id=>doc.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const usd=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const state={items:[],photos:{},query:'',series:'',type:'',view:'gallery',sort:'source',shown:PAGE_SIZE,open:false,loading:null,error:'',lastFocus:null};
+const state={items:[],photos:{},photoIndex:null,query:'',series:'',type:'',view:'gallery',sort:'source',shown:PAGE_SIZE,open:false,loading:null,error:'',lastFocus:null};
+/* Resolve reference images only from product/catalog information. Never describe a
+   borrowed series image as an exact photograph of the product or finish. */
+function buildPhotoIndex(){
+ const byCode=new Map(),bySeriesType=new Map(),bySeries=new Map();
+ let first=null;
+ for(const item of state.items){
+  const page=Number(item.catalogPage);
+  if(!Number.isInteger(page)||!state.photos[String(page)])continue;
+  if(!first)first=page;
+  if(!byCode.has(item.code))byCode.set(item.code,page);
+  const series=(item.series||'').trim().toLowerCase();
+  const type=(item.type||'').trim().toLowerCase();
+  if(series&&!bySeries.has(series))bySeries.set(series,page);
+  if(series&&type&&!bySeriesType.has(series+'|'+type))bySeriesType.set(series+'|'+type,page);
+ }
+ state.photoIndex={byCode,bySeriesType,bySeries,first};
+}
+function resolvePhoto(item){
+ if(!state.photoIndex)buildPhotoIndex();
+ const index=state.photoIndex;
+ const page=Number(item.catalogPage);
+ const own=Number.isInteger(page)?state.photos[String(page)]:null;
+ if(own)return{src:own,page,kind:'catalog',label:'CATALOG PREVIEW',detail:'Catalog page reference, not an exact individual product photograph. Finish and model must be verified.'};
+ const code=index.byCode.get(item.code);
+ if(code)return{src:state.photos[String(code)],page:code,kind:'code',label:'SAME MODEL REFERENCE',detail:'Shared from another price option for this supplier code. Verify the exact finish and product before quoting.'};
+ const series=(item.series||'').trim().toLowerCase();
+ const type=(item.type||'').trim().toLowerCase();
+ const st=index.bySeriesType.get(series+'|'+type);
+ if(st)return{src:state.photos[String(st)],page:st,kind:'type',label:'SERIES REFERENCE',detail:'Reference photo from the same series and product type. It may show another model or finish.'};
+ const family=index.bySeries.get(series);
+ if(family)return{src:state.photos[String(family)],page:family,kind:'series',label:'SERIES REFERENCE',detail:'Reference photo from the same series; this is not a confirmed photo of this item.'};
+ const generic=index.first;
+ if(generic)return{src:state.photos[String(generic)],page:generic,kind:'generic',label:'GENERAL REFERENCE',detail:'General Arredoluce catalog illustration only; not matched to this item, series or finish.'};
+ return null;
+}
 function filtered(){
  const q=state.query.toLowerCase().split(/\s+/).filter(Boolean);
  let rows=state.items.filter(x=>(!state.series||x.series===state.series)&&(!state.type||x.type===state.type)&&q.every(w=>[x.code,x.name,x.series,x.type,x.dimensions,x.variant].join(' ').toLowerCase().includes(w)));
@@ -28,9 +63,11 @@ async function load(){
    const rows=data.items.filter(x=>typeof x.code==='string'&&typeof x.variant==='string'&&Number.isFinite(x.priceUsd)&&x.priceUsd>0);
    if(rows.length!==1143)throw Error('Incomplete Arredoluce prices.');
    state.items=rows;
+   state.photoIndex=null;
    try{
     const rr=await fetch(PHOTOS);
     if(rr.ok){const v=await rr.json();if(v.kind==='catalog_page_previews_only'&&v.pages)state.photos=v.pages}
+    buildPhotoIndex();
    }catch(e){console.warn('Arredoluce catalog page previews unavailable',e)}
   }catch(e){state.error=e.message||'Arredoluce reference unavailable'}
   finally{render()}
@@ -44,10 +81,10 @@ function close(){
 }
 function openPreview(item){
  const p=$('arredo-ref-preview');if(!p)return;
- const image=state.photos[String(item.catalogPage)]||'';
+ const photo=resolvePhoto(item);
  const stage=p.querySelector('.arredo-preview-stage');
  stage.replaceChildren();
- if(image){const img=doc.createElement('img');img.src=image;img.alt='Catalog page '+item.catalogPage+' (unverified individual product)';stage.appendChild(img)}
+ if(photo){const img=doc.createElement('img');img.src=photo.src;img.alt=photo.label+' · Arredoluce catalog page '+photo.page+' · not a verified individual item image';stage.appendChild(img)}
  else stage.innerHTML='<span class="arredo-preview-empty">No catalog preview matched</span>';
  const info=p.querySelector('.arredo-preview-info');info.replaceChildren();
  const label=doc.createElement('span');label.className='da-ref-collection-label';label.textContent=item.series||'Arredoluce';
@@ -59,8 +96,8 @@ function openPreview(item){
  const hidden=doc.createElement('span');hidden.className='da-price-ref-price-hidden';hidden.textContent='Price hidden';
  const note=doc.createElement('small');note.textContent='USD · Actual selling price · Reference only';
  price.append(sale,hidden,note);
- const warning=doc.createElement('p');warning.className='da-ref-preview-disclaimer';warning.textContent=image
-   ?'Catalog page preview only. This page can show other models and finishes. Verify the exact item before quoting or ordering.'
+ const warning=doc.createElement('p');warning.className='da-ref-preview-disclaimer';warning.textContent=photo
+   ?photo.detail+' · Source catalog page '+photo.page+'.'
    :'No verified product photograph is available for this variant. Confirm before quoting or ordering.';
  info.append(label,name,code,dim,price,warning);
  p.hidden=false;$('arredo-ref-preview-close')?.focus();
@@ -80,12 +117,12 @@ function render(){
  const frag=doc.createDocumentFragment();
  for(const x of rows.slice(0,state.shown)){
   const card=doc.createElement('article');card.className='da-ref-card arredo-ref-card';
-  const photo=state.photos[String(x.catalogPage)]||'';
+  const photo=resolvePhoto(x);
   const photoButton=doc.createElement('button');photoButton.type='button';photoButton.className='da-ref-photo arredo-ref-photo';
-  photoButton.title=photo?'View catalog page preview (not exact product photo)':'View selling price details';
-  if(photo){const img=doc.createElement('img');img.src=photo;img.loading='lazy';img.alt='Catalog page preview; exact product not verified';img.className='arredo-ref-image';photoButton.appendChild(img)}
+  photoButton.title=photo?'View '+photo.label.toLowerCase()+' · Catalog page '+photo.page+' (not exact product photo)':'View selling price details';
+  if(photo){const img=doc.createElement('img');img.src=photo.src;img.loading='lazy';img.alt=photo.label+' · catalog page '+photo.page+' · not an exact photo';img.className='arredo-ref-image';photoButton.appendChild(img)}
   else photoButton.innerHTML='<span class="arredo-no-photo"><i class="fa-solid fa-image"></i> No verified photo</span>';
-  const tag=doc.createElement('span');tag.className='arredo-photo-tag';tag.textContent=photo?'CATALOG PREVIEW':'PHOTO UNAVAILABLE';photoButton.appendChild(tag);
+  const tag=doc.createElement('span');tag.className='arredo-photo-tag';tag.textContent=photo?photo.label:'PHOTO UNAVAILABLE';photoButton.appendChild(tag);
   photoButton.addEventListener('click',()=>openPreview(x));
   const info=doc.createElement('div');info.className='arredo-ref-info';
   const series=doc.createElement('div');series.className='arredo-ref-series';series.textContent=(x.series||'Arredoluce')+' · '+(x.type||'Lighting');
@@ -94,7 +131,8 @@ function render(){
   const dims=doc.createElement('div');dims.className='arredo-ref-dims';dims.textContent=x.dimensions||'Size not specified';
   const sale=doc.createElement('strong');sale.className='da-price-ref-price arredo-ref-price';sale.textContent=usd(x.priceUsd);
   const hidden=doc.createElement('span');hidden.className='da-price-ref-price-hidden';hidden.textContent='Price hidden';
-  info.append(series,name,code,dims,sale,hidden);card.append(photoButton,info);frag.appendChild(card);
+  const caution=doc.createElement('div');caution.className='arredo-ref-photo-note';caution.textContent=photo?(photo.kind==='catalog'?'Catalog page · check model/finish':photo.kind==='code'?'Shared code photo · finish may vary':photo.kind==='generic'?'General reference · not matched':'Series photo · model may vary'):'No matched catalog photo';
+  info.append(series,name,code,dims,caution,sale,hidden);card.append(photoButton,info);frag.appendChild(card);
  }
  holder.appendChild(frag);
  const remain=rows.length-state.shown;more.hidden=remain<=0;
@@ -109,7 +147,7 @@ function build(){
  '<div class="arredo-ref-toolbar"><div class="da-ref-search-box"><i class="fa-solid fa-magnifying-glass"></i><input id="arredo-ref-search" type="search" placeholder="Search code, series, description, dimensions or finish…" aria-label="Search Arredoluce"></div><label class="da-ref-field"><span>Series</span><select id="arredo-ref-series"><option value="">All series</option></select></label><label class="da-ref-field"><span>Product type</span><select id="arredo-ref-type"><option value="">All types</option></select></label><label class="da-ref-field"><span>Sort</span><select id="arredo-ref-sort"><option value="source">Original order</option><option value="code">Code</option><option value="priceAsc">Lowest price</option><option value="priceDesc">Highest price</option></select></label></div>'+
  '<div class="da-ref-results-bar"><strong id="arredo-ref-count">Loading…</strong><div class="arredo-view"><button type="button" id="arredo-ref-gallery">Photos</button><button type="button" id="arredo-ref-list">List</button></div></div>'+
  '<div class="arredo-ref-scroll"><p id="arredo-ref-status"></p><div id="arredo-ref-results" class="da-ref-grid arredo-ref-grid"></div><button id="arredo-ref-more" type="button" class="da-ref-more" hidden>Load more</button></div>'+
- '<footer class="da-ref-bottom"><span>Actual selling prices only. Catalog page previews are not exact-product photos.</span><span class="da-ref-bottom-secondary">Reference only · Not in Stock · No supplier costs</span></footer>'+
+ '<footer class="da-ref-bottom"><span>Actual selling prices only. Shared catalog/series images are visual references, not exact-product photos.</span><span class="da-ref-bottom-secondary">Reference only · Not in Stock · No supplier costs</span></footer>'+
  '<div id="arredo-ref-preview" class="da-ref-preview" hidden><div class="da-ref-preview-dialog"><button type="button" id="arredo-ref-preview-close" class="da-ref-preview-close" aria-label="Close preview">×</button><div class="da-ref-preview-content"><div class="da-ref-preview-stage arredo-preview-stage"></div><div class="da-ref-preview-info arredo-preview-info"></div></div></div></div>'+
  '</div>';
  doc.body.appendChild(overlay);
