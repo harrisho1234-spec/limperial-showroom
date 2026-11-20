@@ -51,12 +51,16 @@
    if(!section||!search)return;
    const query=search.value.trim().toLowerCase();
    lastQuery=query;
-   if(query.length<2){section.hidden=true;section.innerHTML='';return}
+   const sizeFilter=root.LImperialSizeFilter;
+   const hasSize=!!sizeFilter?.configuration().active;
+   if(query.length<2&&!hasSize){section.hidden=true;section.innerHTML='';return}
    section.hidden=false;
    if(!loading){section.innerHTML='<p class="reference-search-loading">Searching price references…</p>';load().then(()=>{if(lastQuery===query)render()});return}
    if(!rows.length){section.innerHTML='<p class="reference-search-loading">Price reference search is unavailable.</p>';return}
    const words=query.split(/\s+/).filter(Boolean);
-   const matches=rows.filter(x=>words.every(w=>(x.code+' '+x.name+' '+x.details+' '+x.brand).toLowerCase().includes(w)));
+   const matches=rows.filter(x=>words.every(w=>(x.code+' '+x.name+' '+x.details+' '+x.brand).toLowerCase().includes(w)) &&
+     (!hasSize||sizeFilter.matchesFields(x.brand==='Deluxe Arte'?x.details:x.name+' '+x.details)));
+
    section.replaceChildren();
    if(!matches.length){section.hidden=true;return}
    const header=doc.createElement('div');header.className='reference-search-header';
