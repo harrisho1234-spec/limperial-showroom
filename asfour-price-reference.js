@@ -206,14 +206,14 @@
        ((bundledPhoto||zipFile)&&!exactPhoto?'<div class="asfour-ref-photo-warning">Design reference photo · finish may vary</div>':'')+
        '<div class="asfour-ref-price"><strong class="asfour-sales-price">'+h(p(item.priceUsd))+'</strong><span class="asfour-hidden-price">Hidden</span></div>'+
        '</div>';
-     if(matchingPhoto){card.querySelector('img')?.addEventListener('click',()=>showPhoto({...item,photo:matchingPhoto}))}
+     if(matchingPhoto){card.querySelector('img')?.addEventListener('click',()=>showPhoto({...item,photo:matchingPhoto},exactPhoto?'exact':'reference'))}
      if(zipFile){
        const img=card.querySelector('img');
        const cached=state.photoUrls.get(item.code);
-       if(cached){img.src=cached;img.addEventListener('click',()=>showPhoto({...item,photo:cached}))}
+       if(cached){img.src=cached;img.addEventListener('click',()=>showPhoto({...item,photo:cached},'reference'))}
        else zipFile.async('blob').then(blob=>{
          const url=root.URL.createObjectURL(blob);state.photoUrls.set(item.code,url);
-         if(img.isConnected){img.src=url;img.addEventListener('click',()=>showPhoto({...item,photo:url}))}
+         if(img.isConnected){img.src=url;img.addEventListener('click',()=>showPhoto({...item,photo:url},'reference'))}
        }).catch(()=>{img.replaceWith(doc.createTextNode('Photo could not be loaded'))});
      }
      card.querySelector('img')?.addEventListener('error',e=>{
@@ -226,14 +226,38 @@
    more.hidden=rows.length<=state.visible;
    if(!more.hidden)more.textContent='Show '+Math.min(PAGE_SIZE,rows.length-state.visible)+' more';
  }
- function showPhoto(item){
+ function closePhoto(){
+   const zoom=el('asfour-ref-photo-preview');
+   if(!zoom||zoom.hidden)return;
+   zoom.hidden=true;
+   const img=zoom.querySelector('img');
+   if(img)img.removeAttribute('src');
+   if(state.previewFocus?.isConnected)state.previewFocus.focus();
+   state.previewFocus=null;
+ }
+ function showPhoto(item,photoKind){
    const zoom=el('asfour-ref-photo-preview');
    if(!zoom||!item.photo)return;
-   zoom.querySelector('img').src=item.photo;
-   zoom.querySelector('.asfour-ref-photo-label').textContent=item.name+' · '+item.code;
+   state.previewFocus=doc.activeElement;
+   const img=zoom.querySelector('img');
+   img.src=item.photo;
+   img.alt='Reference photo of '+item.name+' · '+item.code;
+   zoom.querySelector('.asfour-preview-family').textContent=[item.family,item.type].filter(Boolean).join(' · ');
+   zoom.querySelector('.asfour-preview-name').textContent=item.name;
+   zoom.querySelector('.asfour-preview-code').textContent=item.code;
+   const specs=[item.size,item.finish,item.crystal].filter(Boolean);
+   const details=zoom.querySelector('.asfour-preview-specs');
+   details.textContent=specs.join(' · ');
+   details.hidden=!specs.length;
+   zoom.querySelector('.asfour-preview-price').textContent=p(item.priceUsd);
+   zoom.querySelector('.asfour-preview-disclaimer').textContent=photoKind==='exact'
+     ?'This photo matches the individual product reference. Selling prices are for reference only.'
+     :'Design reference photo · Finish or crystal may vary. Confirm the exact product before offering it to a customer.';
    zoom.hidden=false;
+   el('asfour-ref-preview-close')?.focus();
  }
  function close(){
+   closePhoto();
    state.open=false;
    const modal=el('asfour-ref-overlay');if(modal)modal.hidden=true;
    doc.body.classList.remove('asfour-reference-open');
@@ -261,11 +285,22 @@
      '<div id="asfour-ref-results" class="asfour-ref-grid"></div><button type="button" id="asfour-ref-more" class="da-ref-more" hidden>Load more</button></div>'+
      '<footer class="da-ref-bottom"><span>Actual retail prices from the uploaded workbook (20 Nov 2026). Exact photos only when available. No supplier costs or stock quantities.</span>'+
      '<span class="da-ref-bottom-secondary">Not in Stock · No automatic quotation changes</span></footer>'+
-     '<div id="asfour-ref-photo-preview" class="asfour-ref-photo-preview" hidden><button type="button" aria-label="Close photo">×</button><img alt="Asfour reference">'+
-     '<div class="asfour-ref-photo-label"></div></div></div>';
+     '<div id="asfour-ref-photo-preview" class="asfour-ref-photo-preview da-ref-preview" hidden role="dialog" aria-modal="true" aria-label="Asfour product preview">'+
+       '<div class="da-ref-preview-dialog asfour-preview-dialog">'+
+         '<button type="button" id="asfour-ref-preview-close" class="da-ref-preview-close" aria-label="Close photo preview"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>'+
+         '<div class="da-ref-preview-content">'+
+           '<div class="da-ref-preview-stage asfour-preview-stage"><img alt="Asfour product reference"></div>'+
+           '<div class="da-ref-preview-info">'+
+             '<span class="da-ref-collection-label asfour-preview-family"></span>'+
+             '<h3 class="asfour-preview-name"></h3>'+
+             '<p class="asfour-preview-code"></p>'+
+             '<p class="asfour-preview-specs"></p>'+
+             '<div class="da-ref-preview-price"><b class="da-price-ref-price asfour-sales-price asfour-preview-price"></b><span class="da-price-ref-price-hidden asfour-hidden-price">Price hidden</span><small>USD · Reference only · Not part of Stock</small></div>'+
+             '<p class="da-ref-preview-disclaimer asfour-preview-disclaimer"></p>'+
+           '</div></div></div></div></div>';
    doc.body.appendChild(modal);
    modal.addEventListener('pointerdown',e=>{if(e.target===modal)close()});
-   modal.addEventListener('keydown',e=>{if(e.key==='Escape'){const preview=el('asfour-ref-photo-preview');if(preview&&!preview.hidden)preview.hidden=true;else close()}});
+   modal.addEventListener('keydown',e=>{if(e.key==='Escape'){const preview=el('asfour-ref-photo-preview');if(preview&&!preview.hidden)closePhoto();else close();e.stopPropagation()}});
    el('asfour-ref-close').onclick=close;
    el('asfour-ref-search').oninput=e=>{state.query=e.target.value.trim();state.visible=PAGE_SIZE;render()};
    el('asfour-ref-family').onchange=e=>{state.family=e.target.value;state.visible=PAGE_SIZE;render()};
@@ -273,7 +308,8 @@
    el('asfour-ref-sort').onchange=e=>{state.sort=e.target.value;render()};
    el('asfour-ref-more').onclick=()=>{state.visible+=PAGE_SIZE;render()};
    el('asfour-ref-refresh').onclick=load;
-   el('asfour-ref-photo-preview').querySelector('button').onclick=()=>el('asfour-ref-photo-preview').hidden=true;
+   el('asfour-ref-preview-close').onclick=closePhoto;
+   el('asfour-ref-photo-preview').addEventListener('pointerdown',e=>{if(e.target===el('asfour-ref-photo-preview'))closePhoto()});
    modal.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{state.view=button.dataset.view;render()});
  }
  function open(){
