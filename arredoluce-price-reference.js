@@ -8,7 +8,7 @@ const PAGE_SIZE=24;
 const $=id=>doc.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const usd=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const state={items:[],photos:{},photoIndex:null,query:'',series:'',type:'',view:'gallery',sort:'source',shown:PAGE_SIZE,open:false,loading:null,error:'',lastFocus:null};
+const state={items:[],photos:{},photoIndex:null,query:'',series:'',type:'',view:'list',sort:'source',shown:PAGE_SIZE,open:false,loading:null,error:'',lastFocus:null};
 /* Resolve reference images only from product/catalog information. Never describe a
    borrowed series image as an exact photograph of the product or finish. */
 function buildPhotoIndex(){
@@ -102,6 +102,56 @@ function openPreview(item){
  info.append(label,name,code,dim,price,warning);
  p.hidden=false;$('arredo-ref-preview-close')?.focus();
 }
+/* Compact one-row-per-code list: variant choices are revealed only when needed. */
+function renderGroupedList(rows,holder,more,counter){
+ const groups=new Map();
+ for(const item of rows){
+  if(!groups.has(item.code))groups.set(item.code,[]);
+  groups.get(item.code).push(item);
+ }
+ const entries=[...groups.entries()];
+ counter.textContent=entries.length+' products · '+rows.length+' price options';
+ holder.className='arredo-ref-group-list';
+ const frag=doc.createDocumentFragment();
+ for(const [code,options] of entries.slice(0,state.shown)){
+  const item=options[0],photo=resolvePhoto(item);
+  const group=doc.createElement('details');group.className='arredo-group';
+  const summary=doc.createElement('summary');summary.className='arredo-group-summary';
+  const thumb=doc.createElement('span');thumb.className='arredo-group-image';
+  if(photo){const img=doc.createElement('img');img.src=photo.src;img.loading='lazy';img.alt=photo.label+' for '+code;thumb.appendChild(img)}
+  else thumb.textContent='No photo';
+  const info=doc.createElement('span');info.className='arredo-group-info';
+  const title=doc.createElement('strong');title.textContent=item.name;
+  const sub=doc.createElement('small');sub.textContent=[code,item.series,item.dimensions].filter(Boolean).join(' · ');
+  info.append(title,sub);
+  const right=doc.createElement('span');right.className='arredo-group-right';
+  const amounts=options.map(x=>x.priceUsd),minimum=Math.min(...amounts),maximum=Math.max(...amounts);
+  const amount=doc.createElement('strong');amount.className='da-price-ref-price';amount.textContent=minimum===maximum?usd(minimum):usd(minimum)+' – '+usd(maximum);
+  const hidden=doc.createElement('span');hidden.className='da-ref-price-hidden arredo-group-price-hidden';hidden.textContent='Price hidden';
+  const count=doc.createElement('small');count.textContent=options.length+' option'+(options.length===1?'':'s')+' · View details';
+  right.append(amount,hidden,count);
+  summary.append(thumb,info,right);group.appendChild(summary);
+  const variants=doc.createElement('div');variants.className='arredo-group-variants';
+  for(const variant of options){
+   const row=doc.createElement('button');row.type='button';row.className='arredo-group-variant';
+   const name=doc.createElement('span');name.textContent=variant.variant||'Standard finish';
+   const price=doc.createElement('strong');price.className='da-price-ref-price';price.textContent=usd(variant.priceUsd);
+   const hidden=doc.createElement('span');hidden.className='da-ref-price-hidden arredo-group-price-hidden';hidden.textContent='Price hidden';
+   const detail=doc.createElement('span');detail.className='arredo-group-action';detail.textContent='View photo & details';
+   row.append(name,price,hidden,detail);
+   row.addEventListener('click',()=>openPreview(variant));
+   variants.appendChild(row);
+  }
+  if(photo){
+    const note=doc.createElement('div');note.className='arredo-group-warning';note.textContent='Reference photo · finish or exact model may vary';
+    variants.appendChild(note);
+  }
+  group.appendChild(variants);frag.appendChild(group);
+ }
+ holder.appendChild(frag);
+ const remain=entries.length-state.shown;more.hidden=remain<=0;
+ if(remain>0)more.textContent='Show '+Math.min(PAGE_SIZE,remain)+' more products';
+}
 function render(){
  if(!state.open)return;
  const holder=$('arredo-ref-results'),counter=$('arredo-ref-count'),more=$('arredo-ref-more'),status=$('arredo-ref-status');
@@ -114,6 +164,10 @@ function render(){
  if(!state.items.length){status.hidden=false;status.textContent='Loading actual Arredoluce selling prices…';more.hidden=true;return}
  if(!rows.length){status.hidden=false;status.textContent='No results for these filters.';more.hidden=true;return}
  status.hidden=true;
+ if(state.view==='list'){
+  renderGroupedList(rows,holder,more,counter);
+  return;
+ }
  const frag=doc.createDocumentFragment();
  for(const x of rows.slice(0,state.shown)){
   const card=doc.createElement('article');card.className='da-ref-card arredo-ref-card';
