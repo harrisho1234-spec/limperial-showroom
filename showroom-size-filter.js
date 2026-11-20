@@ -11,7 +11,7 @@
    const str=String(raw||'').replace(/⌀|φ/gi,'Ø').replace(/\u00d7/g,'x');
    const found=[];
    // A diameter is only inferred when a diameter symbol or word exists.
-   const diameter=/(?:Ø|diam(?:eter)?\.?|dia\.?)[\s:=-]*\.?\s*(\d+(?:[.,]\d+)?)\s*(mm|cm|m)?\b?/gi;
+   const diameter=/(?:Ø|diam(?:eter)?\.?|dia\.?)[\s:=-]*\.?\s*(\d+(?:[.,]\d+)?)\s*(mm|cm|m)?/gi;
    for(const m of str.matchAll(diameter))found.push({kind:'diameter',value:num(m[1]),unit:m[2]||''});
    const explicit=/(?:^|[^a-z\d])(?:width|height|length|depth|W|H|L|D)\s*[.:= -]*\s*(\d+(?:[.,]\d+)?)\s*(mm|cm|m)?/gi;
    for(const m of str.matchAll(explicit)){
