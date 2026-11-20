@@ -14,7 +14,7 @@
  const p=x=>'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
  const safeUrl=value=>{
    const raw=clean(value);
-   if(!/^https:\/\/[^\\s<>"']+$/i.test(raw))return '';
+   if(!/^https:\/\/[^\s<>"']+$/i.test(raw))return '';
    // Convert exact-item Google Drive links to usable thumbnails.
    const match=raw.match(/^https:\/\/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]{10,})/i);
    const query=raw.match(/^https:\/\/drive\.google\.com\/(?:open|uc)\?[^#]*[?&]id=([A-Za-z0-9_-]{10,})/i);
