@@ -1,0 +1,7 @@
+/* Shared brand selector for the two existing read-only reference views. */
+.unified-price-brands{display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px;border-bottom:1px solid rgba(223,178,108,.2)}
+.unified-price-brand{border:1px solid rgba(223,178,108,.45);border-radius:999px;padding:7px 16px;background:transparent;color:inherit;cursor:pointer;font:inherit;font-size:13px}
+.unified-price-brand:hover,.unified-price-brand:focus-visible{border-color:#dfb26c;outline-offset:2px}
+.unified-price-brand.is-selected{background:#dfb26c;color:#151515;font-weight:700}
+#da-price-reference-button,#asfour-price-reference-button{display:none!important}
+@media(max-width:600px){.unified-price-brands{padding:10px 14px}.unified-price-brand{flex:1;text-align:center}}
