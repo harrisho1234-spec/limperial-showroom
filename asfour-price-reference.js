@@ -8,8 +8,9 @@
  const SNAPSHOT_URL='./assets/price-reference/asfour-actual-sales-2026-11-20.json';
  const PHOTO_MANIFEST_URL='./assets/price-reference/asfour-photo-manifest.json';
  const PHOTO_BASE='./assets/price-reference/asfour-photos/';
+ const PHOTO_ZIP_URL='./assets/price-reference/asfour_photo_assets_only.zip';
  const PAGE_SIZE=24;
- const state={items:[],open:false,loading:false,error:'',query:'',family:'',type:'',sort:'default',view:'gallery',visible:PAGE_SIZE,sourceUpdated:'',lastFocus:null,photoReady:false};
+ const state={items:[],open:false,loading:false,error:'',query:'',family:'',type:'',sort:'default',view:'gallery',visible:PAGE_SIZE,sourceUpdated:'',lastFocus:null,photoReady:false,photoZip:null,photoUrls:new Map()};
  const el=id=>doc.getElementById(id);
  const h=x=>String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
  const clean=x=>String(x||'').trim();
@@ -98,6 +99,16 @@
        state.photoReady=data.version===1&&data.count===1368;
      }else state.photoReady=false;
    }catch(_){state.photoReady=false;}
+   if(!state.photoReady && root.JSZip){
+     try{
+       const response=await fetch(PHOTO_ZIP_URL,{cache:'force-cache'});
+       if(response.ok){
+         const zip=await root.JSZip.loadAsync(await response.blob());
+         const manifest=JSON.parse(await zip.file('photo-manifest.json').async('string'));
+         if(manifest.version===1 && manifest.count===1368)state.photoZip=zip;
+       }
+     }catch(_){state.photoZip=null;}
+   }
    if(state.loading)return;
    state.loading=true;state.error='';render();
    try{
@@ -147,16 +158,31 @@
      const exactPhoto=item.photo||safeUrl(root.LImperialAsfourExactPhotos?.[item.code]);
      const bundledPhoto=state.photoReady?PHOTO_BASE+item.code.replaceAll('/','_')+'.jpg':'';
      const matchingPhoto=exactPhoto||bundledPhoto;
+     const zipFile=!matchingPhoto&&state.photoZip?.file('photos/'+item.code.replaceAll('/','_')+'.jpg');
      const image=matchingPhoto?'<img src="'+h(matchingPhoto)+'" loading="lazy" alt="Asfour '+h(item.code)+' photo" referrerpolicy="no-referrer">':
+       zipFile?'<img class="asfour-zip-photo" alt="Asfour '+h(item.code)+' design reference" loading="lazy">':
        '<div class="asfour-ref-missing"><i class="fa-solid fa-image" aria-hidden="true"></i><span>No verified item photo</span></div>';
      card.innerHTML='<div class="asfour-ref-image">'+image+'</div><div class="asfour-ref-info">'+
        '<div class="asfour-ref-family">'+h(item.family)+(item.type?' · '+h(item.type):'')+'</div>'+
        '<div class="asfour-ref-name">'+h(item.name)+'</div><div class="asfour-ref-code">'+h(item.code)+'</div>'+
        '<div class="asfour-ref-spec">'+[item.size,item.finish,item.crystal].filter(Boolean).map(h).join(' · ')+'</div>'+ 
-       (bundledPhoto&&!exactPhoto?'<div class="asfour-ref-photo-warning">Design reference photo · finish may vary</div>':'')+
+       ((bundledPhoto||zipFile)&&!exactPhoto?'<div class="asfour-ref-photo-warning">Design reference photo · finish may vary</div>':'')+
        '<div class="asfour-ref-price"><strong class="asfour-sales-price">'+h(p(item.priceUsd))+'</strong><span class="asfour-hidden-price">Hidden</span></div>'+
        '</div>';
      if(matchingPhoto){card.querySelector('img')?.addEventListener('click',()=>showPhoto({...item,photo:matchingPhoto}))}
+     if(zipFile){
+       const img=card.querySelector('img');
+       const cached=state.photoUrls.get(item.code);
+       if(cached){img.src=cached;img.addEventListener('click',()=>showPhoto({...item,photo:cached}))}
+       else zipFile.async('blob').then(blob=>{
+         const url=root.URL.createObjectURL(blob);state.photoUrls.set(item.code,url);
+         if(img.isConnected){img.src=url;img.addEventListener('click',()=>showPhoto({...item,photo:url}))}
+       }).catch(()=>{img.replaceWith(doc.createTextNode('Photo could not be loaded'))});
+     }
+     card.querySelector('img')?.addEventListener('error',e=>{
+       const fallback=doc.createElement('div');fallback.className='asfour-ref-missing';
+       fallback.textContent='Photo unavailable';e.target.replaceWith(fallback);
+     });
      fragment.appendChild(card);
    }
    target.appendChild(fragment);
