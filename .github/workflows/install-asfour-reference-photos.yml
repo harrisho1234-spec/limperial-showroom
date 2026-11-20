@@ -1,0 +1,66 @@
+name: Install Asfour photo reference assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - assets/price-reference/asfour_photo_assets_only.zip
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install-photo-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Showroom repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Validate and extract Asfour design-reference photos
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import json, re
+          archive=Path('assets/price-reference/asfour_photo_assets_only.zip')
+          if not archive.is_file():
+              raise SystemExit('Upload asfour_photo_assets_only.zip to assets/price-reference/ first')
+          folder=Path('assets/price-reference/asfour-photos')
+          folder.mkdir(parents=True,exist_ok=True)
+          with ZipFile(archive) as z:
+              names=z.namelist()
+              data=json.loads(z.read('photo-manifest.json'))
+              records=data.get('records',[])
+              if len(records)!=1368 or data.get('count')!=1368:
+                  raise SystemExit('Unexpected photo manifest; refuse partial import')
+              allowed={'photos/'+row['code'].replace('/','_')+'.jpg' for row in records}
+              expected=allowed|{'photo-manifest.json'}
+              if set(names)!=expected or any(not re.fullmatch(r'\d{4,5}/\d{1,4}/\d{1,3}/\d{1,3}',r['code']) for r in records):
+                  raise SystemExit('Photo archive mismatch; nothing written')
+              if len(allowed)!=1368:
+                  raise SystemExit('Duplicate product codes')
+              for source in sorted(allowed):
+                  name=source.split('/')[-1]
+                  payload=z.read(source)
+                  if not payload.startswith(b'\xff\xd8') or len(payload)>100_000:
+                      raise SystemExit('Invalid JPEG: '+name)
+                  (folder/name).write_bytes(payload)
+              Path('assets/price-reference/asfour-photo-manifest.json').write_text(
+                  json.dumps({'version':1,'count':len(records),'status':'design-reference',
+                              'source':'Uploaded Asfour photographic workbook'},
+                             separators=(',',':')),encoding='utf8')
+              print('Extracted',len(allowed),'retail catalog design-reference photos; no prices')
+          PY
+
+      - name: Publish image-only assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/price-reference/asfour-photos assets/price-reference/asfour-photo-manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish exact-code Asfour design-reference photos"
+            git push
+          fi
