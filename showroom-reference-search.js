@@ -79,7 +79,7 @@
    }
    section.appendChild(list);
    const emptyState=byId('empty-state');
-   if(emptyState&&root.filteredProducts?.length===0)emptyState.classList.add('hidden');
+   if(emptyState&&byId('product-grid')?.children.length===0)emptyState.classList.add('hidden');
    if(matches.length>8){
      const small=doc.createElement('p');small.className='reference-search-more';
      small.textContent='Showing first 8 references. Refine your search to see more.';
