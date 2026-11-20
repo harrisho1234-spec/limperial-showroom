@@ -3656,6 +3656,71 @@
         }
 
 
+
+        // Per-line Customer Interest image replacement; never edits the master catalog.
+        function closeInterestPhotoDialog(){document.getElementById('interest-photo-dialog')?.remove();}
+        function resetInterestPhoto(key){
+          const line=findCartLine(key);
+          if(!line?.item||!Object.prototype.hasOwnProperty.call(line.item,'originalInterestPhoto'))return;
+          line.item.imgLink=line.item.originalInterestPhoto||'';
+          delete line.item.originalInterestPhoto;delete line.item.interestPhotoOverride;
+          updateCartVisuals();renderQuoteItemsNotesForm();updateQuotationPreview();
+          closeInterestPhotoDialog();showNotification('Original photo restored for this item.','success');
+        }
+        function openInterestPhotoDialog(key){
+          const line=findCartLine(key);
+          if(!line?.item||line.type==='set'||line.type==='service')return;
+          closeInterestPhotoDialog();
+          const dialog=document.createElement('div');
+          dialog.id='interest-photo-dialog';
+          dialog.className='fixed inset-0 z-[9999] bg-black/75 flex items-center justify-center p-3';
+          dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');
+          dialog.setAttribute('aria-label','Replace this Customer Interest item photo');
+          const box=document.createElement('div');
+          box.className='w-full max-w-md rounded-2xl bg-luxury-dark border border-luxury-gold/40 p-5 space-y-3 shadow-2xl text-luxury-text';
+          const title=document.createElement('h3');title.className='text-base font-semibold';title.textContent='Replace Interest Photo';
+          const note=document.createElement('p');note.className='text-xs text-luxury-muted';
+          note.textContent='Only this Interest List row changes. Your original catalog photo stays unchanged.';
+          const preview=document.createElement('img');preview.className='w-full h-44 object-contain rounded-xl bg-white';
+          const existing=resolveGoogleDriveImg(line.item.imgLink||'');
+          if(existing)preview.src=existing;else preview.classList.add('hidden');
+          const input=document.createElement('input');input.type='file';input.accept='image/*';
+          input.className='block w-full text-xs';input.setAttribute('aria-label','Choose replacement photo or take photo');
+          const status=document.createElement('p');status.className='text-xs text-luxury-muted';status.textContent='Select a photo (maximum 12 MB).';
+          input.onchange=async()=>{
+            const file=input.files?.[0];if(!file)return;
+            if(!file.type.startsWith('image/')||file.size>12000000){showNotification('Choose an image smaller than 12 MB.','error');return;}
+            const objectUrl=URL.createObjectURL(file),image=new Image();
+            try{
+              await new Promise((ok,fail)=>{image.onload=ok;image.onerror=fail;image.src=objectUrl});
+              const scale=Math.min(1,640/Math.max(image.naturalWidth,image.naturalHeight));
+              const canvas=document.createElement('canvas');
+              canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
+              canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+              canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+              const data=canvas.toDataURL('image/jpeg',0.6);
+              if(data.length>120000)throw Error('Photo too large after compression.');
+              const active=findCartLine(key);
+              if(!active?.item)throw Error('Interest item no longer exists.');
+              if(!Object.prototype.hasOwnProperty.call(active.item,'originalInterestPhoto'))
+                active.item.originalInterestPhoto=active.item.imgLink||'';
+              active.item.imgLink=data;active.item.interestPhotoOverride=true;
+              preview.src=data;preview.classList.remove('hidden');
+              updateCartVisuals();renderQuoteItemsNotesForm();updateQuotationPreview();
+              status.textContent='Custom photo applied. Save the interest list to keep it.';
+              showNotification('Photo updated for this Interest List row.','success');
+            }catch(err){showNotification(err.message||'Could not process photo.','error')}
+            finally{URL.revokeObjectURL(objectUrl)}
+          };
+          const actions=document.createElement('div');actions.className='flex justify-end flex-wrap gap-2';
+          const reset=document.createElement('button');reset.type='button';reset.className='border border-luxury-gold/40 rounded-lg px-3 py-2 text-xs';reset.textContent='Use Original Photo';reset.onclick=()=>resetInterestPhoto(key);
+          const done=document.createElement('button');done.type='button';done.className='bg-luxury-gold text-luxury-dark rounded-lg px-3 py-2 text-xs font-semibold';done.textContent='Done';done.onclick=closeInterestPhotoDialog;
+          actions.append(reset,done);box.append(title,note,preview,input,status,actions);dialog.appendChild(box);
+          dialog.onclick=e=>{if(e.target===dialog)closeInterestPhotoDialog()};
+          dialog.onkeydown=e=>{if(e.key==='Escape')closeInterestPhotoDialog()};
+          document.body.appendChild(dialog);input.focus();
+        }
+
         function openManualInterestItem(key=''){
             const line=cart.find(c=>cartLineKey(c)===String(key)&&c.item?.manualItem);
             const m=document.getElementById('manual-interest-modal');
@@ -4190,6 +4255,7 @@
                                     <h5 class="text-xs font-medium text-luxury-text leading-snug line-clamp-2">${item.itemName}</h5>
                                     <span class="text-[10px] font-mono text-luxury-gold mt-0.5 block">${item.code}</span>
                                     <button type="button" onclick="openReplaceCartItem('${uniqueId}')" class="mt-1 text-[10px] font-semibold text-luxury-gold hover:underline" aria-label="Replace this product while keeping its position"><i class="fa-solid fa-right-left mr-1" aria-hidden="true"></i>Replace Item</button>
+                                    <button type="button" onclick="openInterestPhotoDialog('${uniqueId}')" class="ml-2 mt-1 text-[10px] font-semibold text-luxury-gold hover:underline" title="Replace only this Interest List photo"><i class="fa-solid fa-camera mr-1"></i>${cartItem.item?.interestPhotoOverride?'Change Photo':'Replace Photo'}</button>
                                     ${securedMarkupDetailsItem}
                                 </div>
                             </div>
@@ -4384,6 +4450,7 @@
                                     <h5 class="text-xs font-medium text-luxury-text leading-snug line-clamp-2">${item.itemName}</h5>
                                     <span class="text-[9px] font-mono text-luxury-gold block">${item.code}</span>
                                     <button type="button" onclick="openReplaceCartItem('${uniqueId}')" class="mt-1 text-[10px] font-semibold text-luxury-gold hover:underline" aria-label="Replace this product while keeping its position"><i class="fa-solid fa-right-left mr-1" aria-hidden="true"></i>Replace Item</button>
+                                    <button type="button" onclick="openInterestPhotoDialog('${uniqueId}')" class="ml-2 mt-1 text-[10px] font-semibold text-luxury-gold hover:underline" title="Replace only this Interest List photo"><i class="fa-solid fa-camera mr-1"></i>${cartItem.item?.interestPhotoOverride?'Change Photo':'Replace Photo'}</button>
                                     ${securedMarkupDetailsItem}
                                 </div>
                             </div>
