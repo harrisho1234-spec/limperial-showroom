@@ -181,6 +181,9 @@
    const rows=filtered(),count=el('asfour-ref-count');
    if(count)count.textContent=rows.length+' actual sale price'+(rows.length===1?'':'s');
    const view=state.view==='list';
+   el('asfour-ref-overlay')?.querySelectorAll('[data-view]').forEach(button=>{
+     button.setAttribute('aria-pressed',String(button.dataset.view===state.view));
+   });
    target.className='asfour-ref-grid'+(view?' is-list':'');
    if(state.loading){status.hidden=false;status.textContent='Loading Asfour actual USD selling prices…';more.hidden=true;return}
    if(state.error){status.hidden=false;status.textContent=state.error;more.hidden=true;return}
@@ -245,12 +248,15 @@
      '<header class="da-ref-header"><div class="da-ref-heading"><span class="da-ref-kicker"><i class="fa-solid fa-gem"></i> GENERAL PRICE REFERENCE</span>'+
      '<h2>Asfour</h2><p>Actual USD selling prices · Separate from Stock and quotations</p></div>'+
      '<button type="button" id="asfour-ref-close" class="da-ref-close" aria-label="Close reference">×</button></header>'+
-     '<div class="asfour-ref-controls"><input id="asfour-ref-search" type="search" placeholder="Search code, design, finish, crystal or size…" aria-label="Search Asfour">'+
-     '<select id="asfour-ref-family" aria-label="Family"></select><select id="asfour-ref-type" aria-label="Type"></select>'+
-     '<select id="asfour-ref-sort" aria-label="Sort"><option value="default">Original order</option><option value="code">Product code</option>'+
-     '<option value="priceAsc">Price low to high</option><option value="priceDesc">Price high to low</option></select>'+
-     '<div class="asfour-ref-view"><button type="button" data-view="gallery">Photos</button><button type="button" data-view="list">List</button></div></div>'+
-     '<div class="asfour-ref-counter"><b id="asfour-ref-count">0 approved prices</b><button type="button" id="asfour-ref-refresh">Refresh prices</button></div>'+
+     '<div class="asfour-ref-controls">'+
+       '<div class="da-ref-search-box"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="asfour-ref-search" type="search" placeholder="Search code, design, finish, crystal or size…" aria-label="Search Asfour"></div>'+
+       '<label class="da-ref-field"><span>Family</span><select id="asfour-ref-family" aria-label="Family"></select></label>'+
+       '<label class="da-ref-field"><span>Product type</span><select id="asfour-ref-type" aria-label="Type"></select></label>'+
+       '<label class="da-ref-field"><span>Sort</span><select id="asfour-ref-sort" aria-label="Sort"><option value="default">Original order</option><option value="code">Product code</option>'+
+       '<option value="priceAsc">Price low to high</option><option value="priceDesc">Price high to low</option></select></label></div>'+
+     '<div class="asfour-ref-counter da-ref-results-bar"><b id="asfour-ref-count">0 approved prices</b>'+
+       '<div class="asfour-ref-results-actions"><button type="button" id="asfour-ref-refresh"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Refresh prices</button>'+
+       '<div class="asfour-ref-view da-ref-view-switch" role="group" aria-label="Display layout"><button type="button" data-view="gallery"><i class="fa-solid fa-grip" aria-hidden="true"></i> Photos</button><button type="button" data-view="list"><i class="fa-solid fa-list" aria-hidden="true"></i> List</button></div></div></div>'+
      '<div class="asfour-ref-scroll"><div id="asfour-ref-status" class="asfour-ref-status"></div>'+
      '<div id="asfour-ref-results" class="asfour-ref-grid"></div><button type="button" id="asfour-ref-more" class="da-ref-more" hidden>Load more</button></div>'+
      '<footer class="da-ref-bottom"><span>Actual retail prices from the uploaded workbook (20 Nov 2026). Exact photos only when available. No supplier costs or stock quantities.</span>'+
