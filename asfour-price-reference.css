@@ -106,3 +106,7 @@
   .asfour-ref-photo-preview .asfour-preview-name{font-size:17px}
   .asfour-ref-photo-preview .asfour-preview-price{font-size:22px}
 }
+
+/* Readable verified Asfour catalog sizes, distinct from finish/crystal. */
+.asfour-ref-size{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#9e681e;line-height:1.45}
+.asfour-ref-size i{font-size:11px;opacity:.8}
