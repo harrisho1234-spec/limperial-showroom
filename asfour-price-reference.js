@@ -9,6 +9,7 @@
  const PHOTO_MANIFEST_URL='./assets/price-reference/asfour-photo-manifest.json';
  const PHOTO_BASE='./assets/price-reference/asfour-photos/';
  const PHOTO_ZIP_URL='./assets/price-reference/asfour_photo_assets_only.zip';
+ const PHOTO_PACK_BASE='./assets/price-reference/asfour-photo-pack/';
  const PAGE_SIZE=24;
  const state={items:[],open:false,loading:false,error:'',query:'',family:'',type:'',sort:'default',view:'gallery',visible:PAGE_SIZE,sourceUpdated:'',lastFocus:null,photoReady:false,photoZip:null,photoUrls:new Map()};
  const el=id=>doc.getElementById(id);
@@ -99,15 +100,48 @@
        state.photoReady=data.version===1&&data.count===1368;
      }else state.photoReady=false;
    }catch(_){state.photoReady=false;}
-   if(!state.photoReady && root.JSZip){
+   if(!state.photoReady && !state.photoZip && root.JSZip){
      try{
-       const response=await fetch(PHOTO_ZIP_URL,{cache:'force-cache'});
-       if(response.ok){
-         const zip=await root.JSZip.loadAsync(await response.blob());
-         const manifest=JSON.parse(await zip.file('photo-manifest.json').async('string'));
-         if(manifest.version===1 && manifest.count===1368)state.photoZip=zip;
+       let archive;
+       const direct=await fetch(PHOTO_ZIP_URL,{cache:'force-cache'});
+       if(direct.ok){
+         archive=await direct.blob();
+       }else{
+         // GitHub Pages photo assets are split into small binary parts. This
+         // package contains reference images only (no supplier or sale prices).
+         const response=await fetch(PHOTO_PACK_BASE+'manifest.json',{cache:'force-cache'});
+         if(!response.ok)throw Error('Asfour photo pack missing');
+         const manifest=await response.json();
+         if(manifest.version!==1||manifest.parts!==10||manifest.photoCount!==1368||
+            manifest.bytes!==3656956||!manifest.assetOnly)
+           throw Error('Asfour photo manifest mismatch');
+         const segments=await Promise.all(Array.from({length:manifest.parts},async(_,i)=>{
+           const filename='part'+String(i+1).padStart(2,'0')+'.bin';
+           const r=await fetch(PHOTO_PACK_BASE+filename,{cache:'force-cache'});
+           if(!r.ok)throw Error('Missing Asfour photo part: '+filename);
+           return new Uint8Array(await r.arrayBuffer());
+         }));
+         const bytes=new Uint8Array(manifest.bytes);
+         let offset=0;
+         for(const segment of segments){
+           if(offset+segment.byteLength>bytes.length)throw Error('Asfour photo pack overflow');
+           bytes.set(segment,offset);offset+=segment.byteLength;
+         }
+         if(offset!==manifest.bytes)throw Error('Asfour photo pack size mismatch');
+         if(root.crypto?.subtle){
+           const digest=await root.crypto.subtle.digest('SHA-256',bytes);
+           const hex=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
+           if(hex!==manifest.sha256)throw Error('Asfour photo checksum mismatch');
+         }
+         archive=new Blob([bytes],{type:'application/zip'});
        }
-     }catch(_){state.photoZip=null;}
+       const zip=await root.JSZip.loadAsync(archive);
+       const manifest=JSON.parse(await zip.file('photo-manifest.json').async('string'));
+       if(manifest.version===1 && manifest.count===1368)state.photoZip=zip;
+     }catch(error){
+       console.warn('Asfour photo package could not be loaded',error);
+       state.photoZip=null;
+     }
    }
    if(state.loading)return;
    state.loading=true;state.error='';render();
