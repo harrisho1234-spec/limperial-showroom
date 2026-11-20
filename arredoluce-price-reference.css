@@ -65,3 +65,20 @@
  .arredo-group-variant{gap:8px;flex-wrap:wrap}
  .arredo-group-action{width:100%}
 }
+
+/* Photo gallery also displays one product per code, not one card per price option. */
+.arredo-ref-group-list.is-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.arredo-ref-group-list.is-gallery .arredo-group{min-width:0}
+.arredo-ref-group-list.is-gallery .arredo-group-summary{display:flex;flex-direction:column;align-items:stretch;padding:0;gap:0;min-height:0}
+.arredo-ref-group-list.is-gallery .arredo-group-image{width:100%;height:165px;border-radius:0;background:#f0eae2}
+.arredo-ref-group-list.is-gallery .arredo-group-image img{height:100%;object-fit:contain}
+.arredo-ref-group-list.is-gallery .arredo-group-info{padding:12px 12px 0;gap:5px;min-height:0;width:100%}
+.arredo-ref-group-list.is-gallery .arredo-group-info strong{font-size:13px}
+.arredo-ref-group-list.is-gallery .arredo-group-right{width:100%;max-width:none;align-items:flex-start;text-align:left;padding:8px 12px 12px;gap:5px}
+.arredo-ref-group-list.is-gallery .arredo-group-right strong{font-size:16px}
+.arredo-ref-group-list.is-gallery .arredo-group-right small{font-size:11px;color:#91621c;font-weight:700}
+.arredo-ref-group-list.is-gallery .arredo-group-variants{padding:5px 12px 12px}
+.arredo-ref-group-list.is-gallery .arredo-group-variant{flex-wrap:wrap;gap:6px}
+.arredo-ref-group-list.is-gallery .arredo-group-variant .arredo-group-action{width:100%}
+@media(max-width:900px){.arredo-ref-group-list.is-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.arredo-ref-group-list.is-gallery{grid-template-columns:1fr}}
