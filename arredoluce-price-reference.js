@@ -127,7 +127,7 @@ function renderGroupedList(rows,holder,more,counter){
   const right=doc.createElement('span');right.className='arredo-group-right';
   const amounts=options.map(x=>x.priceUsd),minimum=Math.min(...amounts),maximum=Math.max(...amounts);
   const amount=doc.createElement('strong');amount.className='da-price-ref-price';amount.textContent=minimum===maximum?usd(minimum):usd(minimum)+' – '+usd(maximum);
-  const hidden=doc.createElement('span');hidden.className='da-ref-price-hidden arredo-group-price-hidden';hidden.textContent='Price hidden';
+  const hidden=doc.createElement('span');hidden.className='da-price-ref-price-hidden arredo-group-price-hidden';hidden.textContent='Price hidden';
   const count=doc.createElement('small');count.textContent=options.length+' option'+(options.length===1?'':'s')+' · View details';
   right.append(amount,hidden,count);
   summary.append(thumb,info,right);group.appendChild(summary);
@@ -136,7 +136,7 @@ function renderGroupedList(rows,holder,more,counter){
    const row=doc.createElement('button');row.type='button';row.className='arredo-group-variant';
    const name=doc.createElement('span');name.textContent=variant.variant||'Standard finish';
    const price=doc.createElement('strong');price.className='da-price-ref-price';price.textContent=usd(variant.priceUsd);
-   const hidden=doc.createElement('span');hidden.className='da-ref-price-hidden arredo-group-price-hidden';hidden.textContent='Price hidden';
+   const hidden=doc.createElement('span');hidden.className='da-price-ref-price-hidden arredo-group-price-hidden';hidden.textContent='Price hidden';
    const detail=doc.createElement('span');detail.className='arredo-group-action';detail.textContent='View photo & details';
    row.append(name,price,hidden,detail);
    row.addEventListener('click',()=>openPreview(variant));
