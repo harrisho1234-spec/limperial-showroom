@@ -1,0 +1,15 @@
+/* Read-only price matches shown apart from actual stock products. */
+.reference-search-section[hidden]{display:none!important}
+.reference-search-section{border:1px solid rgba(207,160,77,.45);background:var(--luxury-card,#fff);border-radius:16px;padding:14px;margin-bottom:18px;color:var(--luxury-text,#29231b)}
+.reference-search-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:11px}
+.reference-search-header strong{font-weight:800;color:var(--luxury-text,#29231b);font-size:14px}
+.reference-search-header span,.reference-search-more,.reference-search-loading{font-size:11px;color:var(--luxury-text-soft,#756a60)}
+.reference-search-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.reference-search-item{border:1px solid rgba(170,130,73,.26);border-radius:11px;padding:12px;text-align:left;display:grid;gap:5px;background:var(--luxury-accent,#faf7f0);cursor:pointer}
+.reference-search-item:hover,.reference-search-item:focus-visible{border-color:#c8974f;outline-offset:2px}
+.reference-search-name{font-size:13px;font-weight:800;color:var(--luxury-text,#29231b);overflow-wrap:anywhere}
+.reference-search-meta{font-size:11px;color:var(--luxury-text-soft,#756a60);overflow-wrap:anywhere}
+.reference-search-price{font-size:16px;font-weight:800;color:#ae741f}
+.reference-search-view{font-size:10px;color:var(--luxury-text-soft,#756a60)}
+.reference-search-more{margin-top:10px}
+@media(max-width:700px){.reference-search-list{grid-template-columns:1fr}.reference-search-section{padding:11px}}
