@@ -65,7 +65,7 @@ function init(){
  if(!panel||!search||el('showroom-size-filter'))return;
  const wrap=doc.createElement('div');
  wrap.id='showroom-size-filter';wrap.className='showroom-size-filter';
- wrap.innerHTML='<div class="showroom-size-top"><label for="showroom-size-kind">Size</label>'+
+ wrap.innerHTML='<details id="showroom-size-details"><summary class="showroom-size-summary"><span class="showroom-size-summary-title"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> Size</span><span id="showroom-size-summary-value" class="showroom-size-summary-value">Any size</span><i class="fa-solid fa-chevron-down showroom-size-chevron" aria-hidden="true"></i></summary><div class="showroom-size-expanded"><div class="showroom-size-top"><label for="showroom-size-kind">Dimension</label>'+
   '<select id="showroom-size-kind" aria-label="Dimension type"><option value="any">Any size</option><option value="diameter">Diameter Ø</option><option value="width">Width</option><option value="length">Length</option><option value="height">Height</option><option value="depth">Depth</option></select>'+
   '<select id="showroom-size-mode" aria-label="Size matching mode"><option value="around">Around ±10%</option><option value="exact">Exact</option><option value="range">Between</option><option value="min">At least</option><option value="max">At most</option></select>'+
   '<input id="showroom-size-value" type="number" inputmode="decimal" min="0" step="any" placeholder="Size" aria-label="Size in selected unit">'+
@@ -75,10 +75,27 @@ function init(){
   '<button type="button" id="showroom-size-clear">Clear</button></div>'+
   '<div class="showroom-size-quick" aria-label="Quick diameter sizes"><span>Quick Ø:</span>'+
   [10,20,30,40,60,80,100].map(n=>'<button type="button" data-cm="'+n+'">'+n+' cm</button>').join('')+
-  '<span class="showroom-size-hint">Only documented dimensions are matched; unknown sizes are excluded.</span></div>';
+  '<span class="showroom-size-hint">Only documented dimensions are matched; unknown sizes are excluded.</span></div></div></details>';
  const row=search.parentElement;
  if(row?.parentElement===panel)row.after(wrap);else panel.prepend(wrap);
+ const updateSummary=()=>{
+  const c=configuration();
+  const label=el('showroom-size-summary-value');
+  const details=el('showroom-size-details');
+  if(!label||!details)return;
+  const names={any:'Any dimension',diameter:'Ø',width:'W',length:'L',height:'H',depth:'D'};
+  const modes={around:'≈',exact:'=',range:'',min:'≥',max:'≤'};
+  let summary='Any size';
+  if(c.active){
+    const number=c.mode==='range'&&c.hasTo?c.from+'–'+c.to:c.from;
+    summary=(names[c.kind]||'Size')+' '+(modes[c.mode]||'')+number+' '+c.unit;
+  }
+  label.textContent=summary;
+  details.classList.toggle('has-size',c.active);
+  details.querySelector('summary')?.setAttribute('aria-label','Size filter: '+summary+'. Expand or collapse.');
+ };
  const notify=()=>{
+  updateSummary();
   if(typeof root.executeSearchFilter==='function')root.executeSearchFilter();
   root.LImperialReferenceSearch?.render?.();
  };
@@ -99,7 +116,7 @@ function init(){
   el('showroom-size-value').value=button.dataset.cm;el('showroom-size-unit').value='cm';
   showRange();notify();
  }));
- showRange();
+ showRange();updateSummary();
 }
 if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',init,{once:true});else init();
 root.LImperialSizeFilter=Object.freeze({dimensions,configuration,matchesFields,matchesProduct});
