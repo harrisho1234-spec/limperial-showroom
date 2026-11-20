@@ -7,6 +7,7 @@
  const ENDPOINT=String(root.LImperialAsfourPriceFeedUrl||'').trim();
  const SNAPSHOT_URL='./assets/price-reference/asfour-actual-sales-2026-11-20.json';
  const PHOTO_MANIFEST_URL='./assets/price-reference/asfour-photo-manifest.json';
+ const DESCRIPTIONS_URL='./assets/price-reference/asfour-supplier-descriptions.json';
  const PHOTO_BASE='./assets/price-reference/asfour-photos/';
  const PHOTO_ZIP_URL='./assets/price-reference/asfour_photo_assets_only.zip';
  const PHOTO_PACK_BASE='./assets/price-reference/asfour-photo-pack/';
@@ -31,6 +32,7 @@
    if(!/^\d{4,5}\/\d{1,4}\/\d{1,3}\/\d{1,3}$/.test(code)||!Number.isFinite(usd)||usd<=0)return null;
    return{code,priceUsd:usd,name:clean(input.name).slice(0,160)||'Asfour '+code,
      family:clean(input.family).slice(0,90)||code.split('/')[0],
+     description:clean(input.description||input.supplierDescription).slice(0,240),
      type:clean(input.type).slice(0,80),size:clean(input.size).slice(0,100),
      finish:clean(input.finish).slice(0,80),crystal:clean(input.crystal).slice(0,80),
      photo:safeUrl(input.photoUrl)};
@@ -148,6 +150,18 @@
    try{
      const data=await feed();
      state.items=validate(data);
+     try{
+       const response=await fetch(DESCRIPTIONS_URL,{cache:'no-store'});
+       if(response.ok){
+         const payload=await response.json();
+         if(payload.kind==='asfour_supplier_descriptions'&&payload.descriptions&&typeof payload.descriptions==='object'){
+           for(const item of state.items){
+             const description=payload.descriptions[item.code];
+             if(typeof description==='string'&&description.trim())item.description=description.trim().slice(0,240);
+           }
+         }
+       }
+     }catch(e){console.warn('Asfour description reference unavailable',e)}
      state.sourceUpdated=data.updatedAt||'';
    }catch(e){state.error=e.message||'Unable to load Asfour prices';state.items=[]}
    finally{state.loading=false;render()}
@@ -155,7 +169,7 @@
  function filtered(){
    const q=state.query.toLowerCase();
    const list=state.items.filter(x=>(!state.family||x.family===state.family)&&(!state.type||x.type===state.type)&&
-     (!q||[x.code,x.name,x.family,x.type,x.size,x.finish,x.crystal].join(' ').toLowerCase().includes(q)));
+     (!q||[x.code,x.name,x.description,x.family,x.type,x.size,x.finish,x.crystal].join(' ').toLowerCase().includes(q)));
    if(state.sort==='priceAsc')list.sort((a,b)=>a.priceUsd-b.priceUsd);
    if(state.sort==='priceDesc')list.sort((a,b)=>b.priceUsd-a.priceUsd);
    if(state.sort==='code')list.sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
@@ -201,7 +215,7 @@
        '<div class="asfour-ref-missing"><i class="fa-solid fa-image" aria-hidden="true"></i><span>No verified item photo</span></div>';
      card.innerHTML='<div class="asfour-ref-image">'+image+'</div><div class="asfour-ref-info">'+
        '<div class="asfour-ref-family">'+h(item.family)+(item.type?' · '+h(item.type):'')+'</div>'+
-       '<div class="asfour-ref-name">'+h(item.name)+'</div><div class="asfour-ref-code">'+h(item.code)+'</div>'+
+       '<div class="asfour-ref-name">'+h(item.description||item.name)+'</div><div class="asfour-ref-code">'+h(item.code)+'</div>'+
        '<div class="asfour-ref-spec">'+[item.size,item.finish,item.crystal].filter(Boolean).map(h).join(' · ')+'</div>'+ 
        ((bundledPhoto||zipFile)&&!exactPhoto?'<div class="asfour-ref-photo-warning">Design reference photo · finish may vary</div>':'')+
        '<div class="asfour-ref-price"><strong class="asfour-sales-price">'+h(p(item.priceUsd))+'</strong><span class="asfour-hidden-price">Hidden</span></div>'+
@@ -243,7 +257,7 @@
    img.src=item.photo;
    img.alt='Reference photo of '+item.name+' · '+item.code;
    zoom.querySelector('.asfour-preview-family').textContent=[item.family,item.type].filter(Boolean).join(' · ');
-   zoom.querySelector('.asfour-preview-name').textContent=item.name;
+   zoom.querySelector('.asfour-preview-name').textContent=item.description||item.name;
    zoom.querySelector('.asfour-preview-code').textContent=item.code;
    const specs=[item.size,item.finish,item.crystal].filter(Boolean);
    const details=zoom.querySelector('.asfour-preview-specs');
