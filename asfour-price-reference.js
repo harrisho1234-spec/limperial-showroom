@@ -6,8 +6,10 @@
  // Set after the separate Google Apps Script price publisher is deployed.
  const ENDPOINT=String(root.LImperialAsfourPriceFeedUrl||'').trim();
  const SNAPSHOT_URL='./assets/price-reference/asfour-actual-sales-2026-11-20.json';
+ const PHOTO_MANIFEST_URL='./assets/price-reference/asfour-photo-manifest.json';
+ const PHOTO_BASE='./assets/price-reference/asfour-photos/';
  const PAGE_SIZE=24;
- const state={items:[],open:false,loading:false,error:'',query:'',family:'',type:'',sort:'default',view:'gallery',visible:PAGE_SIZE,sourceUpdated:'',lastFocus:null};
+ const state={items:[],open:false,loading:false,error:'',query:'',family:'',type:'',sort:'default',view:'gallery',visible:PAGE_SIZE,sourceUpdated:'',lastFocus:null,photoReady:false};
  const el=id=>doc.getElementById(id);
  const h=x=>String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
  const clean=x=>String(x||'').trim();
@@ -89,6 +91,13 @@
    });
  }
  async function load(){
+   try{
+     const photoManifest=await fetch(PHOTO_MANIFEST_URL,{cache:'no-store'});
+     if(photoManifest.ok){
+       const data=await photoManifest.json();
+       state.photoReady=data.version===1&&data.count===1368;
+     }else state.photoReady=false;
+   }catch(_){state.photoReady=false;}
    if(state.loading)return;
    state.loading=true;state.error='';render();
    try{
@@ -135,13 +144,16 @@
    const fragment=doc.createDocumentFragment();
    for(const item of rows.slice(0,state.visible)){
      const card=doc.createElement('article');card.className='asfour-ref-item';
-     const matchingPhoto=item.photo||safeUrl(root.LImperialAsfourExactPhotos?.[item.code]);
+     const exactPhoto=item.photo||safeUrl(root.LImperialAsfourExactPhotos?.[item.code]);
+     const bundledPhoto=state.photoReady?PHOTO_BASE+item.code.replaceAll('/','_')+'.jpg':'';
+     const matchingPhoto=exactPhoto||bundledPhoto;
      const image=matchingPhoto?'<img src="'+h(matchingPhoto)+'" loading="lazy" alt="Asfour '+h(item.code)+' photo" referrerpolicy="no-referrer">':
        '<div class="asfour-ref-missing"><i class="fa-solid fa-image" aria-hidden="true"></i><span>No verified item photo</span></div>';
      card.innerHTML='<div class="asfour-ref-image">'+image+'</div><div class="asfour-ref-info">'+
        '<div class="asfour-ref-family">'+h(item.family)+(item.type?' · '+h(item.type):'')+'</div>'+
        '<div class="asfour-ref-name">'+h(item.name)+'</div><div class="asfour-ref-code">'+h(item.code)+'</div>'+
-       '<div class="asfour-ref-spec">'+[item.size,item.finish,item.crystal].filter(Boolean).map(h).join(' · ')+'</div>'+
+       '<div class="asfour-ref-spec">'+[item.size,item.finish,item.crystal].filter(Boolean).map(h).join(' · ')+'</div>'+ 
+       (bundledPhoto&&!exactPhoto?'<div class="asfour-ref-photo-warning">Design reference photo · finish may vary</div>':'')+
        '<div class="asfour-ref-price"><strong class="asfour-sales-price">'+h(p(item.priceUsd))+'</strong><span class="asfour-hidden-price">Hidden</span></div>'+
        '</div>';
      if(matchingPhoto){card.querySelector('img')?.addEventListener('click',()=>showPhoto({...item,photo:matchingPhoto}))}
