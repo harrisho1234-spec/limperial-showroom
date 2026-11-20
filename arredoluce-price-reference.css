@@ -18,3 +18,17 @@
 .arredo-preview-empty{display:grid;place-items:center;height:100%;font-size:12px;color:#7d7166}
 @media(max-width:900px){.arredo-ref-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.arredo-ref-toolbar .da-ref-search-box{grid-column:1/-1}}
 @media(max-width:600px){.arredo-ref-toolbar{padding:12px;gap:8px}.arredo-ref-scroll{padding:12px}.arredo-ref-grid{grid-template-columns:1fr}.arredo-ref-panel{width:100%}.arredo-ref-photo{height:180px}}
+
+/* Match Asfour/Deluxe Arte: consistent card dimensions and image treatments. */
+.arredo-ref-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.arredo-ref-card{border-radius:14px;overflow:hidden}
+.arredo-ref-photo{height:172px;min-height:172px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0;background:#f3ede6}
+.arredo-ref-image{position:static!important;transform:none!important;display:block!important;min-width:0!important;max-width:100%!important;width:100%!important;height:100%!important;max-height:100%!important;object-fit:contain!important;object-position:center!important}
+.arredo-ref-info{padding:13px;display:flex;flex-direction:column;gap:6px;min-height:142px}
+.arredo-ref-photo-note{font-size:10px;line-height:1.35;color:#9b6e2e;background:rgba(235,185,104,.12);padding:4px 6px;border-radius:5px}
+.arredo-photo-tag{max-width:calc(100% - 14px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
+.arredo-ref-grid.as-list .arredo-ref-card{grid-template-columns:120px minmax(0,1fr)}
+.arredo-ref-grid.as-list .arredo-ref-photo{height:142px;min-height:142px}
+.arredo-preview-stage img{position:static!important;transform:none!important;min-width:0!important;max-width:100%!important;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important}
+@media(max-width:900px){.arredo-ref-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.arredo-ref-grid{grid-template-columns:1fr}.arredo-ref-photo{height:190px}.arredo-ref-grid.as-list .arredo-ref-card{grid-template-columns:105px minmax(0,1fr)}}
