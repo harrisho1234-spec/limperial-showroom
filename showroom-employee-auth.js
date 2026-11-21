@@ -88,6 +88,17 @@ async function logout(){
  setAllowed(false);message('Signed out. Please sign in to continue.');
  el('showroom-auth-logout').hidden=true;
 }
+async function getPriceReference(brand){
+ if(!client)throw Error('Employee login is not available.');
+ const allowedBrands=['asfour','arredoluce','deluxe'];
+ if(!allowedBrands.includes(brand))throw Error('Unknown price-reference brand.');
+ const {data:userData,error:userError}=await client.auth.getUser();
+ if(userError||!userData?.user)throw Error('Sign in to view prices.');
+ const {data,error}=await client.from('showroom_private_price_references')
+   .select('payload').eq('brand',brand).single();
+ if(error||!data?.payload)throw Error('Access denied or price reference unavailable.');
+ return data.payload;
+}
 function init(){
  overlay();setAllowed(false);
  if(!window.supabase?.createClient){message('Employee login service failed to load. Check your connection and refresh.');return}
@@ -99,7 +110,7 @@ function init(){
  verify();
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)verify()});
  window.addEventListener('online',verify);
- window.LImperialShowroomAuth=Object.freeze({verify,logout,get allowed(){return authorized}});
+ window.LImperialShowroomAuth=Object.freeze({verify,logout,getPriceReference,get allowed(){return authorized}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
