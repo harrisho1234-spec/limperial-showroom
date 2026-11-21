@@ -137,10 +137,7 @@
     state.error = '';
     state.loading = (async()=>{
       const [reference,photos,rowPhotos] = await Promise.allSettled([
-        fetch(DATA_URL,{cache:'no-cache',credentials:'same-origin'}).then(async r=>{
-          if (!r.ok) throw new Error('Could not open the reference price list ('+r.status+').');
-          return validateSnapshot(await r.json());
-        }),
+        root.LImperialShowroomAuth.getPriceReference('deluxe').then(validateSnapshot)
         fetch(PHOTOS_URL,{cache:'no-cache',credentials:'same-origin'}).then(async r=>{
           if (!r.ok) throw new Error('Photo catalog not found');
           return validatePhotoMap(await r.json());
