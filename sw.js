@@ -1,15 +1,16 @@
 // Limperial Luxury Showroom Service Worker - V26 Tablet/Laptop Workspace
-const CACHE_NAME = 'limperial-v4-app-4-11-07';
+const CACHE_NAME = 'limperial-v4-app-4-11-26-private-prices';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './app-version.js?v=V4.11.07',
-  './deluxe-arte-price-reference.js?v=V4.11.07',
+  './app-version.js?v=V4.11.26',
+  './deluxe-arte-price-reference.js?v=V4.11.26',
   './deluxe-arte-price-reference.css?v=V4.11.07',
-  './assets/price-reference/deluxe-arte.json',
   './assets/price-reference/deluxe-arte-photo-map.json',
   './assets/price-reference/deluxe-arte-row-photos.json',
+  './showroom-employee-auth.js?v=V4.11.26',
+  './showroom-employee-auth.css?v=V4.11.26',
   './showroom-price-visibility.js?v=V4.11.03',
   './showroom-price-visibility.css?v=V4.11.03',
   './customer-shopping-session.js?v=20261023-session1',
@@ -91,7 +92,13 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
   // Never cache authenticated or time-sensitive campaign responses.
-  if (new URL(request.url).hostname.endsWith('.supabase.co')) return;
+  const sensitiveUrl = new URL(request.url);
+  if (sensitiveUrl.hostname.endsWith('.supabase.co')) return;
+  // Never save personal sessions, Google Sheets data, or old public price feeds
+  // in PWA caches. Offline sensitive-price access is deliberately disabled.
+  if (sensitiveUrl.hostname.includes('google.com') ||
+      sensitiveUrl.hostname.includes('script.google.com') ||
+      /\/assets\/price-reference\/(?:asfour-actual-sales|arredoluce-actual-sales|deluxe-arte\.json)/.test(sensitiveUrl.pathname)) return;
 
   const isDocument = request.mode === 'navigate' || request.destination === 'document';
   const isLocalScript = new URL(request.url).origin === self.location.origin && new URL(request.url).pathname.endsWith('.js');
