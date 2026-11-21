@@ -1,0 +1,19 @@
+/* App stays visually inaccessible until server-checked employee permission passes.
+   Note: this UI gate is not a replacement for private backend data storage. */
+html:not(.showroom-employee-authorized) #main-app{visibility:hidden!important;pointer-events:none!important}
+#showroom-employee-gate[hidden]{display:none!important}
+#showroom-employee-gate{position:fixed;inset:0;z-index:2147483000;display:flex;justify-content:center;align-items:center;overflow:auto;padding:18px;background:#0d111a;color:#e9e4da;font-family:Inter,Arial,sans-serif}
+.showroom-auth-panel{width:min(420px,100%);padding:30px 26px;background:#151d2c;border:1px solid #8c723f;border-radius:18px;box-shadow:0 25px 90px #0009}
+.showroom-auth-heading{text-align:center;display:grid;gap:6px;margin-bottom:27px}.showroom-auth-heading span{font-family:Georgia,serif;color:#dfb26c;font-size:30px;font-weight:700;letter-spacing:.04em}
+.showroom-auth-heading small{font-size:10px;letter-spacing:.23em;color:#b7ae9c}
+.showroom-auth-panel h2{font-size:22px;font-weight:750;margin:0 0 6px}
+.showroom-auth-panel p{font-size:12px;line-height:1.65;color:#b9b9bb;margin-bottom:20px}
+#showroom-auth-form{display:grid;gap:15px}
+#showroom-auth-form label{display:grid;gap:6px;font-size:12px;font-weight:650}
+#showroom-auth-form input{height:43px;width:100%;border:1px solid #6e654f;background:#0f1520;color:#fff;border-radius:9px;padding:0 13px;font-size:14px}
+#showroom-auth-form button{height:44px;background:#dfb26c;color:#151a25;font-weight:850;border:0;border-radius:9px;cursor:pointer}
+#showroom-auth-form button:disabled{opacity:.6;cursor:wait}
+#showroom-auth-message{min-height:22px;margin-top:15px;font-size:12px;line-height:1.5;color:#e7bf75}
+#showroom-auth-logout{color:#dfb26c;font-size:12px;text-decoration:underline}
+.showroom-auth-note{display:block;margin-top:18px;color:#999ca4;font-size:11px;line-height:1.5}
+@media(max-width:450px){.showroom-auth-panel{padding:24px 17px}}
