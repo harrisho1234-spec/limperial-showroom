@@ -28,9 +28,22 @@ function overlay(){
  return host;
 }
 function message(t){const node=el('showroom-auth-message');if(node)node.textContent=t||''}
+function ensureSignOutButton(){
+ if(el('showroom-employee-signout'))return;
+ const header=document.querySelector('#main-app header .max-w-7xl');
+ if(!header)return;
+ const button=document.createElement('button');
+ button.id='showroom-employee-signout';
+ button.type='button';button.textContent='Sign Out';
+ button.setAttribute('aria-label','Sign out of L’Imperial Showroom');
+ button.style.cssText='border:1px solid #b58b48;border-radius:999px;padding:5px 10px;color:#c29658;font-size:11px;font-weight:700;white-space:nowrap;margin-left:8px';
+ button.addEventListener('click',logout);
+ header.appendChild(button);
+}
 function setAllowed(flag){
  authorized=!!flag;
  document.documentElement.classList.toggle('showroom-employee-authorized',authorized);
+ if(authorized)ensureSignOutButton();
  const gate=overlay();
  gate.hidden=authorized;
  if(!authorized)document.querySelector('#showroom-auth-password')?.setAttribute('value','');
