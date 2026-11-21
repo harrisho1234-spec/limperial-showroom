@@ -52,12 +52,10 @@
    if(resolver){const cb=resolver;resolver=null;cb(data)}
  };
  async function snapshotFeed(){
-   const response=await fetch(SNAPSHOT_URL,{cache:'no-store'});
-   if(!response.ok)throw Error('Asfour selling-price snapshot is unavailable');
-   const snapshot=await response.json();
+   const snapshot=await root.LImperialShowroomAuth.getPriceReference('asfour');
    if(snapshot.format!=='gzip-json-price-map-v1'||snapshot.count!==1363||
       !/^[A-Za-z0-9+/]+={0,2}$/.test(snapshot.data||''))
-       throw Error('Invalid Asfour selling-price snapshot');
+       throw Error('Invalid protected Asfour selling prices.');
    if(typeof DecompressionStream!=='function')
      throw Error('This browser cannot load the compressed price reference. Update Chrome.');
    const binary=Uint8Array.from(atob(snapshot.data),c=>c.charCodeAt(0));
@@ -78,23 +76,7 @@
    });
    return{version:1,items,updatedAt:snapshot.date,retailSnapshot:true};
  }
- function feed(){
-   if(!ENDPOINT)return snapshotFeed();
-   return new Promise((resolve,reject)=>{
-     const url=safeUrl(ENDPOINT);
-     if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)){
-       reject(Error('Asfour price publisher is not connected yet. Configure its Apps Script /exec URL.'));return;
-     }
-     if(resolver){reject(Error('An Asfour reference update is already running'));return}
-     const script=doc.createElement('script');
-     const timer=setTimeout(()=>{if(resolver){resolver=null;cleanup();reject(Error('Asfour prices timed out. Retry.'))}},17000);
-     function cleanup(){clearTimeout(timer);script.remove()}
-     resolver=data=>{cleanup();resolve(data)};
-     script.onerror=()=>{resolver=null;cleanup();reject(Error('Cannot load the Asfour retail-price publisher'))};
-     script.src=url+'?callback=__LimperialAsfourPriceReceive&_='+Date.now();
-     doc.head.appendChild(script);
-   });
- }
+ async function feed(){return snapshotFeed();}
  async function load(){
    try{
      const photoManifest=await fetch(PHOTO_MANIFEST_URL,{cache:'no-store'});
