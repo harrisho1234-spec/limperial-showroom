@@ -137,7 +137,7 @@
     state.error = '';
     state.loading = (async()=>{
       const [reference,photos,rowPhotos] = await Promise.allSettled([
-        root.LImperialShowroomAuth.getPriceReference('deluxe').then(validateSnapshot)
+        root.LImperialShowroomAuth.getPriceReference('deluxe').then(validateSnapshot),
         fetch(PHOTOS_URL,{cache:'no-cache',credentials:'same-origin'}).then(async r=>{
           if (!r.ok) throw new Error('Photo catalog not found');
           return validatePhotoMap(await r.json());
