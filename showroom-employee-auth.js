@@ -43,7 +43,7 @@ function ensureSignOutButton(){
 function setAllowed(flag){
  authorized=!!flag;
  document.documentElement.classList.toggle('showroom-employee-authorized',authorized);
- if(authorized)ensureSignOutButton();
+ if(authorized){ensureSignOutButton();document.dispatchEvent(new Event('showroom:employee-authorized'));}
  const gate=overlay();
  gate.hidden=authorized;
  if(!authorized)document.querySelector('#showroom-auth-password')?.setAttribute('value','');
