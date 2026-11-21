@@ -56,9 +56,7 @@ async function load(){
  if(state.loading)return state.loading;
  state.loading=(async()=>{
   try{
-   const response=await fetch(DATA,{cache:'no-store'});
-   if(!response.ok)throw Error('Arredoluce selling-price feed could not be loaded.');
-   const data=await response.json();
+   const data=await root.LImperialShowroomAuth.getPriceReference('arredoluce');
    if(data.kind!=='reference_only'||data.brand!=='Arredoluce'||data.currency!=='USD'||!Array.isArray(data.items)||data.items.length!==1143)throw Error('Invalid Arredoluce price reference.');
    const rows=data.items.filter(x=>typeof x.code==='string'&&typeof x.variant==='string'&&Number.isFinite(x.priceUsd)&&x.priceUsd>0);
    if(rows.length!==1143)throw Error('Incomplete Arredoluce prices.');
