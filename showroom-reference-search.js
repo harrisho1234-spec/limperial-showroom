@@ -108,6 +108,10 @@
    section.className='reference-search-section';section.hidden=true;
    section.setAttribute('aria-label','Reference-only product search results');
    grid.before(section);
+   doc.addEventListener('showroom:employee-authorized',()=>{
+     // A search opened before sign-in must retry after staff permission is granted.
+     loading=null;rows=[];render();
+   });
    search.addEventListener('input',render);
    search.addEventListener('change',render);
    render();
