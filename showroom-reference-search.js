@@ -18,10 +18,10 @@
    if(loading)return loading;
    loading=(async()=>{
      const [da,af,desc,arredo,asfourDimensions]=await Promise.allSettled([
-       fetch(DELUXE).then(r=>{if(!r.ok)throw Error('Deluxe Arte unavailable');return r.json()}),
-       fetch(ASFOUR).then(r=>{if(!r.ok)throw Error('Asfour unavailable');return r.json()}),
+       root.LImperialShowroomAuth.getPriceReference('deluxe'),
+       root.LImperialShowroomAuth.getPriceReference('asfour'),
        fetch(DESCRIPTIONS).then(r=>{if(!r.ok)throw Error('Descriptions unavailable');return r.json()}),
-       fetch(ARREDOLUCE).then(r=>{if(!r.ok)throw Error('Arredoluce unavailable');return r.json()}),
+       root.LImperialShowroomAuth.getPriceReference('arredoluce'),
        fetch(ASFOUR_DIMENSIONS).then(r=>{if(!r.ok)throw Error('Asfour dimensions unavailable');return r.json()})
      ]);
      const results=[];
