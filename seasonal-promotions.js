@@ -1032,7 +1032,7 @@
     ticker=setInterval(()=>{if(liveDay!==today())redraw();},60000);
     window.addEventListener('online',()=>{refresh();syncManagementControlVisibility();});
     window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(applyTheme,120);});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden){redraw();refresh();syncManagementControlVisibility();}});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){redraw();syncManagementControlVisibility();}});
     document.addEventListener('keydown',e=>{
       const modal=ui('seasonal-promo-modal');if(!modal||modal.classList.contains('hidden'))return;
       if(e.key==='Escape')closeManager();
