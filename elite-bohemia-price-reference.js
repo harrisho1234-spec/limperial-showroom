@@ -82,7 +82,8 @@ function render(){
  for(const item of state.filtered.slice(0,state.shown)){
   const card=d.createElement('article');card.className='elite-ref-card';
   const main=item.sources?.[0]||{},cat=catalogLabels[main.catalog]||main.catalog||'Supplier catalog';
-  const sourceLinks=item.sources.slice(0,4).map(s=>'<span class="elite-ref-source">'+h(catalogLabels[s.catalog]||s.catalog)+' · PDF p. '+h(s.page)+'</span>').join('');
+  const sourceLinks=item.sources.slice(0,4).map(s=>'<span class="elite-ref-source">'+h(catalogLabels[s.catalog]||s.catalog)+' · PDF p. '+h(s.page)+'</span>').join('')+
+   (item.sources.length?'':(item.priceListReferences||[]).slice(0,2).map(r=>'<span class="elite-ref-source">2025 supplement · '+h(r.collection)+' · sheet row '+h(r.row)+'</span>').join(''));
   const previewUrl=main.catalog&&catalogSlug[main.catalog]&&main.page?PHOTO_ROOT+catalogSlug[main.catalog]+'/p'+String(main.page).padStart(4,'0')+'.jpg':'';
   const fallback='<div class="elite-ref-image-placeholder"><span>Elite<br>Bohemia</span><small>Catalog image pending</small></div>';
   const thumb=item.imageUrl?'<img src="'+h(item.imageUrl)+'" loading="lazy" alt="Supplier image for '+h(item.code)+'">':
