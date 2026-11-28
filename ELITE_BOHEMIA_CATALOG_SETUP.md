@@ -5,7 +5,7 @@
 - 5 user-supplied supplier PDF sources indexed as **reference-only** models.
 - 1,036 distinct automatically parsed model-code strings, with references to original PDF pages and source catalogs.
 - Searchable by code, product category, source and provisional dimensions.
-- No selling prices were supplied. All prices remain **pending**, with no assumed currency or zero-price fallback.
+- **190 calculated USD selling-price options** were loaded from the 12 uploaded 2025 supplier price lists. Other catalog entries remain **Price Pending**.
 - **Not stock inventory**; does not create or modify stock, order products, SKUs, quotations, or costs.
 - Catalog measurements and codes are machine-extracted, require visual supplier verification, particularly models shared by several pages or containing finish suffixes.
 
@@ -32,7 +32,18 @@ images (which may contain multiple products); they are **not** validated
 single-product photographs. Never imply an exact model-photo match where a
 page contains multiple codes.
 
-## When supplier selling prices arrive
+## 2025 partial selling-price list now loaded
+
+Supplier list price is treated as the retail/list basis. L’Imperial's agreed formula is:
+
+- Discounted costing = supplier listed USD price × 0.55
+- Selling price = discounted costing × 3 = supplier listed USD price × **1.65**
+
+Only the calculated selling price is stored in Supabase `showroom_private_price_references` under `brand = elite`. Supplier list prices and internal costing are **not** committed to public GitHub assets or returned to Showroom staff. The archived user calculation CSV includes the costing and original price for management checking.
+
+The protected pricing data uses the existing authenticated Showroom permission/RLS. Distinct supplier finishes (e.g. Seashell Crystal, Opal/Gold and Amber/Champagne; Water Crystal/Aqua) remain separate price options. Unlisted finishes are **not priced by assumption**. Original Storybook and Golden Glow price lists specify gold finish as base and nickel/silver at supplier list +5%; the 190 prices use only supplier base-gold prices. Some Crystalion models exclude LED ceiling lights as stated on their lists.
+
+## When additional supplier selling prices arrive
 - Use full supplier model code as key, **including variant/finish suffixes**.
 - Match price list codes to `assets/price-reference/elite-bohemia-catalog.json`.
 - Keep unmatched variants flagged for review, do not assume parent-code prices.
