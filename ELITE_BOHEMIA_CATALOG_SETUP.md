@@ -61,3 +61,13 @@ The protected pricing data uses the existing authenticated Showroom permission/R
 - `elite-bohemia-price-reference.css`
 - `unified-price-reference.js` (brand picker)
 - `showroom-reference-search.js` (read-only main search)
+
+## 2025 supplemental spreadsheet imports — 28 November 2026
+
+- Imported **model-code and source-row references only** from five newer `.xlsx` price sheets; the public catalog index now contains **1,151 unique model codes** (previously 1,036).
+- Reviewed **301 spreadsheet price rows**: 186 codes already matched the earlier catalog index, and 115 additional codes were indexed. These are code matches, **not photo matches**.
+- **84** spreadsheet rows overlap earlier 2025 PDF retail prices but have different numeric bases. Example: Storybook `L 678/6/03/AD` appears as USD 969.045 in the XLSX while the earlier supplier PDF lists USD 1,609.00. Illusion and Melody show similar ~60.24% relationships. **Do not multiply the XLSX numbers by 1.65 or overwrite existing prices until supplier-price meaning is confirmed**.
+- The previous **190 protected retail-based selling prices remain unchanged**, and no supplemental pricing or costing was added to public GitHub assets.
+- Legacy Excel `.xls` files `Ceník Exclusive 2025 USD pb.xls` and `CENÍK lamp 2025 USD pb.xls` are not yet imported because the current spreadsheet reader cannot import that legacy binary format. Convert them to `.xlsx` without changing values for complete intake.
+- The Illusion product sheet PDF provides model imagery and variant/finish evidence but still requires exact code-to-image/photo mapping and image hosting. No product photos were guessed or swapped.
+- The source reconciliation is available as the conversation artifact `Elite_Bohemia_Additional_Pricelists_Reconciliation.csv` and deliberately is not committed to the public repository because it contains pricing data.
