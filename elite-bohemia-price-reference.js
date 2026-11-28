@@ -8,6 +8,8 @@ const $=id=>d.getElementById(id);
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const state={items:[],filtered:[],query:'',category:'',source:'',shown:48,open:false,loaded:false,loading:null,error:'',lastFocus:null};
 const catalogLabels={'2014 catalog':'2014 Chandeliers','2016 catalog':'2016 Chandeliers','2017 catalog':'2017 Chandeliers','2017 lamps':'2017 Lamps','Storybook':'Crystal Chandelier Storybook'};
+const catalogSlug={'2014 catalog':'2014_catalog','2016 catalog':'2016_catalog','2017 catalog':'2017_catalog','2017 lamps':'2017_lamps','Storybook':'storybook'};
+const PHOTO_ROOT='./assets/price-reference/elite-bohemia-page-previews/';
 function mount(){
  if($('elite-ref-overlay'))return;
  const overlay=d.createElement('section');overlay.id='elite-ref-overlay';overlay.className='elite-ref-overlay';overlay.hidden=true;overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Elite Bohemia Catalog Reference');
@@ -58,7 +60,10 @@ function render(){
   const card=d.createElement('article');card.className='elite-ref-card';
   const main=item.sources?.[0]||{},cat=catalogLabels[main.catalog]||main.catalog||'Supplier catalog';
   const sourceLinks=item.sources.slice(0,4).map(s=>'<span class="elite-ref-source">'+h(catalogLabels[s.catalog]||s.catalog)+' · PDF p. '+h(s.page)+'</span>').join('');
-  const thumb=item.imageUrl?'<img src="'+h(item.imageUrl)+'" loading="lazy" alt="Elite Bohemia '+h(item.code)+' supplier reference photo">':'<div class="elite-ref-image-placeholder"><span>Elite<br>Bohemia</span><small>Catalog image pending</small></div>';
+  const previewUrl=main.catalog&&catalogSlug[main.catalog]&&main.page?PHOTO_ROOT+catalogSlug[main.catalog]+'/p'+String(main.page).padStart(4,'0')+'.jpg':'';
+  const fallback='<div class="elite-ref-image-placeholder"><span>Elite<br>Bohemia</span><small>Catalog image pending</small></div>';
+  const thumb=item.imageUrl?'<img src="'+h(item.imageUrl)+'" loading="lazy" alt="Supplier image for '+h(item.code)+'">':
+   previewUrl?'<img src="'+h(previewUrl)+'" loading="lazy" alt="Source catalog page '+h(main.page)+' showing Elite Bohemia models; verify specific item" onerror="this.replaceWith(this.nextElementSibling)">'+fallback:fallback;
   card.innerHTML='<div class="elite-ref-image">'+thumb+'</div><div class="elite-ref-data"><div class="elite-ref-type">'+h(item.category||'Crystal lighting')+'</div>'+
    '<h3>'+h(item.code)+'</h3>'+
    '<div class="elite-ref-dimension">'+(item.dimension?'Catalog dimensions (verify): '+h(item.dimension):'Dimensions: see supplier PDF')+'</div>'+
