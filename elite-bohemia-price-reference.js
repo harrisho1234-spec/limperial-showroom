@@ -10,6 +10,7 @@ const state={items:[],filtered:[],query:'',category:'',source:'',shown:48,open:f
 const catalogLabels={'2014 catalog':'2014 Chandeliers','2016 catalog':'2016 Chandeliers','2017 catalog':'2017 Chandeliers','2017 lamps':'2017 Lamps','Storybook':'Crystal Chandelier Storybook'};
 const catalogSlug={'2014 catalog':'2014_catalog','2016 catalog':'2016_catalog','2017 catalog':'2017_catalog','2017 lamps':'2017_lamps','Storybook':'storybook'};
 const PHOTO_ROOT='./assets/price-reference/elite-bohemia-page-previews/';
+const PHOTO_CANDIDATES='./assets/price-reference/elite-bohemia-photo-candidates.json';
 function mount(){
  if($('elite-ref-overlay'))return;
  const overlay=d.createElement('section');overlay.id='elite-ref-overlay';overlay.className='elite-ref-overlay';overlay.hidden=true;overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Elite Bohemia Catalog Reference');
@@ -33,6 +34,24 @@ async function load(){
    const r=await fetch(PATH,{cache:'no-cache'});if(!r.ok)throw Error('Elite Bohemia catalog index unavailable');
    const x=await r.json();if(x.kind!=='catalog_reference_only'||x.brand!=='Elite Bohemia'||!Array.isArray(x.items)||x.items.length<100)throw Error('Unexpected catalog index');
    const catalog=x.items.filter(y=>y&&typeof y.code==='string'&&Array.isArray(y.sources));
+   // Source-page images are candidates, not verified model/finish photographs.
+   let photos={};
+   try{
+     const photoResp=await fetch(PHOTO_CANDIDATES,{cache:'no-cache'});
+     if(photoResp.ok){
+       const photoJson=await photoResp.json();
+       if(photoJson.kind==='elite-bohemia-single-model-page-photo-candidates'&&photoJson.photos&&typeof photoJson.photos==='object')photos=photoJson.photos;
+     }
+   }catch(err){console.warn('Elite Bohemia catalog photo candidates unavailable',err)}
+   const photoKey=v=>String(v||'').trim().toUpperCase().replace(/\s+/g,' ');
+   const photoByCode=new Map(Object.entries(photos).map(([code,photo])=>[photoKey(code),photo]));
+   for(const item of catalog){
+     const photo=photoByCode.get(photoKey(item.code));
+     if(photo?.src?.startsWith('data:image/jpeg;base64,')){
+       item.photoCandidate=photo.src;item.photoCandidatePage=photo.page;
+       item.photoMatchStatus='candidate_single_model_page';
+     }
+   }
    let pricing=[];
    try{
      const p=await root.LImperialShowroomAuth.getPriceReference('elite');
@@ -87,11 +106,13 @@ function render(){
   const previewUrl=main.catalog&&catalogSlug[main.catalog]&&main.page?PHOTO_ROOT+catalogSlug[main.catalog]+'/p'+String(main.page).padStart(4,'0')+'.jpg':'';
   const fallback='<div class="elite-ref-image-placeholder"><span>Elite<br>Bohemia</span><small>Catalog image pending</small></div>';
   const thumb=item.imageUrl?'<img src="'+h(item.imageUrl)+'" loading="lazy" alt="Supplier image for '+h(item.code)+'">':
-   previewUrl?'<img src="'+h(previewUrl)+'" loading="lazy" alt="Source catalog page '+h(main.page)+' showing Elite Bohemia models; verify specific item" onerror="this.replaceWith(this.nextElementSibling)">'+fallback:fallback;
+    item.photoCandidate?'<img src="'+h(item.photoCandidate)+'" loading="lazy" alt="Source-page photo candidate for '+h(item.code)+'; verify finish before quoting">':
+    fallback;
   card.innerHTML='<div class="elite-ref-image">'+thumb+'</div><div class="elite-ref-data"><div class="elite-ref-type">'+h(item.category||'Crystal lighting')+'</div>'+
    '<h3>'+h(item.code)+'</h3>'+(item.variant?'<div class="elite-ref-variant">Finish: '+h(item.variant)+'</div>':'')+
    '<div class="elite-ref-dimension">'+(item.dimension?'Catalog dimensions (verify): '+h(item.dimension):'Dimensions: see supplier PDF')+'</div>'+
    '<div class="elite-ref-sources">'+sourceLinks+'</div>'+
+   '<div class="elite-ref-source">'+(item.photoCandidate?'Catalog photo candidate (finish unverified)':'Photo not yet matched')+'</div>'+
    '<div class="elite-ref-price">Price pending</div>'+
    '<small class="elite-ref-caution">Catalog reference only · No stock · Check original PDF before ordering</small></div>';
   if(Number.isFinite(item.priceUsd)&&item.priceUsd>0){const el=card.querySelector('.elite-ref-price');const show=d.createElement('span');show.className='da-price-ref-price';show.textContent=String.fromCharCode(36)+item.priceUsd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});const hidden=d.createElement('span');hidden.className='da-price-ref-price-hidden';hidden.textContent='Price hidden';el.replaceChildren(show,hidden);}
