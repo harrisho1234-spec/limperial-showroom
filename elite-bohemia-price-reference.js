@@ -6,17 +6,17 @@ const d=root.document;if(!d)return;
 const PATH='./assets/price-reference/elite-bohemia-catalog.json';
 const $=id=>d.getElementById(id);
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={items:[],filtered:[],query:'',category:'',source:'',shown:48,open:false,loaded:false,loading:null,error:'',lastFocus:null};
+const state={items:[],filtered:[],query:'',category:'',source:'',shown:48,open:false,loaded:false,loading:null,error:'',lastFocus:null,pricedCount:0};
 const catalogLabels={'2014 catalog':'2014 Chandeliers','2016 catalog':'2016 Chandeliers','2017 catalog':'2017 Chandeliers','2017 lamps':'2017 Lamps','Storybook':'Crystal Chandelier Storybook'};
 const catalogSlug={'2014 catalog':'2014_catalog','2016 catalog':'2016_catalog','2017 catalog':'2017_catalog','2017 lamps':'2017_lamps','Storybook':'storybook'};
 const PHOTO_ROOT='./assets/price-reference/elite-bohemia-page-previews/';
 function mount(){
  if($('elite-ref-overlay'))return;
  const overlay=d.createElement('section');overlay.id='elite-ref-overlay';overlay.className='elite-ref-overlay';overlay.hidden=true;overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Elite Bohemia Catalog Reference');
- overlay.innerHTML='<div class="elite-ref-dialog"><header class="da-ref-header"><div class="da-ref-heading"><span class="da-ref-kicker">CATALOG & PRICE REFERENCE</span><h2>Elite Bohemia</h2><p>Bohemian crystal lighting · Unpriced catalog · Not stock inventory</p></div><button type="button" id="elite-ref-close" class="da-ref-close" aria-label="Close Elite Bohemia">×</button></header>'+
+ overlay.innerHTML='<div class="elite-ref-dialog"><header class="da-ref-header"><div class="da-ref-heading"><span class="da-ref-kicker">CATALOG & PRICE REFERENCE</span><h2>Elite Bohemia</h2><p>Bohemian crystal lighting · 2025 selling-price reference · Not stock inventory</p></div><button type="button" id="elite-ref-close" class="da-ref-close" aria-label="Close Elite Bohemia">×</button></header>'+
  '<div class="elite-ref-tools"><input id="elite-ref-search" type="search" placeholder="Search supplier model code, dimension, catalog…" aria-label="Search Elite Bohemia models"><select id="elite-ref-category" aria-label="Product category"><option value="">All types</option></select><select id="elite-ref-catalog" aria-label="Source catalog"><option value="">All catalogs</option></select></div>'+
  '<div class="elite-ref-summary" id="elite-ref-summary"></div><div class="elite-ref-scroll"><div class="elite-ref-cards" id="elite-ref-cards"></div><div class="elite-ref-empty" id="elite-ref-empty" hidden></div><button class="elite-ref-more" id="elite-ref-more" type="button">Load more products</button></div>'+
- '<footer class="elite-ref-footer">Price: awaiting supplier price list · Reference-only (no inventory, stock quantity or cost) · Confirm finish and dimensions with original supplier catalog before ordering.</footer></div>';
+ '<footer class="elite-ref-footer">2025 selling prices on selected items · Reference-only (no inventory, stock quantity or cost) · Confirm finish and dimensions with original supplier catalog before ordering.</footer></div>';
  d.body.appendChild(overlay);
  $('elite-ref-close').addEventListener('click',close);
  overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
