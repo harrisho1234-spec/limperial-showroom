@@ -94,6 +94,16 @@ function render(){
    '<div class="elite-ref-price">Price pending</div>'+
    '<small class="elite-ref-caution">Catalog reference only · No stock · Check original PDF before ordering</small></div>';
   if(Number.isFinite(item.priceUsd)&&item.priceUsd>0){const el=card.querySelector('.elite-ref-price');const show=d.createElement('span');show.className='da-price-ref-price';show.textContent=String.fromCharCode(36)+item.priceUsd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});const hidden=d.createElement('span');hidden.className='da-price-ref-price-hidden';hidden.textContent='Price hidden';el.replaceChildren(show,hidden);}
+  if(item.collection==='Flame'||item.collection==='Water' || item.collection==='Seashell'){
+    const foot=d.createElement('small');foot.className='elite-ref-caution';
+    foot.textContent='Verify LED ceiling-light inclusion and exact finish with supplier before quoting.';
+    card.querySelector('.elite-ref-data')?.appendChild(foot);
+  }
+  if(['Light of Diamond','The Majesty of Brilliance','Dancing Light','Golden Glow'].includes(item.collection)){
+    const foot=d.createElement('small');foot.className='elite-ref-caution';
+    foot.textContent='Base gold design. Nickel/silver finish has a supplier surcharge of 5%; confirm before quoting.';
+    card.querySelector('.elite-ref-data')?.appendChild(foot);
+  }
   card.dataset.priceUsd=String(item.priceUsd||'');
   frag.appendChild(card);
  }
