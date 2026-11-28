@@ -88,7 +88,7 @@ function render(){
   const thumb=item.imageUrl?'<img src="'+h(item.imageUrl)+'" loading="lazy" alt="Supplier image for '+h(item.code)+'">':
    previewUrl?'<img src="'+h(previewUrl)+'" loading="lazy" alt="Source catalog page '+h(main.page)+' showing Elite Bohemia models; verify specific item" onerror="this.replaceWith(this.nextElementSibling)">'+fallback:fallback;
   card.innerHTML='<div class="elite-ref-image">'+thumb+'</div><div class="elite-ref-data"><div class="elite-ref-type">'+h(item.category||'Crystal lighting')+'</div>'+
-   '<h3>'+h(item.code)+'</h3>'+
+   '<h3>'+h(item.code)+'</h3>'+(item.variant?'<div class="elite-ref-variant">Finish: '+h(item.variant)+'</div>':'')+
    '<div class="elite-ref-dimension">'+(item.dimension?'Catalog dimensions (verify): '+h(item.dimension):'Dimensions: see supplier PDF')+'</div>'+
    '<div class="elite-ref-sources">'+sourceLinks+'</div>'+
    '<div class="elite-ref-price">Price not supplied</div>'+
