@@ -101,7 +101,7 @@ async function logout(){
 }
 async function getPriceReference(brand){
  if(!client)throw Error('Employee login is not available.');
- const allowedBrands=['asfour','arredoluce','deluxe'];
+ const allowedBrands=['asfour','arredoluce','deluxe','elite'];
  if(!allowedBrands.includes(brand))throw Error('Unknown price-reference brand.');
  const {data:userData,error:userError}=await client.auth.getUser();
  if(userError||!userData?.user)throw Error('Sign in to view prices.');
