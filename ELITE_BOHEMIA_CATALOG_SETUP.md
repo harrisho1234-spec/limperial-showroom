@@ -71,3 +71,14 @@ The protected pricing data uses the existing authenticated Showroom permission/R
 - Legacy Excel `.xls` files `Ceník Exclusive 2025 USD pb.xls` and `CENÍK lamp 2025 USD pb.xls` are not yet imported because the current spreadsheet reader cannot import that legacy binary format. Convert them to `.xlsx` without changing values for complete intake.
 - The Illusion product sheet PDF provides model imagery and variant/finish evidence but still requires exact code-to-image/photo mapping and image hosting. No product photos were guessed or swapped.
 - The source reconciliation is available as the conversation artifact `Elite_Bohemia_Additional_Pricelists_Reconciliation.csv` and deliberately is not committed to the public repository because it contains pricing data.
+
+## Complete master catalog & photo coverage — 28 November 2026
+
+- **1,244 distinct Elite Bohemia codes**: 1,151 catalog/supplemental index codes + 93 additional priced-only 2025 PDF model codes. These are non-stock reference entries.
+- **190 validated selling-price model/finish combinations** remain in Supabase's protected elite reference. Some priced products have multiple finishes. No supplier costing is published to static assets.
+- **524 supplier catalog PDF page thumbnails** are now actually hosted in the repository in eight files under `assets/price-reference/elite-bohemia-pages-*.json`. The client loads only the source page sets required by the currently displayed results.
+- **83 single-model-source-page photo candidates** are embedded in `assets/price-reference/elite-bohemia-photo-candidates.json`. These may still need finish/variant visual verification. The remaining 953 older catalog codes show a relevant page preview, which may contain several products; 115 additional sheet-only codes plus 93 PDF-price-only codes lack original catalog photo evidence.
+- The private **Price Upload Master** sheet is: https://docs.google.com/spreadsheets/d/1NUxCHSrO5pzdCzHokrZ9gcMt1kxzzB-iiUJKhVs2jYk/edit . Contains Catalog Master, Price Upload, Priced Variants and Instructions. Includes 1,244 code rows and 13 extra existing-variant entries (1,257 total Price Upload rows), and price-basis dropdown to prevent double discounting.
+- Price formula: supplier **retail/list price × 0.55 × 3**, or **cost × 3** if the entered amount has already had the 45% discount, or direct final selling price when confirmed. Never combine the bases.
+- **How to add prices**: use **Price Upload**, fill supplier price and price basis, download as Excel, then submit the completed file for code+variant reconciliation and guarded protected import. Merely editing the Google Sheet does NOT auto-publish confidential prices to the Showroom.
+- **Not yet complete:** single-product photo cropping and visual verification for all 1,244 codes. Page preview is not an exact product photograph and should not be described as such.
