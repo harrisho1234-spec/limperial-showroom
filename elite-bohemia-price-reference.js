@@ -93,6 +93,7 @@ function render(){
    '<div class="elite-ref-sources">'+sourceLinks+'</div>'+
    '<div class="elite-ref-price">Price pending</div>'+
    '<small class="elite-ref-caution">Catalog reference only · No stock · Check original PDF before ordering</small></div>';
+  card.dataset.priceUsd=String(item.priceUsd||'');
   frag.appendChild(card);
  }
  holder.appendChild(frag);
