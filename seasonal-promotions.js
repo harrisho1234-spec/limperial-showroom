@@ -191,7 +191,7 @@
       activeThemeKey=defaultBackground?.custom_background_path||defaultBackground?.custom_background_dark_path||'';
     }
   }
-  const redraw=()=>{applyTheme();renderBanner();if(typeof executeSearchFilter==='function')executeSearchFilter();};
+  const redraw=()=>{applyTheme();renderBanner();if(typeof executeSearchFilter==='function')executeSearchFilter(false);};
   const ui=id=>document.getElementById(id);
   const escapeHtml=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const codeOf=v=>String(v||'').trim().toUpperCase();
