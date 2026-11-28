@@ -91,7 +91,7 @@ function render(){
    '<h3>'+h(item.code)+'</h3>'+(item.variant?'<div class="elite-ref-variant">Finish: '+h(item.variant)+'</div>':'')+
    '<div class="elite-ref-dimension">'+(item.dimension?'Catalog dimensions (verify): '+h(item.dimension):'Dimensions: see supplier PDF')+'</div>'+
    '<div class="elite-ref-sources">'+sourceLinks+'</div>'+
-   '<div class="elite-ref-price">Price not supplied</div>'+
+   '<div class="elite-ref-price">Price pending</div>'+
    '<small class="elite-ref-caution">Catalog reference only · No stock · Check original PDF before ordering</small></div>';
   frag.appendChild(card);
  }
