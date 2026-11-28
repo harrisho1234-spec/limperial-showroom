@@ -1005,8 +1005,22 @@
         let documentType = 'quotation';
         let salesOrderDepositMode = 'pct'; // last edited field is authoritative
         let showPreOrderOnDoc = true;
-        let currentPage = 1;
-        let itemsPerPage = 12;
+        const SHOWROOM_CATALOG_PAGE_STATE_KEY = 'limperial_showroom_catalog_page_state';
+        const savedCatalogPageState = (() => {
+            try { return JSON.parse(localStorage.getItem(SHOWROOM_CATALOG_PAGE_STATE_KEY) || 'null'); }
+            catch (_) { return null; }
+        })();
+        let currentPage = Math.max(1, parseInt(savedCatalogPageState?.page, 10) || 1);
+        let itemsPerPage = [12, 24, 48, -1].includes(Number(savedCatalogPageState?.itemsPerPage))
+            ? Number(savedCatalogPageState.itemsPerPage) : 12;
+        function saveCatalogPageState() {
+            try {
+                localStorage.setItem(SHOWROOM_CATALOG_PAGE_STATE_KEY, JSON.stringify({
+                    page: currentPage,
+                    itemsPerPage: itemsPerPage
+                }));
+            } catch (_) {}
+        }
         let productModalSequence = [];
         let productModalActiveIndex = -1;
         let productModalLastSwipeAt = 0;
@@ -1583,7 +1597,7 @@
                         keyMaterialByCode = nextMap;
                         applyKeyMaterialToProducts();
                         renderKeyMaterialFilters();
-                        executeSearchFilter();
+                        executeSearchFilter(false);
                     }
                 });
             } catch (error) {
@@ -1709,7 +1723,7 @@
                             updateShowroomSyncHint();
                             const spinner = document.getElementById('loading-spinner');
                             if (spinner) spinner.classList.add('hidden');
-                            renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); handleSearchFilter();
+                            renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); handleSearchFilter(true);
                             if (statusText) statusText.textContent = "Synced";
                             if (syncStatusPill) syncStatusPill.className = "flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5 text-xs";
                             showNotification("Inventory fully updated.", "success");
@@ -1914,7 +1928,7 @@
                 if (Array.isArray(response.sets)) {
                     mergeCreatedSets(response.sets);
                     applyCreatedSetsToProducts();
-                    renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); executeSearchFilter();
+                    renderClassFilters(); renderSubclassFilters(); renderBrandFilters(); renderKeyMaterialFilters(); renderLocationFilters(); executeSearchFilter(false);
                 }
             } catch (e) {}
         }
@@ -2599,7 +2613,7 @@
             executeSearchFilter();
         }
 
-        function handleSearchFilter() { clearTimeout(searchTimeout); searchTimeout = setTimeout(executeSearchFilter, 150); }
+        function handleSearchFilter(preservePage = false) { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => executeSearchFilter(!preservePage), 150); }
 
         function getSetFilterComponents(product) {
             if (!product || !product.isSet) return product ? [product] : [];
@@ -2625,7 +2639,7 @@
             return displayBrand === filterValue;
         }
 
-        function executeSearchFilter() {
+        function executeSearchFilter(resetPage = true) {
             window.SeasonalPromos?.catalogUpdated();
             const searchInput = document.getElementById('search-input'); const searchVal = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const clearBtn = document.getElementById('clear-search-btn');
@@ -2688,7 +2702,10 @@
 
             const emptyState = document.getElementById('empty-state');
             if (emptyState) { if (filteredProducts.length === 0) emptyState.classList.remove('hidden'); else emptyState.className = "hidden"; }
-            currentPage = 1; renderProductGrid(); updateMobileFilterBadge();
+            if (resetPage) currentPage = 1;
+            renderProductGrid();
+            saveCatalogPageState();
+            updateMobileFilterBadge();
         }
 
         function clearSearch() { const searchInput = document.getElementById('search-input'); if (searchInput) searchInput.value = ''; executeSearchFilter(); }
@@ -2885,6 +2902,7 @@
             container.classList.remove('hidden');
             const totalItems = filteredProducts.length; const totalPages = itemsPerPage === -1 ? 1 : Math.ceil(totalItems / itemsPerPage);
             if (currentPage > totalPages) currentPage = totalPages; if (currentPage < 1) currentPage = 1;
+            saveCatalogPageState();
             const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
             let endItem = currentPage * itemsPerPage; if (itemsPerPage === -1 || endItem > totalItems) endItem = totalItems;
             
@@ -2921,8 +2939,8 @@
             btn.textContent = pageNum; btn.onclick = () => changePage(pageNum); return btn;
         }
 
-        function changePage(pageNum) { currentPage = pageNum; renderProductGrid(); const c = document.getElementById('product-scroll-container'); if(c) c.scrollTop = 0; }
-        function setItemsPerPage(num) { itemsPerPage = num; currentPage = 1; renderProductGrid(); }
+        function changePage(pageNum) { currentPage = Math.max(1, Number(pageNum) || 1); saveCatalogPageState(); renderProductGrid(); const c = document.getElementById('product-scroll-container'); if(c) c.scrollTop = 0; }
+        function setItemsPerPage(num) { itemsPerPage = num; currentPage = 1; saveCatalogPageState(); renderProductGrid(); }
 
         function openEditItemModal(uniqueId) {
             const cartItem = findCartLine(uniqueId); if (!cartItem) return;
