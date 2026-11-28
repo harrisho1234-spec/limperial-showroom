@@ -7,7 +7,8 @@
   const brands=[
     {id:'deluxe',label:'Deluxe Arte',api:'DeluxeArtePriceReference',overlay:'da-ref-overlay'},
     {id:'asfour',label:'Asfour',api:'AsfourPriceReference',overlay:'asfour-ref-overlay'},
-    {id:'arredoluce',label:'Arredoluce',api:'ArredolucePriceReference',overlay:'arredo-ref-overlay'}
+    {id:'arredoluce',label:'Arredoluce',api:'ArredolucePriceReference',overlay:'arredo-ref-overlay'},
+    {id:'elite',label:'Elite Bohemia',api:'EliteBohemiaPriceReference',overlay:'elite-ref-overlay'}
   ];
   function switchBrand(id){
     const selected=brands.find(x=>x.id===id);
