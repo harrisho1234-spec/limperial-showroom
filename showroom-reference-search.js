@@ -9,6 +9,7 @@
  const ASFOUR_DIMENSIONS='./assets/price-reference/asfour-dimensions-by-code.json';
  const DELUXE='./assets/price-reference/deluxe-arte.json';
  const ARREDOLUCE='./assets/price-reference/arredoluce-actual-sales-2026-11-20.json';
+ const ELITE='./assets/price-reference/elite-bohemia-catalog.json';
  let rows=[],loading=null,lastQuery='',requestId=0;
  const byId=id=>doc.getElementById(id);
  const text=v=>String(v==null?'':v);
@@ -17,12 +18,13 @@
  async function load(){
    if(loading)return loading;
    loading=(async()=>{
-     const [da,af,desc,arredo,asfourDimensions]=await Promise.allSettled([
+     const [da,af,desc,arredo,asfourDimensions,elite]=await Promise.allSettled([
        root.LImperialShowroomAuth.getPriceReference('deluxe'),
        root.LImperialShowroomAuth.getPriceReference('asfour'),
        fetch(DESCRIPTIONS).then(r=>{if(!r.ok)throw Error('Descriptions unavailable');return r.json()}),
        root.LImperialShowroomAuth.getPriceReference('arredoluce'),
-       fetch(ASFOUR_DIMENSIONS).then(r=>{if(!r.ok)throw Error('Asfour dimensions unavailable');return r.json()})
+       fetch(ASFOUR_DIMENSIONS).then(r=>{if(!r.ok)throw Error('Asfour dimensions unavailable');return r.json()}),
+       fetch(ELITE).then(r=>{if(!r.ok)throw Error('Elite Bohemia catalog unavailable');return r.json()})
      ]);
      const results=[];
      if(da.status==='fulfilled'&&da.value.kind==='reference_only'&&da.value.brand==='Deluxe Arte'&&Array.isArray(da.value.items)){
@@ -50,6 +52,12 @@
        for(const x of arredo.value.items){
          if(!x||typeof x.code!=='string'||!Number.isFinite(x.priceUsd)||x.priceUsd<=0)continue;
          results.push({brand:'Arredoluce',code:x.code,name:x.name||'Arredoluce lighting',details:[x.variant,x.series,x.dimensions,x.type].filter(Boolean).join(' '),price:x.priceUsd});
+       }
+     }
+     if(elite.status==='fulfilled'&&elite.value.brand==='Elite Bohemia'&&elite.value.kind==='catalog_reference_only'&&Array.isArray(elite.value.items)){
+       for(const x of elite.value.items){
+         if(!x||typeof x.code!=='string')continue;
+         results.push({brand:'Elite Bohemia',code:x.code,name:x.code,details:[x.category,x.dimension,(x.catalogs||[]).join(' ')].filter(Boolean).join(' · '),price:null});
        }
      }
      rows=results;
@@ -80,14 +88,14 @@
    const list=doc.createElement('div');list.className='reference-search-list';
    for(const item of matches.slice(0,8)){
      const button=doc.createElement('button');button.type='button';button.className='reference-search-item';
-     button.innerHTML='<span class="reference-search-name">'+safe(item.name)+'</span><span class="reference-search-meta">'+safe(item.brand)+' · '+safe(item.code)+'</span><span class="reference-search-price">'+safe(price(item.price))+'</span><span class="reference-search-view">View reference ↗</span>';
+     button.innerHTML='<span class="reference-search-name">'+safe(item.name)+'</span><span class="reference-search-meta">'+safe(item.brand)+' · '+safe(item.code)+'</span><span class="reference-search-price">'+safe(item.price==null?'Price pending':price(item.price))+'</span><span class="reference-search-view">View reference ↗</span>';
      button.setAttribute('aria-label','View '+item.brand+' price reference '+item.code);
      button.addEventListener('click',()=>{
-       const key=item.brand==='Asfour'?'asfour':item.brand==='Arredoluce'?'arredoluce':'deluxe';
+       const key=item.brand==='Asfour'?'asfour':item.brand==='Arredoluce'?'arredoluce':item.brand==='Elite Bohemia'?'elite':'deluxe';
        const api=root.LImperialUnifiedPriceReference;
        if(!api?.open)return;
        api.open(key);
-       const input=byId(key==='asfour'?'asfour-ref-search':key==='arredoluce'?'arredo-ref-search':'da-ref-search');
+       const input=byId(key==='asfour'?'asfour-ref-search':key==='arredoluce'?'arredo-ref-search':key==='elite'?'elite-ref-search':'da-ref-search');
        if(input){input.value=item.code;input.dispatchEvent(new Event('input',{bubbles:true}))}
      });
      list.appendChild(button);
