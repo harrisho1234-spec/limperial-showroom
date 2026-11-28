@@ -32,7 +32,30 @@ async function load(){
   try{
    const r=await fetch(PATH,{cache:'no-cache'});if(!r.ok)throw Error('Elite Bohemia catalog index unavailable');
    const x=await r.json();if(x.kind!=='catalog_reference_only'||x.brand!=='Elite Bohemia'||!Array.isArray(x.items)||x.items.length<100)throw Error('Unexpected catalog index');
-   state.items=x.items.filter(y=>y&&typeof y.code==='string'&&Array.isArray(y.sources));
+   const catalog=x.items.filter(y=>y&&typeof y.code==='string'&&Array.isArray(y.sources));
+   let pricing=[];
+   try{
+     const p=await root.LImperialShowroomAuth.getPriceReference('elite');
+     if(p.brand!=='Elite Bohemia'||p.kind!=='reference_only'||p.currency!=='USD'||!Array.isArray(p.items))throw Error('Invalid reference');
+     pricing=p.items.filter(v=>v&&typeof v.code==='string'&&Number.isFinite(v.priceUsd)&&v.priceUsd>0);
+   }catch(err){console.warn('Elite Bohemia selling prices unavailable',err);}
+   const normalize=code=>String(code).trim().toUpperCase().split(' ').filter(Boolean).join(' ');
+   const byCode=new Map(catalog.map(item=>[normalize(item.code),item]));
+   const mapped=new Map();
+   for(const p of pricing){
+     const key=normalize(p.code),base=byCode.get(key);
+     const item={...(base||{}),code:p.code,variant:p.variant||'',collection:p.collection||'',priceUsd:p.priceUsd,
+       category:base?.category||p.collection||'Crystal lighting',catalogs:base?.catalogs||[],sources:base?.sources||[],dimension:base?.dimension||''};
+     if(!mapped.has(key))mapped.set(key,[]);mapped.get(key).push(item);
+   }
+   state.items=[];
+   for(const item of catalog){
+      const key=normalize(item.code),priced=mapped.get(key);
+      if(priced?.length){state.items.push(...priced);mapped.delete(key)}
+      else state.items.push({...item,priceUsd:null,variant:'',collection:''});
+   }
+   for(const list of mapped.values())state.items.push(...list);
+   state.pricedCount=pricing.length;
    const categories=[...new Set(state.items.map(y=>y.category).filter(Boolean))].sort();
    const selector=$('elite-ref-category');categories.forEach(cat=>{const o=d.createElement('option');o.value=cat;o.textContent=cat;selector.appendChild(o)});
    const sourceSelector=$('elite-ref-catalog');
