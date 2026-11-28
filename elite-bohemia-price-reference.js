@@ -16,7 +16,7 @@ function previewFile(source,page){
  const slug=catalogSlug[source];
  if(!slug||!Number.isInteger(page)||page<1)return '';
  const part=slug==='2014_catalog'?'_part'+Math.ceil(page/80):'';
- return PAGE_PREVIEWS_ROOT+slug+part+'.json';
+ return PAGE_PREVIEWS_ROOT+(slug==='2014_catalog'?'2014':slug)+part+'.json';
 }
 function ensurePagePreview(source,page){
  const file=previewFile(source,page);
