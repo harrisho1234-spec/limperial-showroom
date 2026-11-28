@@ -51,22 +51,33 @@ function setAllowed(flag){
 async function verify(){
  if(!client)return;
  if(checking)return;
- checking=true;setAllowed(false);message('Verifying employee access…');
+ checking=true;
+ // Do not hide an already-authorized app while checking the session again
+ // after the user returns to this tab. This avoids a visible app/login flash.
+ if(!authorized){setAllowed(false);message('Verifying employee access…');}
  try{
   const {data:userData,error:userError}=await client.auth.getUser();
-  if(userError||!userData?.user){message('Sign in using your employee account.');return}
+  if(userError)throw userError;
+  if(!userData?.user){
+   setAllowed(false);
+   message('Sign in using your employee account.');
+   return;
+  }
   const {data:hasAccess,error}=await client.rpc('current_user_has_permission',{p_permission:PERMISSION});
   if(error)throw error;
   if(hasAccess!==true){
+   setAllowed(false);
    message('Your account does not have Showroom access. Ask an Admin to enable Open Showroom in User & Access.');
    el('showroom-auth-logout').hidden=false;
    return;
   }
   el('showroom-auth-logout').hidden=true;
   message('');
-  setAllowed(true);
+  // Only dispatch the authorization event when access actually changes.
+  if(!authorized)setAllowed(true);
  }catch(error){
-  message('Could not verify Showroom permission. Internet and staff login service are required; retry signing in.');
+  // A temporary network error must not blank an app that was already open.
+  if(!authorized)message('Could not verify Showroom permission. Internet and staff login service are required; retry signing in.');
   console.warn('Showroom access verification unavailable',error);
  }finally{checking=false}
 }
