@@ -75,8 +75,8 @@ function render(){
   $('elite-ref-more').hidden=true;return;
  }
  const words=state.query.split(/\s+/).filter(Boolean);
- state.filtered=state.items.filter(row=>(!state.category||row.category===state.category)&&(!state.source||row.catalogs.includes(state.source))&&words.every(word=>(row.code+' '+row.category+' '+row.dimension+' '+row.catalogs.join(' ')).toLowerCase().includes(word)));
- $('elite-ref-summary').textContent=state.filtered.length+' model codes · '+state.items.length+' total indexed · 5 supplier catalogs · Prices pending';
+ state.filtered=state.items.filter(row=>(!state.category||row.category===state.category)&&(!state.source||row.catalogs.includes(state.source))&&words.every(word=>(row.code+' '+row.variant+' '+row.collection+' '+row.category+' '+row.dimension+' '+row.catalogs.join(' ')).toLowerCase().includes(word)));
+ $('elite-ref-summary').textContent=state.filtered.length+' options shown · '+state.pricedCount+' priced combinations · remaining models Pending';
  const holder=$('elite-ref-cards');holder.replaceChildren();
  const frag=d.createDocumentFragment();
  for(const item of state.filtered.slice(0,state.shown)){
@@ -102,5 +102,5 @@ function render(){
 }
 function close(){state.open=false;const x=$('elite-ref-overlay');if(x)x.hidden=true;d.body.classList.remove('elite-ref-active');state.lastFocus?.focus?.()}
 function open(){mount();state.lastFocus=d.activeElement;state.open=true;$('elite-ref-overlay').hidden=false;d.body.classList.add('elite-ref-active');load();$('elite-ref-search').focus()}
-root.EliteBohemiaPriceReference=Object.freeze({open,close,get loadedCount(){return state.items.length},get priced(){return false}});
+root.EliteBohemiaPriceReference=Object.freeze({open,close,get loadedCount(){return state.items.length},get priced(){return state.pricedCount>0}});
 })(typeof window!=='undefined'?window:globalThis);
