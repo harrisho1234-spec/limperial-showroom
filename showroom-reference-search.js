@@ -18,13 +18,14 @@
  async function load(){
    if(loading)return loading;
    loading=(async()=>{
-     const [da,af,desc,arredo,asfourDimensions,elite]=await Promise.allSettled([
+     const [da,af,desc,arredo,asfourDimensions,elite,elitePrices]=await Promise.allSettled([
        root.LImperialShowroomAuth.getPriceReference('deluxe'),
        root.LImperialShowroomAuth.getPriceReference('asfour'),
        fetch(DESCRIPTIONS).then(r=>{if(!r.ok)throw Error('Descriptions unavailable');return r.json()}),
        root.LImperialShowroomAuth.getPriceReference('arredoluce'),
        fetch(ASFOUR_DIMENSIONS).then(r=>{if(!r.ok)throw Error('Asfour dimensions unavailable');return r.json()}),
-       fetch(ELITE).then(r=>{if(!r.ok)throw Error('Elite Bohemia catalog unavailable');return r.json()})
+       fetch(ELITE).then(r=>{if(!r.ok)throw Error('Elite Bohemia catalog unavailable');return r.json()}),
+       root.LImperialShowroomAuth.getPriceReference('elite')
      ]);
      const results=[];
      if(da.status==='fulfilled'&&da.value.kind==='reference_only'&&da.value.brand==='Deluxe Arte'&&Array.isArray(da.value.items)){
@@ -54,11 +55,28 @@
          results.push({brand:'Arredoluce',code:x.code,name:x.name||'Arredoluce lighting',details:[x.variant,x.series,x.dimensions,x.type].filter(Boolean).join(' '),price:x.priceUsd});
        }
      }
+     const eliteOptions=elitePrices.status==='fulfilled'&&elitePrices.value.brand==='Elite Bohemia'&&Array.isArray(elitePrices.value.items)?elitePrices.value.items:[];
+     const eliteByCode=new Map();
+     for(const x of eliteOptions){
+       if(!x||typeof x.code!=='string'||!Number.isFinite(x.priceUsd)||x.priceUsd<=0)continue;
+       const code=x.code.trim().toUpperCase();
+       if(!eliteByCode.has(code))eliteByCode.set(code,[]);
+       eliteByCode.get(code).push(x);
+     }
+     const priceSeen=new Set();
      if(elite.status==='fulfilled'&&elite.value.brand==='Elite Bohemia'&&elite.value.kind==='catalog_reference_only'&&Array.isArray(elite.value.items)){
        for(const x of elite.value.items){
          if(!x||typeof x.code!=='string')continue;
-         results.push({brand:'Elite Bohemia',code:x.code,name:x.code,details:[x.category,x.dimension,(x.catalogs||[]).join(' ')].filter(Boolean).join(' · '),price:null});
+         const key=x.code.trim().toUpperCase(),options=eliteByCode.get(key)||[];
+         if(options.length){
+           for(const p of options)results.push({brand:'Elite Bohemia',code:x.code,name:x.code,details:[p.variant,p.collection,x.category,x.dimension].filter(Boolean).join(' · '),price:p.priceUsd});
+           priceSeen.add(key);
+         }else results.push({brand:'Elite Bohemia',code:x.code,name:x.code,details:[x.category,x.dimension,(x.catalogs||[]).join(' ')].filter(Boolean).join(' · '),price:null});
        }
+     }
+     for(const [key,options] of eliteByCode){
+       if(priceSeen.has(key))continue;
+       for(const p of options)results.push({brand:'Elite Bohemia',code:p.code,name:p.code,details:[p.variant,p.collection].filter(Boolean).join(' · '),price:p.priceUsd});
      }
      rows=results;
      return results;
