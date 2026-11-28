@@ -9,7 +9,28 @@ const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 const state={items:[],filtered:[],query:'',category:'',source:'',shown:48,open:false,loaded:false,loading:null,error:'',lastFocus:null,pricedCount:0};
 const catalogLabels={'2014 catalog':'2014 Chandeliers','2016 catalog':'2016 Chandeliers','2017 catalog':'2017 Chandeliers','2017 lamps':'2017 Lamps','Storybook':'Crystal Chandelier Storybook'};
 const catalogSlug={'2014 catalog':'2014_catalog','2016 catalog':'2016_catalog','2017 catalog':'2017_catalog','2017 lamps':'2017_lamps','Storybook':'storybook'};
-const PHOTO_ROOT='./assets/price-reference/elite-bohemia-page-previews/';
+const PAGE_PREVIEWS_ROOT='./assets/price-reference/elite-bohemia-pages-';
+const pagePreviewCache=new Map(),pagePreviewLoads=new Map();
+const previewKey=(source,page)=>source+'|'+page;
+function previewFile(source,page){
+ const slug=catalogSlug[source];
+ if(!slug||!Number.isInteger(page)||page<1)return '';
+ const part=slug==='2014_catalog'?'_part'+Math.ceil(page/80):'';
+ return PAGE_PREVIEWS_ROOT+slug+part+'.json';
+}
+function ensurePagePreview(source,page){
+ const file=previewFile(source,page);
+ if(!file||pagePreviewLoads.has(file))return;
+ const load=fetch(file,{cache:'force-cache'}).then(r=>{if(!r.ok)throw Error('Preview unavailable');return r.json()})
+  .then(data=>{
+    if(data.kind!=='elite-bohemia-catalog-source-page-previews'||data.source!==source)return;
+    for(const [number,src] of Object.entries(data.pages||{})){
+      if(typeof src==='string'&&src.startsWith('data:image/jpeg;base64,'))pagePreviewCache.set(previewKey(source,Number(number)),src);
+    }
+  }).catch(e=>console.warn('Elite Bohemia page preview missing',source,page,e))
+  .finally(()=>{if(state.open&&state.loaded)render()});
+ pagePreviewLoads.set(file,load);
+}
 const PHOTO_CANDIDATES='./assets/price-reference/elite-bohemia-photo-candidates.json';
 function mount(){
  if($('elite-ref-overlay'))return;
@@ -103,16 +124,18 @@ function render(){
   const main=item.sources?.[0]||{},cat=catalogLabels[main.catalog]||main.catalog||'Supplier catalog';
   const sourceLinks=item.sources.slice(0,4).map(s=>'<span class="elite-ref-source">'+h(catalogLabels[s.catalog]||s.catalog)+' · PDF p. '+h(s.page)+'</span>').join('')+
    (item.sources.length?'':(item.priceListReferences||[]).slice(0,2).map(r=>'<span class="elite-ref-source">2025 supplement · '+h(r.collection)+' · sheet row '+h(r.row)+'</span>').join(''));
-  const previewUrl=main.catalog&&catalogSlug[main.catalog]&&main.page?PHOTO_ROOT+catalogSlug[main.catalog]+'/p'+String(main.page).padStart(4,'0')+'.jpg':'';
-  const fallback='<div class="elite-ref-image-placeholder"><span>Elite<br>Bohemia</span><small>Catalog image pending</small></div>';
+  const pageNumber=Number(main.page);
+  const pagePreview=pagePreviewCache.get(previewKey(main.catalog,pageNumber));
+  if(!item.imageUrl&&!item.photoCandidate&&!pagePreview)ensurePagePreview(main.catalog,pageNumber);
+  const fallback='<div class="elite-ref-image-placeholder"><span>Elite<br>Bohemia</span><small>Source photo unavailable</small></div>';
   const thumb=item.imageUrl?'<img src="'+h(item.imageUrl)+'" loading="lazy" alt="Supplier image for '+h(item.code)+'">':
     item.photoCandidate?'<img src="'+h(item.photoCandidate)+'" loading="lazy" alt="Source-page photo candidate for '+h(item.code)+'; verify finish before quoting">':
-    fallback;
+    pagePreview?'<img src="'+h(pagePreview)+'" loading="lazy" alt="Source catalog page '+h(pageNumber)+'; may contain multiple models, not exact product photo">':fallback;
   card.innerHTML='<div class="elite-ref-image">'+thumb+'</div><div class="elite-ref-data"><div class="elite-ref-type">'+h(item.category||'Crystal lighting')+'</div>'+
    '<h3>'+h(item.code)+'</h3>'+(item.variant?'<div class="elite-ref-variant">Finish: '+h(item.variant)+'</div>':'')+
    '<div class="elite-ref-dimension">'+(item.dimension?'Catalog dimensions (verify): '+h(item.dimension):'Dimensions: see supplier PDF')+'</div>'+
    '<div class="elite-ref-sources">'+sourceLinks+'</div>'+
-   '<div class="elite-ref-source">'+(item.photoCandidate?'Catalog photo candidate (finish unverified)':'Photo not yet matched')+'</div>'+
+   '<div class="elite-ref-source">'+(item.photoCandidate?'Single-model catalog page candidate · finish unverified':pagePreview?'Catalog page preview · multiple models may be shown':'Exact photo not yet matched')+'</div>'+
    '<div class="elite-ref-price">Price pending</div>'+
    '<small class="elite-ref-caution">Catalog reference only · No stock · Check original PDF before ordering</small></div>';
   if(Number.isFinite(item.priceUsd)&&item.priceUsd>0){const el=card.querySelector('.elite-ref-price');const show=d.createElement('span');show.className='da-price-ref-price';show.textContent=String.fromCharCode(36)+item.priceUsd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});const hidden=d.createElement('span');hidden.className='da-price-ref-price-hidden';hidden.textContent='Price hidden';el.replaceChildren(show,hidden);}
